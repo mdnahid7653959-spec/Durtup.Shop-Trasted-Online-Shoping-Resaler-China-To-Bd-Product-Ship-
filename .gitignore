@@ -28,6 +28,8 @@ release/
 release
 *.exe
 .env
+.env*
+.env.backup
 .env.*.local
 debug_*.ts
 test_*.ts
