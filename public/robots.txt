@@ -1,0 +1,97 @@
+# Googlebot and standard web search crawlers
+User-agent: *
+Allow: /
+Allow: /product/
+Allow: /products/
+Allow: /category/
+Allow: /categories/
+Allow: /press
+Allow: /about
+Allow: /contact
+Allow: /help
+Allow: /shipping
+Allow: /returns
+Allow: /privacy
+Allow: /terms
+Allow: /cookies
+Allow: /ip
+Allow: /careers
+Allow: /affiliate
+Allow: /seller
+Allow: /track
+Allow: /guides/
+Allow: /blog/
+
+# AI & LLM Search Agents (GEO / AEO - ChatGPT Search, Perplexity, Claude, Gemini, Apple Intelligence)
+User-agent: Google-Extended
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+# Allow critical static assets for complete rendering & Core Web Vitals
+Allow: /favicon.ico
+Allow: /favicon*.png
+Allow: /icon-*.png
+Allow: /apple-touch-icon*.png
+Allow: /manifest.json
+Allow: /*.js$
+Allow: /*.css$
+Allow: /*.png$
+Allow: /*.jpg$
+Allow: /*.jpeg$
+Allow: /*.webp$
+Allow: /*.svg$
+
+# Disallow private user, checkout, administrative, and internal search facet paths
+Disallow: /admin/
+Disallow: /admin*
+Disallow: /staff/
+Disallow: /staff*
+Disallow: /seller/dashboard
+Disallow: /seller/orders
+Disallow: /seller/settings
+Disallow: /account
+Disallow: /profile
+Disallow: /cart
+Disallow: /checkout
+Disallow: /payment/
+Disallow: /payment/callback
+Disallow: /orders
+Disallow: /orders/
+Disallow: /wishlist
+Disallow: /wallet
+Disallow: /vouchers
+Disallow: /notifications
+Disallow: /messages
+Disallow: /messages/
+Disallow: /search
+Disallow: /search?*
+Disallow: /api/
+Disallow: /*?*filter=
+Disallow: /*?*minPrice=
+Disallow: /*?*maxPrice=
+
+# XML Sitemap Index
+Sitemap: https://durtup.shop/sitemap.xml

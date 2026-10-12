@@ -1,0 +1,86 @@
+{
+  "auth": {
+    "providers": {
+      "emailPassword": true,
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "Durtup.shop",
+        "supportEmail": "support@durtup.shop",
+        "authorizedRedirectUris": [
+          "https://www.durtup.shop",
+          "https://durtup.shop",
+          "http://localhost"
+        ]
+      }
+    }
+  },
+  "hosting": {
+    "public": "dist",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "headers": [
+      {
+        "source": "/assets/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      },
+      {
+        "source": "**/*.@(jpg|jpeg|gif|png|webp|svg|woff|woff2|ico)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=2592000, stale-while-revalidate=86400"
+          }
+        ]
+      },
+      {
+        "source": "/mohasagor_catalog_slim.json",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=7200, stale-while-revalidate=86400"
+          }
+        ]
+      },
+      {
+        "source": "/(sw.js|registerSW.js)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      },
+      {
+        "source": "/index.html",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      }
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "dataconnect": {
+    "source": "dataconnect"
+  },
+  "functions": {
+    "source": "functions"
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  }
+}

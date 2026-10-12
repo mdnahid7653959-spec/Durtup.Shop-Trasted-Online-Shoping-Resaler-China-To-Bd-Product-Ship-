@@ -1,0 +1,80 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && (request.auth.uid == userId);
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.admin == true ||
+        request.auth.token.role == 'admin' ||
+        get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.role == 'admin'
+      );
+    }
+
+    // 1. Referral Global Settings
+    match /settings/referral {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 2. Profiles Collection
+    match /profiles/{userId} {
+      allow read: if true;
+      allow create: if isOwner(userId) || isAdmin();
+      // Protect financial balances from untrusted client modification
+      allow update: if isAdmin() || (
+        isOwner(userId) && 
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['wallet_balance', 'walletBalance', 'total_earned', 'totalEarned', 'role']))
+      );
+      allow delete: if isAdmin();
+    }
+
+    // 3. Referrals Collection
+    match /referrals/{referralId} {
+      allow read: if true;
+      // Allow initial pending referral tracking registration
+      allow create: if true;
+      // Changing status to 'rewarded' or modifying rewardAmount is restricted to Admin/Backend
+      allow update: if isAdmin() || (
+        request.resource.data.status == resource.data.status &&
+        request.resource.data.rewardAmount == resource.data.rewardAmount
+      );
+      allow delete: if isAdmin();
+    }
+
+    // 4. Wallet Transactions (Immutable financial ledger)
+    match /wallet_transactions/{txId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // 5. Withdrawals Collection
+    match /withdrawals/{withdrawalId} {
+      allow read: if true;
+      // Customers can create initial pending withdrawal requests
+      allow create: if true;
+      // Only Admins can approve, reject, or mark as paid
+      allow update, delete: if isAdmin();
+    }
+
+    // 6. Orders Collection
+    match /orders/{orderId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if true;
+    }
+
+    // Fallback rule for other collections in the store
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
