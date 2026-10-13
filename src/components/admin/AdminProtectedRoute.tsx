@@ -1,6 +1,8 @@
 import { ReactNode, useEffect, useState, useRef } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
+import { isAdminGateUnlocked } from "@/components/admin/AdminGate";
+import NotFound from "@/pages/NotFound";
 import { Loader2 } from "lucide-react";
 
 interface AdminProtectedRouteProps {
@@ -8,6 +10,11 @@ interface AdminProtectedRouteProps {
 }
 
 export function AdminProtectedRoute({ children }: AdminProtectedRouteProps) {
+  // If not running in Electron Desktop App (or unlocked via secret route), block completely with 404
+  if (!isAdminGateUnlocked()) {
+    return <NotFound />;
+  }
+
   const { isAuthenticated, loading, validateSession } = useAdminAuth();
   const location = useLocation();
   const [validating, setValidating] = useState(true);

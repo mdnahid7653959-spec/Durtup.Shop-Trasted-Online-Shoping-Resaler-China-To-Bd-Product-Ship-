@@ -9,8 +9,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { SEOHead } from "@/components/SEOHead";
+import { isAdminGateUnlocked } from "@/components/admin/AdminGate";
+import NotFound from "@/pages/NotFound";
 
 export default function AdminLogin() {
+  if (!isAdminGateUnlocked()) {
+    return <NotFound />;
+  }
 
   const [username, setUsername] = useState("");
 

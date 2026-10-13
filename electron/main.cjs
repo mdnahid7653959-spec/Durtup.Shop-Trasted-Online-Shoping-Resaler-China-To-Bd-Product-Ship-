@@ -74,10 +74,15 @@ async function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       webSecurity: true,
+      preload: path.join(__dirname, 'preload.cjs'),
     },
     autoHideMenuBar: true,
     backgroundColor: '#ffffff',
   });
+
+  // Stamp custom userAgent for Durtup Desktop App detection
+  const currentUA = mainWindow.webContents.getUserAgent();
+  mainWindow.webContents.setUserAgent(`${currentUA} DurtupDesktopApp/2.0 ElectronApp`);
 
   let activeBaseUrl = 'http://localhost:8080';
 

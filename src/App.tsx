@@ -11,6 +11,7 @@ import { AdminAuthProvider } from "@/contexts/AdminAuthContext";
 import { StaffProvider } from "@/contexts/StaffContext";
 import { StaffProtectedRoute } from "@/components/staff/StaffProtectedRoute";
 import { AdminProtectedRoute } from "@/components/admin/AdminProtectedRoute";
+import { AdminGate, AdminSecretUnlock, ADMIN_SECRET_ROUTE } from "@/components/admin/AdminGate";
 const GlobalAdminNotificationListener = lazy(() => import("@/components/admin/GlobalAdminNotificationListener").then(m => ({ default: m.GlobalAdminNotificationListener })));
 import { CartProvider } from "@/contexts/CartContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
@@ -339,8 +340,11 @@ const App = () => (
                               <Route path="/staff/products" element={<StaffProtectedRoute><StaffProducts /></StaffProtectedRoute>} />
                               <Route path="/staff/sellers" element={<StaffProtectedRoute><StaffSellers /></StaffProtectedRoute>} />
                               
-                              {/* Admin Portal Routes */}
-                              <Route path="/admin/login" element={<AdminLogin />} />
+                              {/* Secret Admin Portal Emergency Unlock Route */}
+                              <Route path={ADMIN_SECRET_ROUTE} element={<AdminSecretUnlock />} />
+
+                              {/* Admin Portal Routes - Strictly accessible ONLY via Electron Desktop App */}
+                              <Route path="/admin/login" element={<AdminGate><AdminLogin /></AdminGate>} />
                               <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
                               <Route path="/admin/dashboard" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
                               <Route path="/admin/products" element={<AdminProtectedRoute><AdminProducts /></AdminProtectedRoute>} />
