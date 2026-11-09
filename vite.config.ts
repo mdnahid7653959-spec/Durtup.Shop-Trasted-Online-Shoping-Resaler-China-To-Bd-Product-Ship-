@@ -269,6 +269,9 @@ export default defineConfig(({ mode }) => ({
     target: "es2022",
     cssCodeSplit: true,
     cssMinify: true,
+    reportCompressedSize: false,
+    assetsInlineLimit: 4096,
+    sourcemap: false,
     chunkSizeWarningLimit: 1200,
     minify: "esbuild",
     rollupOptions: {
