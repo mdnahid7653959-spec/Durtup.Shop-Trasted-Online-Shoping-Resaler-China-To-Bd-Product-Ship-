@@ -170,7 +170,11 @@ export function Footer() {
       {/* Bottom bar */}
       <div className="border-t">
         <div className="container py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-[10px] sm:text-xs text-muted-foreground text-center sm:text-left">{copyright}</p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground text-center sm:text-left">
+            {copyright}
+            <span className="mx-2 text-muted-foreground/30">•</span>
+            <Link to="/admin/login" className="hover:text-primary transition-colors">Admin Login</Link>
+          </p>
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] sm:text-xs text-muted-foreground mr-1">We accept:</span>
             {paymentMethods.map((card) => (

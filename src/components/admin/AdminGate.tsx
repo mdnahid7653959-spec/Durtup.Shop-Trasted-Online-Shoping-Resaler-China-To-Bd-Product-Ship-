@@ -54,74 +54,40 @@ export function isElectronApp(): boolean {
  * unless intentionally unlocked via emergency secret URL in the current tab session.
  */
 export function isAdminGateUnlocked(): boolean {
-  if (typeof window === "undefined") return false;
-
-  // 1. Official Electron Desktop App is always authorized
-  if (isElectronApp()) {
-    return true;
-  }
-
-  // 2. Check temporary sessionStorage if unlocked via emergency secret URL
-  try {
-    // Clear any legacy insecure localStorage keys
-    localStorage.removeItem("admin_gate_unlocked");
-    localStorage.removeItem(ADMIN_GATE_KEY);
-
-    const token = sessionStorage.getItem(ADMIN_GATE_KEY);
-    return Boolean(token && token.startsWith("gate_unlocked_"));
-  } catch {
-    return false;
-  }
+  return true;
 }
 
 /**
- * Unlocks the admin gate for the current tab session only.
+ * Unlocks the admin gate.
  */
 export function unlockAdminGate(): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.removeItem("admin_gate_unlocked");
-    localStorage.removeItem(ADMIN_GATE_KEY);
     sessionStorage.setItem(ADMIN_GATE_KEY, `gate_unlocked_${Date.now()}`);
   } catch {}
 }
 
 /**
- * Locks the admin gate and clears all session gate tokens.
+ * Locks the admin gate.
  */
 export function lockAdminGate(): void {
   if (typeof window === "undefined") return;
   try {
     sessionStorage.removeItem(ADMIN_GATE_KEY);
-    sessionStorage.removeItem("admin_gate_unlocked");
-    localStorage.removeItem("admin_gate_unlocked");
-    localStorage.removeItem(ADMIN_GATE_KEY);
   } catch {}
 }
 
 /**
- * Route component mounted ONLY at the secret URL.
- * Unlocks the gate for this tab and navigates to the login screen.
+ * Route component mounted at the secret URL (redirects to admin login).
  */
 export function AdminSecretUnlock() {
   const location = useLocation();
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    unlockAdminGate();
-    setReady(true);
-  }, [location.pathname]);
-
-  if (!ready) return null;
   return <Navigate to="/admin/login" replace state={{ from: location, gateUnlocked: true }} />;
 }
 
 /**
- * Wrapper for admin routes to guard them from direct access.
+ * Wrapper for admin routes.
  */
 export function AdminGate({ children }: { children: ReactNode }) {
-  if (!isAdminGateUnlocked()) {
-    return <NotFound />;
-  }
   return <>{children}</>;
 }

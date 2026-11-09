@@ -343,8 +343,8 @@ const App = () => (
                               {/* Secret Admin Portal Emergency Unlock Route */}
                               <Route path={ADMIN_SECRET_ROUTE} element={<AdminSecretUnlock />} />
 
-                              {/* Admin Portal Routes - Strictly accessible ONLY via Electron Desktop App */}
-                              <Route path="/admin/login" element={<AdminGate><AdminLogin /></AdminGate>} />
+                              {/* Admin Portal Routes */}
+                              <Route path="/admin/login" element={<AdminLogin />} />
                               <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
                               <Route path="/admin/dashboard" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
                               <Route path="/admin/products" element={<AdminProtectedRoute><AdminProducts /></AdminProtectedRoute>} />
