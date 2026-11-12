@@ -33,7 +33,7 @@ export const DEFAULT_ECOMSELLER_CATEGORY_MAPPINGS: Record<string, { durtupId: st
   "camera": { durtupId: "gadgets-electronics", durtupName: "Gadgets & Electronics", durtupSlug: "gadgets-electronics" },
   "rechargeable-fan": { durtupId: "gadgets-electronics", durtupName: "Gadgets & Electronics", durtupSlug: "gadgets-electronics" },
   "rechargeable-light": { durtupId: "gadgets-electronics", durtupName: "Gadgets & Electronics", durtupSlug: "gadgets-electronics" },
-  "outdoor-gadgets": { durtupId: "gadgets-electronics", durtupName: "Gadgets & Electronics", durtupSlug: "gadgets-electronics" },
+  "outdoor-gadgets": { durtupId: "home-lifestyle", durtupName: "Home & Lifestyle", durtupSlug: "home-lifestyle" },
   "safety-and-security": { durtupId: "gadgets-electronics", durtupName: "Gadgets & Electronics", durtupSlug: "gadgets-electronics" },
 
   // Home & Kitchen / Lifestyle
@@ -260,7 +260,7 @@ export class CategoryMappingService {
       if (found) return found;
     }
 
-    // 3. HEALTH & BEAUTY (cramp relief, fungus treatment, face wash, serum)
+    // 3. HEALTH & BEAUTY (massager, tens units, pain relief patch, mole remover, cramp relief, skincare)
     if (
       pName.includes("fungus") ||
       pName.includes("cramp") ||
@@ -268,13 +268,45 @@ export class CategoryMappingService {
       pName.includes("heating pad") ||
       pName.includes("massager") ||
       pName.includes("massage") ||
+      pName.includes("tens units") ||
       pName.includes("pain relief") ||
+      pName.includes("skin tag") ||
+      pName.includes("wart") ||
+      pName.includes("mole remover") ||
+      pName.includes("ice roller") ||
       pName.includes("serum") ||
       pName.includes("whitening") ||
       pName.includes("derma") ||
       pName.includes("perfume")
     ) {
       const found = DURTUP_MASTER_CATEGORIES.find(c => c.slug === "health-beauty");
+      if (found) return found;
+    }
+
+    // 4. HOME & LIFESTYLE takes precedence over generic supplier gadgets
+    if (
+      pName.includes("knife") ||
+      pName.includes("sharpener") ||
+      pName.includes("cooker") ||
+      pName.includes("steamer") ||
+      pName.includes("iron machine") ||
+      pName.includes("oil sprayer") ||
+      pName.includes("gas stove") ||
+      pName.includes("camping stove") ||
+      pName.includes("blender") ||
+      pName.includes("grinder") ||
+      pName.includes("chopper") ||
+      pName.includes("cutter") ||
+      pName.includes("slicer") ||
+      pName.includes("siphon") ||
+      pName.includes("transfer pipe") ||
+      pName.includes("drain cleaner") ||
+      pName.includes("claw grabber") ||
+      pName.includes("crack repair") ||
+      pName.includes("sandwich maker") ||
+      pName.includes("furniture easy moving")
+    ) {
+      const found = DURTUP_MASTER_CATEGORIES.find(c => c.slug === "home-lifestyle");
       if (found) return found;
     }
 

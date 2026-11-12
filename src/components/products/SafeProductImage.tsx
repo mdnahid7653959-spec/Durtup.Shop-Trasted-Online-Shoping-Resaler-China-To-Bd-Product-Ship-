@@ -103,15 +103,22 @@ export const SafeProductImage: React.FC<SafeProductImageProps> = ({
 
   // Responsive srcset for dynamic CDNs (Unsplash, wsrv.nl)
   const imageSrcSet = useMemo(() => {
-    if (candidateIdx === 0 && currentSrc && !currentSrc.startsWith("data:") && (currentSrc.includes("wsrv.nl") || currentSrc.includes("unsplash.com"))) {
-      return getResponsiveImageSrcSet(currentSrc, [160, 240, 360, 480], 75);
+    if (
+      candidateIdx === 0 &&
+      currentSrc &&
+      !currentSrc.startsWith("data:") &&
+      !currentSrc.startsWith("blob:") &&
+      (currentSrc.includes("wsrv.nl") || currentSrc.includes("images.unsplash.com"))
+    ) {
+      const set = getResponsiveImageSrcSet(currentSrc, [160, 240, 360, 480], 75);
+      return set && set.trim().length > 0 ? set.trim() : undefined;
     }
     return undefined;
   }, [candidateIdx, currentSrc]);
 
   const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     if (e.currentTarget) {
-      e.currentTarget.srcset = "";
+      e.currentTarget.removeAttribute("srcset");
     }
     if (currentSrc && !currentSrc.startsWith("data:")) {
       globalFailedImageUrls.add(currentSrc);
@@ -141,7 +148,7 @@ export const SafeProductImage: React.FC<SafeProductImageProps> = ({
         ref={imgRef}
         key={currentSrc}
         src={currentSrc}
-        srcSet={imageSrcSet}
+        srcSet={imageSrcSet || undefined}
         sizes={sizes}
         width={width}
         height={height}
@@ -151,7 +158,7 @@ export const SafeProductImage: React.FC<SafeProductImageProps> = ({
         loading={priority ? "eager" : "lazy"}
         {...({ fetchpriority: priority ? "high" : "auto" } as any)}
         decoding="async"
-        referrerPolicy="no-referrer"
+        referrerPolicy="strict-origin-when-cross-origin"
         onLoad={handleLoad}
         onError={handleError}
         className={cn(

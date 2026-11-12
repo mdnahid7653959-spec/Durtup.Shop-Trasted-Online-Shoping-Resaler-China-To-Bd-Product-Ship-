@@ -509,6 +509,7 @@ function ProductDetailContent() {
   } = useRecentlyViewed();
   const imageContainerRef = useRef<HTMLDivElement>(null);
   const thumbnailScrollRef = useRef<HTMLDivElement>(null);
+  const mainImgRef = useRef<HTMLImageElement>(null);
 
   const scrollThumbnails = (direction: "left" | "right") => {
     if (thumbnailScrollRef.current) {
@@ -516,6 +517,15 @@ function ProductDetailContent() {
       thumbnailScrollRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
     }
   };
+
+  // Immediate cached image sync: if browser already cached image, avoid any white opacity-0 state
+  useEffect(() => {
+    const img = mainImgRef.current;
+    if (img && img.complete && img.naturalWidth > 0 && !isCurrentMainLoaded) {
+      setLoadedMainImages(prev => ({ ...prev, [currentImage]: true }));
+      setPrevImage(currentImage);
+    }
+  }, [currentImage, isCurrentMainLoaded]);
 
   // Enable real-time sync for this product
   useProductRealtimeSync(product?.id);
@@ -701,33 +711,26 @@ function ProductDetailContent() {
     });
   }, [images]);
 
-  // Proactive safety watchdog: If main image hangs or fails to load within 2.5 seconds, advance to next real photo
+  // Proactive safety watchdog: If main image hangs or fails to load within 12 seconds, safely advance
   useEffect(() => {
     if (!currentImage || isCurrentMainLoaded || currentImage.startsWith("data:")) return;
     const cat = (product as any)?.category || product?.category_id || "";
     const timer = setTimeout(() => {
       if (!loadedMainImages[currentImage]) {
-        failedUrlsRef.current.add(currentImage);
-        setGalleryImages(prev => {
-          const remaining = prev.filter(img => img !== currentImage && !failedUrlsRef.current.has(img));
-          if (remaining.length > 0) {
-            return remaining;
-          }
-          const seriesImgs = findSeriesImages(product?.name || "");
-          if (seriesImgs.length > 0) {
-            return seriesImgs;
-          }
-          return getCategoryFallbackImages(product?.name || "", cat, 4);
-        });
-        setSelectedImage(prev => (prev > 0 ? prev - 1 : 0));
+        const seriesImgs = findSeriesImages(product?.name || "");
+        if (seriesImgs.length > 0) {
+          setGalleryImages(seriesImgs);
+        } else {
+          setGalleryImages(getCategoryFallbackImages(product?.name || "", cat, 4));
+        }
       }
-    }, 2500);
+    }, 12000);
     return () => clearTimeout(timer);
-  }, [currentImage, isCurrentMainLoaded, product?.name, selectedImage]);
+  }, [currentImage, isCurrentMainLoaded, product?.name]);
 
   const handleMainImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     const target = e.currentTarget;
-    target.srcset = "";
+    target.removeAttribute("srcset");
     const failedSrc = currentImage;
     if (failedSrc) failedUrlsRef.current.add(failedSrc);
 
@@ -765,9 +768,9 @@ function ProductDetailContent() {
   };
 
   const heroSrcSet = useMemo(() => {
-    return currentImage && !currentImage.startsWith("data:")
-      ? getResponsiveImageSrcSet(currentImage, [400, 600, 800, 1000], 80)
-      : "";
+    if (!currentImage || currentImage.startsWith("data:") || currentImage.startsWith("blob:")) return undefined;
+    const set = getResponsiveImageSrcSet(currentImage, [400, 600, 800, 1000], 80);
+    return set && set.trim().length > 0 ? set.trim() : undefined;
   }, [currentImage]);
 
   // Touch swipe handling for images
@@ -1774,6 +1777,7 @@ function ProductDetailContent() {
 
                         {/* Main Product Image with instant eager loading & smooth fade-in */}
                         <img
+                          ref={mainImgRef}
                           key={currentImage}
                           src={currentImage}
                           srcSet={heroSrcSet || undefined}
@@ -1801,6 +1805,7 @@ function ProductDetailContent() {
                           loading="eager"
                           {...({ fetchpriority: "high" } as any)}
                           decoding="async"
+                          referrerPolicy="strict-origin-when-cross-origin"
                           onLoad={() => {
                             setLoadedMainImages(prev => ({ ...prev, [currentImage]: true }));
                             setPrevImage(currentImage);
@@ -1975,6 +1980,7 @@ function ProductDetailContent() {
                             height="84"
                             loading={i < 4 ? "eager" : "lazy"}
                             decoding="async"
+                            referrerPolicy="strict-origin-when-cross-origin"
                             style={{ imageRendering: "-webkit-optimize-contrast" }}
                             className={cn(
                               "w-full h-full object-contain transition-opacity duration-200 relative z-1",

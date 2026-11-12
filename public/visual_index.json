@@ -7878,9 +7878,9 @@
     "image": "https://mohasagor.com.bd/public/storage/images/products/A4cJSqRXuMPl1qXK6n4wjKiOchdEOeIApo7KmlqD.jpg",
     "rating": 4.8,
     "sold": 81,
-    "categorySlug": "gadgets-electronics",
-    "categoryName": "Gadgets & Electronics",
-    "categoryBangla": "ইলেকট্রনিক্স ও গ্যাজেটস",
+    "categorySlug": "health-beauty",
+    "categoryName": "Health & Beauty",
+    "categoryBangla": "স্বাস্থ্য ও সৌন্দর্য",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "portrait",
@@ -7894,9 +7894,9 @@
       "stick",
       "double"
     ],
-    "category": "Gadgets & Electronics",
-    "category_name": "Gadgets & Electronics",
-    "category_slug": "gadgets-electronics"
+    "category": "Health & Beauty",
+    "category_name": "Health & Beauty",
+    "category_slug": "health-beauty"
   },
   {
     "id": "877",
@@ -13189,9 +13189,9 @@
     "image": "https://mohasagor.com.bd/public/storage/images/products/11CLTp6Wzm78C44nDk0HOnirfS7iefECW19zDhlZ.png",
     "rating": 4.8,
     "sold": 144,
-    "categorySlug": "home-lifestyle",
-    "categoryName": "Home & Lifestyle",
-    "categoryBangla": "হোম ও লিভিং",
+    "categorySlug": "health-beauty",
+    "categoryName": "Health & Beauty",
+    "categoryBangla": "স্বাস্থ্য ও সৌন্দর্য",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "portrait",
@@ -13202,9 +13202,9 @@
       "gun",
       "massager"
     ],
-    "category": "Home & Lifestyle",
-    "category_name": "Home & Lifestyle",
-    "category_slug": "home-lifestyle"
+    "category": "Health & Beauty",
+    "category_name": "Health & Beauty",
+    "category_slug": "health-beauty"
   },
   {
     "id": "1900",
@@ -26976,9 +26976,9 @@
     "image": "https://mohasagor.com.bd/public/storage/images/products/wb0G1Atr1CiDqUqSdMPePGgf5BzHVvk8JqNVy77j.jpg",
     "rating": 4.8,
     "sold": 78,
-    "categorySlug": "home-lifestyle",
-    "categoryName": "Home & Lifestyle",
-    "categoryBangla": "হোম ও লিভিং",
+    "categorySlug": "health-beauty",
+    "categoryName": "Health & Beauty",
+    "categoryBangla": "স্বাস্থ্য ও সৌন্দর্য",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "portrait",
@@ -26990,9 +26990,9 @@
       "therapy",
       "massager"
     ],
-    "category": "Home & Lifestyle",
-    "category_name": "Home & Lifestyle",
-    "category_slug": "home-lifestyle"
+    "category": "Health & Beauty",
+    "category_name": "Health & Beauty",
+    "category_slug": "health-beauty"
   },
   {
     "id": "4115",
@@ -33529,9 +33529,9 @@
     "image": "https://mohasagor.com.bd/public/storage/images/products/mPMCTTL38fU13QlHVC9sFdtHBwNH0JrpAb9lsgse.png",
     "rating": 4.8,
     "sold": 155,
-    "categorySlug": "home-lifestyle",
-    "categoryName": "Home & Lifestyle",
-    "categoryBangla": "হোম ও লিভিং",
+    "categorySlug": "health-beauty",
+    "categoryName": "Health & Beauty",
+    "categoryBangla": "স্বাস্থ্য ও সৌন্দর্য",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "portrait",
@@ -33547,9 +33547,9 @@
       "compression",
       "massager"
     ],
-    "category": "Home & Lifestyle",
-    "category_name": "Home & Lifestyle",
-    "category_slug": "home-lifestyle"
+    "category": "Health & Beauty",
+    "category_name": "Health & Beauty",
+    "category_slug": "health-beauty"
   },
   {
     "id": "5517",
@@ -41236,9 +41236,9 @@
     "image": "https://mohasagor.com.bd/public/storage/images/products/PAcrQ0nWpGGVb9dyWZ8u1wrCOuutM1Eoy1ChA2Oq.jpg",
     "rating": 4.8,
     "sold": 66,
-    "categorySlug": "home-lifestyle",
-    "categoryName": "Home & Lifestyle",
-    "categoryBangla": "হোম ও লিভিং",
+    "categorySlug": "foods",
+    "categoryName": "Foods",
+    "categoryBangla": "খাবার ও পুষ্টি",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "square",
@@ -41249,9 +41249,9 @@
       "shake",
       "supplement"
     ],
-    "category": "Home & Lifestyle",
-    "category_name": "Home & Lifestyle",
-    "category_slug": "home-lifestyle"
+    "category": "Foods",
+    "category_name": "Foods",
+    "category_slug": "foods"
   },
   {
     "id": "6862",
@@ -44633,9 +44633,9 @@
     "image": "https://mohasagor.com.bd/public/storage/images/products/GLPe1M9cIWLhDbHxFigmnhibkEqJkMYOSFGkTUJO.png",
     "rating": 4.8,
     "sold": 46,
-    "categorySlug": "home-lifestyle",
-    "categoryName": "Home & Lifestyle",
-    "categoryBangla": "হোম ও লিভিং",
+    "categorySlug": "health-beauty",
+    "categoryName": "Health & Beauty",
+    "categoryBangla": "স্বাস্থ্য ও সৌন্দর্য",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "square",
@@ -44651,9 +44651,9 @@
       "massager",
       "lcd"
     ],
-    "category": "Home & Lifestyle",
-    "category_name": "Home & Lifestyle",
-    "category_slug": "home-lifestyle"
+    "category": "Health & Beauty",
+    "category_name": "Health & Beauty",
+    "category_slug": "health-beauty"
   },
   {
     "id": "7682",
@@ -48532,9 +48532,9 @@
     "image": "https://mohasagor.com.bd/public/storage/images/products/V6Tb5ce5U7imoefS9Hxl0XY3PHERtNwsfLuri9dx.jpg",
     "rating": 4.8,
     "sold": 45,
-    "categorySlug": "home-lifestyle",
-    "categoryName": "Home & Lifestyle",
-    "categoryBangla": "হোম ও লিভিং",
+    "categorySlug": "health-beauty",
+    "categoryName": "Health & Beauty",
+    "categoryBangla": "স্বাস্থ্য ও সৌন্দর্য",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "portrait",
@@ -48547,9 +48547,9 @@
       "healthy",
       "hair"
     ],
-    "category": "Home & Lifestyle",
-    "category_name": "Home & Lifestyle",
-    "category_slug": "home-lifestyle"
+    "category": "Health & Beauty",
+    "category_name": "Health & Beauty",
+    "category_slug": "health-beauty"
   },
   {
     "id": "8161",
@@ -52032,9 +52032,9 @@
     "image": "https://mohasagor.com.bd/public/storage/images/products/RsddZaynzBnIaCDdScXwmRkZVwVghwY49uPLxoRY.png",
     "rating": 4.8,
     "sold": 143,
-    "categorySlug": "gadgets-electronics",
-    "categoryName": "Gadgets & Electronics",
-    "categoryBangla": "ইলেকট্রনিক্স ও গ্যাজেটস",
+    "categorySlug": "health-beauty",
+    "categoryName": "Health & Beauty",
+    "categoryBangla": "স্বাস্থ্য ও সৌন্দর্য",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "portrait",
@@ -52050,9 +52050,9 @@
       "neck",
       "massager"
     ],
-    "category": "Gadgets & Electronics",
-    "category_name": "Gadgets & Electronics",
-    "category_slug": "gadgets-electronics"
+    "category": "Health & Beauty",
+    "category_name": "Health & Beauty",
+    "category_slug": "health-beauty"
   },
   {
     "id": "8379",
@@ -54499,9 +54499,9 @@
     "image": "https://mohasagor.com.bd/public/storage/images/products/RZW3ciTQEorzod3OUJMzrcLTY6W2eZ47PE84SIYS.jpg",
     "rating": 4.8,
     "sold": 51,
-    "categorySlug": "home-lifestyle",
-    "categoryName": "Home & Lifestyle",
-    "categoryBangla": "হোম ও লিভিং",
+    "categorySlug": "health-beauty",
+    "categoryName": "Health & Beauty",
+    "categoryBangla": "স্বাস্থ্য ও সৌন্দর্য",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "portrait",
@@ -54517,9 +54517,9 @@
       "relief",
       "sleep"
     ],
-    "category": "Home & Lifestyle",
-    "category_name": "Home & Lifestyle",
-    "category_slug": "home-lifestyle"
+    "category": "Health & Beauty",
+    "category_name": "Health & Beauty",
+    "category_slug": "health-beauty"
   },
   {
     "id": "8655",
@@ -60676,9 +60676,9 @@
     "image": "https://mohasagor.com.bd/public/storage/images/products/pj7Ii9HGNaDzZhVZK6GabwxxyNE25wfeaHFVtYkz.png",
     "rating": 4.8,
     "sold": 81,
-    "categorySlug": "home-lifestyle",
-    "categoryName": "Home & Lifestyle",
-    "categoryBangla": "হোম ও লিভিং",
+    "categorySlug": "health-beauty",
+    "categoryName": "Health & Beauty",
+    "categoryBangla": "স্বাস্থ্য ও সৌন্দর্য",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "portrait",
@@ -60689,9 +60689,9 @@
       "massager",
       "gun"
     ],
-    "category": "Home & Lifestyle",
-    "category_name": "Home & Lifestyle",
-    "category_slug": "home-lifestyle"
+    "category": "Health & Beauty",
+    "category_name": "Health & Beauty",
+    "category_slug": "health-beauty"
   },
   {
     "id": "9277",
@@ -65387,9 +65387,9 @@
     "image": "https://mohasagor.com.bd/public/storage/images/products/0xkIjdCyRTnx5wrDxB6CW5Dn9cmJs9M9WyGzpE5X.png",
     "rating": 4.8,
     "sold": 45,
-    "categorySlug": "home-lifestyle",
-    "categoryName": "Home & Lifestyle",
-    "categoryBangla": "হোম ও লিভিং",
+    "categorySlug": "health-beauty",
+    "categoryName": "Health & Beauty",
+    "categoryBangla": "স্বাস্থ্য ও সৌন্দর্য",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "portrait",
@@ -65399,9 +65399,9 @@
       "neck",
       "massager"
     ],
-    "category": "Home & Lifestyle",
-    "category_name": "Home & Lifestyle",
-    "category_slug": "home-lifestyle"
+    "category": "Health & Beauty",
+    "category_name": "Health & Beauty",
+    "category_slug": "health-beauty"
   },
   {
     "id": "9603",
@@ -68641,9 +68641,9 @@
     "image": "https://mohasagor.com.bd/public/storage/images/products/AWt5cWSgSaqoxSRnNaExoQxnVfIIvPFoMFKwzZBP.jpg",
     "rating": 4.8,
     "sold": 155,
-    "categorySlug": "home-lifestyle",
-    "categoryName": "Home & Lifestyle",
-    "categoryBangla": "হোম ও লিভিং",
+    "categorySlug": "health-beauty",
+    "categoryName": "Health & Beauty",
+    "categoryBangla": "স্বাস্থ্য ও সৌন্দর্য",
     "color": "Black",
     "colorHex": "#18181b",
     "aspect": "portrait",
@@ -68655,9 +68655,9 @@
       "fascial",
       "gun"
     ],
-    "category": "Home & Lifestyle",
-    "category_name": "Home & Lifestyle",
-    "category_slug": "home-lifestyle"
+    "category": "Health & Beauty",
+    "category_name": "Health & Beauty",
+    "category_slug": "health-beauty"
   },
   {
     "id": "9831",
@@ -77418,9 +77418,9 @@
     "image": "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/3d682161-b529-4e11-8bcc-482a8a780e02.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvM2Q2ODIxNjEtYjUyOS00ZTExLThiY2MtNDgyYThhNzgwZTAyLndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg4NTE1MzIxLCJleHAiOjE5NDYxOTUzMjF9.nnl-fNKnd6Fd5sV8lAuFazol1aGablx8cY5dizQXhI4",
     "rating": 4.7,
     "sold": 0,
-    "categorySlug": "gadgets-electronics",
-    "categoryName": "Gadgets & Electronics",
-    "categoryBangla": "ইলেকট্রনিক্স ও গ্যাজেটস",
+    "categorySlug": "home-lifestyle",
+    "categoryName": "Home & Lifestyle",
+    "categoryBangla": "হোম ও লাইফস্টাইল",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "square",
@@ -77435,9 +77435,9 @@
       "hand",
       "pump"
     ],
-    "category": "Gadgets & Electronics",
-    "category_name": "Gadgets & Electronics",
-    "category_slug": "gadgets-electronics"
+    "category": "Home & Lifestyle",
+    "category_name": "Home & Lifestyle",
+    "category_slug": "home-lifestyle"
   },
   {
     "id": "ccccbfe7-feed-4201-8076-59ec7c1c8578",
@@ -77448,9 +77448,9 @@
     "image": "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/29b8c55c-2cf2-48aa-8082-be778be87584.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvMjliOGM1NWMtMmNmMi00OGFhLTgwODItYmU3NzhiZTg3NTg0LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg4NTE1MDI1LCJleHAiOjE5NDYxOTUwMjV9.1l_RorkgwmZ7Nl8dF1W51M-nksUmtAJEa1orsvfZ8Mw",
     "rating": 4.7,
     "sold": 0,
-    "categorySlug": "gadgets-electronics",
-    "categoryName": "Gadgets & Electronics",
-    "categoryBangla": "ইলেকট্রনিক্স ও গ্যাজেটস",
+    "categorySlug": "home-lifestyle",
+    "categoryName": "Home & Lifestyle",
+    "categoryBangla": "হোম ও লাইফস্টাইল",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "square",
@@ -77465,9 +77465,9 @@
       "control",
       "valve"
     ],
-    "category": "Gadgets & Electronics",
-    "category_name": "Gadgets & Electronics",
-    "category_slug": "gadgets-electronics"
+    "category": "Home & Lifestyle",
+    "category_name": "Home & Lifestyle",
+    "category_slug": "home-lifestyle"
   },
   {
     "id": "b16b0b03-d7bc-4e6c-9a12-4c922b5e38bc",
@@ -77478,9 +77478,9 @@
     "image": "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/90878282-f096-41c8-9672-14f3bf4cdaf2.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvOTA4NzgyODItZjA5Ni00MWM4LTk2NzItMTRmM2JmNGNkYWYyLndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg4NDQzNDgzLCJleHAiOjE5NDYxMjM0ODN9.-U1YMoceF0--bONTigz-C0UriLUax7MnjBtni4wKjfA",
     "rating": 4.7,
     "sold": 0,
-    "categorySlug": "gadgets-electronics",
-    "categoryName": "Gadgets & Electronics",
-    "categoryBangla": "ইলেকট্রনিক্স ও গ্যাজেটস",
+    "categorySlug": "home-lifestyle",
+    "categoryName": "Home & Lifestyle",
+    "categoryBangla": "হোম ও লাইফস্টাইল",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "square",
@@ -77491,9 +77491,9 @@
       "repair",
       "kit"
     ],
-    "category": "Gadgets & Electronics",
-    "category_name": "Gadgets & Electronics",
-    "category_slug": "gadgets-electronics"
+    "category": "Home & Lifestyle",
+    "category_name": "Home & Lifestyle",
+    "category_slug": "home-lifestyle"
   },
   {
     "id": "d480aef8-150f-40e2-a72d-227170050215",
@@ -77504,9 +77504,9 @@
     "image": "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/d59fe2b9-15ee-4499-8c64-d60669b37bb9.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvZDU5ZmUyYjktMTVlZS00NDk5LThjNjQtZDYwNjY5YjM3YmI5LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg4NDQyNDgzLCJleHAiOjE5NDYxMjI0ODN9.Q4iU2lv_TigIlBcwiHaJIq0crGrXYDCeri1vktsJ1xg",
     "rating": 4.7,
     "sold": 0,
-    "categorySlug": "gadgets-electronics",
-    "categoryName": "Gadgets & Electronics",
-    "categoryBangla": "ইলেকট্রনিক্স ও গ্যাজেটস",
+    "categorySlug": "health-beauty",
+    "categoryName": "Health & Beauty",
+    "categoryBangla": "স্বাস্থ্য ও সৌন্দর্য",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "square",
@@ -77518,9 +77518,9 @@
       "puffiness",
       "relief"
     ],
-    "category": "Gadgets & Electronics",
-    "category_name": "Gadgets & Electronics",
-    "category_slug": "gadgets-electronics"
+    "category": "Health & Beauty",
+    "category_name": "Health & Beauty",
+    "category_slug": "health-beauty"
   },
   {
     "id": "aff3d67e-3f39-4f9d-9412-701e86ae0016",
@@ -77528,12 +77528,12 @@
     "name": "3-in-1 Kitchen Knife Sharpener",
     "price": 490,
     "regular_price": 490,
-    "image": "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/0eca4a1e-57df-445d-9187-baefd1d10f36.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvMGVjYTRhMWUtNTdkZi00NDVkLTkxODctYmFlZmQxZDEwZjM2LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg4NDQxMDU2LCJleHAiOjE5NDYxMjEwNTZ9.VKWrd7WjBLWtNjAIQz6UKDoAa58zVZDnRTlW3hy0wj4",
+    "image": "https://images.unsplash.com/photo-1593618998160-e34014e67546?w=600&h=600&fit=crop",
     "rating": 4.7,
     "sold": 0,
     "categorySlug": "home-lifestyle",
     "categoryName": "Home & Lifestyle",
-    "categoryBangla": "হোম ও লিভিং",
+    "categoryBangla": "হোম ও লাইফস্টাইল",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "square",
@@ -78015,9 +78015,9 @@
     "image": "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/b71cae80-df84-4038-8f4d-9f06d663de4f.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvYjcxY2FlODAtZGY4NC00MDM4LThmNGQtOWYwNmQ2NjNkZTRmLndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg4MTc4MDI5LCJleHAiOjE5NDU4NTgwMjl9.gGdyMz7UoMokq-txSQZeguhWb4hFd4XkBxZgmrprFkk",
     "rating": 4.7,
     "sold": 0,
-    "categorySlug": "gadgets-electronics",
-    "categoryName": "Gadgets & Electronics",
-    "categoryBangla": "ইলেকট্রনিক্স ও গ্যাজেটস",
+    "categorySlug": "home-lifestyle",
+    "categoryName": "Home & Lifestyle",
+    "categoryBangla": "হোম ও লাইফস্টাইল",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "square",
@@ -78032,9 +78032,9 @@
       "repair",
       "fluid"
     ],
-    "category": "Gadgets & Electronics",
-    "category_name": "Gadgets & Electronics",
-    "category_slug": "gadgets-electronics"
+    "category": "Home & Lifestyle",
+    "category_name": "Home & Lifestyle",
+    "category_slug": "home-lifestyle"
   },
   {
     "id": "a4817a35-498d-4ab9-ad70-c2025578d04d",
@@ -78103,9 +78103,9 @@
     "image": "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/7f1bd7da-39a3-49b3-b6c8-e19bb2398518.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvN2YxYmQ3ZGEtMzlhMy00OWIzLWI2YzgtZTE5YmIyMzk4NTE4LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg4MTczMjY5LCJleHAiOjE5NDU4NTMyNjl9.L4GzruDP0X6s_3vgOUBEGCZX4X7cYTDOO7XNzO97jOI",
     "rating": 4.7,
     "sold": 0,
-    "categorySlug": "womens-fashion",
-    "categoryName": "Women's Fashion",
-    "categoryBangla": "শাড়ি ও ড্রেস",
+    "categorySlug": "home-lifestyle",
+    "categoryName": "Home & Lifestyle",
+    "categoryBangla": "হোম ও লাইফস্টাইল",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "square",
@@ -78119,9 +78119,9 @@
       "cleaner",
       "tool"
     ],
-    "category": "Women's Fashion",
-    "category_name": "Women's Fashion",
-    "category_slug": "womens-fashion"
+    "category": "Home & Lifestyle",
+    "category_name": "Home & Lifestyle",
+    "category_slug": "home-lifestyle"
   },
   {
     "id": "def20c81-37d8-4d87-a597-8c1d12e61f0e",
@@ -78246,9 +78246,9 @@
     "image": "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/992d80c7-02fa-499c-9670-a168c3f4c68e.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvOTkyZDgwYzctMDJmYS00OTljLTk2NzAtYTE2OGMzZjRjNjhlLndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg4MTYwMDg0LCJleHAiOjE5NDU4NDAwODR9.tV0agCm1D4LcvejxW537Nd074MLz_WEVD-Hr_MO21QE",
     "rating": 4.7,
     "sold": 0,
-    "categorySlug": "gadgets-electronics",
-    "categoryName": "Gadgets & Electronics",
-    "categoryBangla": "ইলেকট্রনিক্স ও গ্যাজেটস",
+    "categorySlug": "health-beauty",
+    "categoryName": "Health & Beauty",
+    "categoryBangla": "স্বাস্থ্য ও সৌন্দর্য",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "portrait",
@@ -78259,9 +78259,9 @@
       "eye",
       "massager"
     ],
-    "category": "Gadgets & Electronics",
-    "category_name": "Gadgets & Electronics",
-    "category_slug": "gadgets-electronics"
+    "category": "Health & Beauty",
+    "category_name": "Health & Beauty",
+    "category_slug": "health-beauty"
   },
   {
     "id": "7aea4f27-79cd-4934-a114-d63f90ca9ee8",
@@ -78382,9 +78382,9 @@
     "image": "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/9ee57657-a922-433b-877f-b7eb91192a17.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvOWVlNTc2NTctYTkyMi00MzNiLTg3N2YtYjdlYjkxMTkyYTE3LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg4MTUzNTAxLCJleHAiOjE5NDU4MzM1MDF9.vjfocaNnHGOBw143nmHQRCfnyTrZeLU8ge8AHIf_5-o",
     "rating": 4.7,
     "sold": 0,
-    "categorySlug": "gadgets-electronics",
-    "categoryName": "Gadgets & Electronics",
-    "categoryBangla": "ইলেকট্রনিক্স ও গ্যাজেটস",
+    "categorySlug": "health-beauty",
+    "categoryName": "Health & Beauty",
+    "categoryBangla": "স্বাস্থ্য ও সৌন্দর্য",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "portrait",
@@ -78396,9 +78396,9 @@
       "pain",
       "relief"
     ],
-    "category": "Gadgets & Electronics",
-    "category_name": "Gadgets & Electronics",
-    "category_slug": "gadgets-electronics"
+    "category": "Health & Beauty",
+    "category_name": "Health & Beauty",
+    "category_slug": "health-beauty"
   },
   {
     "id": "0cc3c464-31e2-4990-8f07-d82812bf79ae",
@@ -79374,9 +79374,9 @@
     "image": "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/603c8f5a-02df-4c95-bd65-411cdaeeba07.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvNjAzYzhmNWEtMDJkZi00Yzk1LWJkNjUtNDExY2RhZWViYTA3LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3OTE1ODYwLCJleHAiOjE5NDU1OTU4NjB9.KagkKRKkszLLEbP_HM7AAhnykJWsTBFLDM2mKdTrPmQ",
     "rating": 4.7,
     "sold": 0,
-    "categorySlug": "gadgets-electronics",
-    "categoryName": "Gadgets & Electronics",
-    "categoryBangla": "ইলেকট্রনিক্স ও গ্যাজেটস",
+    "categorySlug": "home-lifestyle",
+    "categoryName": "Home & Lifestyle",
+    "categoryBangla": "হোম ও লাইফস্টাইল",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "square",
@@ -79389,9 +79389,9 @@
       "wooden",
       "handle"
     ],
-    "category": "Gadgets & Electronics",
-    "category_name": "Gadgets & Electronics",
-    "category_slug": "gadgets-electronics"
+    "category": "Home & Lifestyle",
+    "category_name": "Home & Lifestyle",
+    "category_slug": "home-lifestyle"
   },
   {
     "id": "f01c6ac6-5987-47e9-bc30-2ca1daa7614a",
@@ -79427,9 +79427,9 @@
     "image": "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/88e8eb0c-551c-42a5-8b2f-303c3641c6a9.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvODhlOGViMGMtNTUxYy00MmE1LThiMmYtMzAzYzM2NDFjNmE5LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3OTExMzEwLCJleHAiOjE5NDU1OTEzMTB9.rDQP7wXVRu3yKZzHRLg3-yCN7DoIqGi8QGFQBJWzVTo",
     "rating": 4.7,
     "sold": 0,
-    "categorySlug": "gadgets-electronics",
-    "categoryName": "Gadgets & Electronics",
-    "categoryBangla": "ইলেকট্রনিক্স ও গ্যাজেটস",
+    "categorySlug": "health-beauty",
+    "categoryName": "Health & Beauty",
+    "categoryBangla": "স্বাস্থ্য ও সৌন্দর্য",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "portrait",
@@ -79440,9 +79440,9 @@
       "head",
       "massage"
     ],
-    "category": "Gadgets & Electronics",
-    "category_name": "Gadgets & Electronics",
-    "category_slug": "gadgets-electronics"
+    "category": "Health & Beauty",
+    "category_name": "Health & Beauty",
+    "category_slug": "health-beauty"
   },
   {
     "id": "3b8ae982-01c9-4b45-b0be-5fff76cce2ef",
@@ -79453,9 +79453,9 @@
     "image": "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/235b7ebd-a94f-4bdf-8697-e8ca3fd9350c.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvMjM1YjdlYmQtYTk0Zi00YmRmLTg2OTctZThjYTNmZDkzNTBjLndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3OTEwNDYwLCJleHAiOjE5NDU1OTA0NjB9.fNabO3tktj23vDsk9xSWcD-agx3xZmbgeY7l1R48dXg",
     "rating": 4.7,
     "sold": 0,
-    "categorySlug": "gadgets-electronics",
-    "categoryName": "Gadgets & Electronics",
-    "categoryBangla": "ইলেকট্রনিক্স ও গ্যাজেটস",
+    "categorySlug": "health-beauty",
+    "categoryName": "Health & Beauty",
+    "categoryBangla": "স্বাস্থ্য ও সৌন্দর্য",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "portrait",
@@ -79471,9 +79471,9 @@
       "pad",
       "massager"
     ],
-    "category": "Gadgets & Electronics",
-    "category_name": "Gadgets & Electronics",
-    "category_slug": "gadgets-electronics"
+    "category": "Health & Beauty",
+    "category_name": "Health & Beauty",
+    "category_slug": "health-beauty"
   },
   {
     "id": "33aff24b-273e-4df9-b777-d6ad2608cb64",
@@ -79816,9 +79816,9 @@
     "image": "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/8d540750-f65b-4c97-9e46-afb3d73a0827.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvOGQ1NDA3NTAtZjY1Yi00Yzk3LTllNDYtYWZiM2Q3M2EwODI3LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3ODM2MTI1LCJleHAiOjE5NDU1MTYxMjV9.M24wr2S4_o_gFlvzT3RotvBQ2ncyklxmk0gGB3WHmxg",
     "rating": 4.7,
     "sold": 0,
-    "categorySlug": "gadgets-electronics",
-    "categoryName": "Gadgets & Electronics",
-    "categoryBangla": "ইলেকট্রনিক্স ও গ্যাজেটস",
+    "categorySlug": "health-beauty",
+    "categoryName": "Health & Beauty",
+    "categoryBangla": "স্বাস্থ্য ও সৌন্দর্য",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "square",
@@ -79831,9 +79831,9 @@
       "men",
       "women"
     ],
-    "category": "Gadgets & Electronics",
-    "category_name": "Gadgets & Electronics",
-    "category_slug": "gadgets-electronics"
+    "category": "Health & Beauty",
+    "category_name": "Health & Beauty",
+    "category_slug": "health-beauty"
   },
   {
     "id": "e313627b-f3ee-4a3f-9f7a-5c3a42b572bb",
@@ -79844,9 +79844,9 @@
     "image": "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/206d25de-5496-4383-96d2-775b2c6caf7e.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvMjA2ZDI1ZGUtNTQ5Ni00MzgzLTk2ZDItNzc1YjJjNmNhZjdlLndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3ODMzOTU2LCJleHAiOjE5NDU1MTM5NTZ9.EE2cnf-6pX2TmNZsLey5GKvJaFQsR_b8weCwNBmZ_i4",
     "rating": 4.7,
     "sold": 0,
-    "categorySlug": "gadgets-electronics",
-    "categoryName": "Gadgets & Electronics",
-    "categoryBangla": "ইলেকট্রনিক্স ও গ্যাজেটস",
+    "categorySlug": "health-beauty",
+    "categoryName": "Health & Beauty",
+    "categoryBangla": "স্বাস্থ্য ও সৌন্দর্য",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "portrait",
@@ -79856,9 +79856,9 @@
       "mini",
       "massager"
     ],
-    "category": "Gadgets & Electronics",
-    "category_name": "Gadgets & Electronics",
-    "category_slug": "gadgets-electronics"
+    "category": "Health & Beauty",
+    "category_name": "Health & Beauty",
+    "category_slug": "health-beauty"
   },
   {
     "id": "d5cfa094-e47a-4a60-809a-b2e694b13322",
@@ -80224,9 +80224,9 @@
     "image": "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/cf9efacf-6543-4bee-94be-761901e73400.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvY2Y5ZWZhY2YtNjU0My00YmVlLTk0YmUtNzYxOTAxZTczNDAwLndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3NzQ5MDc1LCJleHAiOjE5NDU0MjkwNzV9.NgTNJmwJITiayTKC4RHA4KGAjzzb4J08mOOTcYgB_wE",
     "rating": 4.7,
     "sold": 0,
-    "categorySlug": "gadgets-electronics",
-    "categoryName": "Gadgets & Electronics",
-    "categoryBangla": "ইলেকট্রনিক্স ও গ্যাজেটস",
+    "categorySlug": "health-beauty",
+    "categoryName": "Health & Beauty",
+    "categoryBangla": "স্বাস্থ্য ও সৌন্দর্য",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "portrait",
@@ -80239,9 +80239,9 @@
       "muscle",
       "stimulator"
     ],
-    "category": "Gadgets & Electronics",
-    "category_name": "Gadgets & Electronics",
-    "category_slug": "gadgets-electronics"
+    "category": "Health & Beauty",
+    "category_name": "Health & Beauty",
+    "category_slug": "health-beauty"
   },
   {
     "id": "64f0f757-acda-4ac0-ba45-f14dd3e9a555",
@@ -80252,9 +80252,9 @@
     "image": "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/22ee3ac7-b571-4252-9999-f55ff3493f87.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvMjJlZTNhYzctYjU3MS00MjUyLTk5OTktZjU1ZmYzNDkzZjg3LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3NzQ4NTU0LCJleHAiOjE5NDU0Mjg1NTR9.Pr4xJzAFa98obBVOrcU9F4XZfhLnhqPL8z2nQSNoZ_0",
     "rating": 4.7,
     "sold": 0,
-    "categorySlug": "gadgets-electronics",
-    "categoryName": "Gadgets & Electronics",
-    "categoryBangla": "ইলেকট্রনিক্স ও গ্যাজেটস",
+    "categorySlug": "health-beauty",
+    "categoryName": "Health & Beauty",
+    "categoryBangla": "স্বাস্থ্য ও সৌন্দর্য",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "portrait",
@@ -80267,9 +80267,9 @@
       "pain",
       "relief"
     ],
-    "category": "Gadgets & Electronics",
-    "category_name": "Gadgets & Electronics",
-    "category_slug": "gadgets-electronics"
+    "category": "Health & Beauty",
+    "category_name": "Health & Beauty",
+    "category_slug": "health-beauty"
   },
   {
     "id": "1485cf30-55e3-4b47-a1d0-6020d2f9fd67",
@@ -80308,9 +80308,9 @@
     "image": "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/884c02cf-bf9d-42ac-9c09-eba1a17688d1.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvODg0YzAyY2YtYmY5ZC00MmFjLTljMDktZWJhMWExNzY4OGQxLndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3NzQ0MTQ1LCJleHAiOjE5NDU0MjQxNDV9.skp-9M3TVqeiJtw8oLTPyeTL6K0lNwySYlYcHY0JmCY",
     "rating": 4.7,
     "sold": 0,
-    "categorySlug": "gadgets-electronics",
-    "categoryName": "Gadgets & Electronics",
-    "categoryBangla": "ইলেকট্রনিক্স ও গ্যাজেটস",
+    "categorySlug": "home-lifestyle",
+    "categoryName": "Home & Lifestyle",
+    "categoryBangla": "হোম ও লাইফস্টাইল",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "square",
@@ -80321,9 +80321,9 @@
       "tool",
       "lifter"
     ],
-    "category": "Gadgets & Electronics",
-    "category_name": "Gadgets & Electronics",
-    "category_slug": "gadgets-electronics"
+    "category": "Home & Lifestyle",
+    "category_name": "Home & Lifestyle",
+    "category_slug": "home-lifestyle"
   },
   {
     "id": "b820e530-6791-43cf-be0f-b4f8f8b4b213",
@@ -80365,9 +80365,9 @@
     "image": "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/18386270-f405-4a15-9e06-5706d56c30c9.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvMTgzODYyNzAtZjQwNS00YTE1LTllMDYtNTcwNmQ1NmMzMGM5LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3NzQxOTExLCJleHAiOjE5NDU0MjE5MTF9.df7l6EF1bhg6bC56Ckbzj9lv8Gj9jIJhuAI2b4MzXco",
     "rating": 4.7,
     "sold": 0,
-    "categorySlug": "gadgets-electronics",
-    "categoryName": "Gadgets & Electronics",
-    "categoryBangla": "ইলেকট্রনিক্স ও গ্যাজেটস",
+    "categorySlug": "home-lifestyle",
+    "categoryName": "Home & Lifestyle",
+    "categoryBangla": "হোম ও লাইফস্টাইল",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "square",
@@ -80379,9 +80379,9 @@
       "iron",
       "machine"
     ],
-    "category": "Gadgets & Electronics",
-    "category_name": "Gadgets & Electronics",
-    "category_slug": "gadgets-electronics"
+    "category": "Home & Lifestyle",
+    "category_name": "Home & Lifestyle",
+    "category_slug": "home-lifestyle"
   },
   {
     "id": "a0d20717-2739-43dc-ae4a-49fb86c7a6b2",
@@ -80392,9 +80392,9 @@
     "image": "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/92deb09f-3474-4017-8bcf-9a2625c2e05f.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvOTJkZWIwOWYtMzQ3NC00MDE3LThiY2YtOWEyNjI1YzJlMDVmLndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3NzQxMzExLCJleHAiOjE5NDU0MjEzMTF9.o2w_qUSqHD77Mm0eIt3Cg4z028ZIO4-gDeHUFqHfGjA",
     "rating": 4.7,
     "sold": 0,
-    "categorySlug": "gadgets-electronics",
-    "categoryName": "Gadgets & Electronics",
-    "categoryBangla": "ইলেকট্রনিক্স ও গ্যাজেটস",
+    "categorySlug": "health-beauty",
+    "categoryName": "Health & Beauty",
+    "categoryBangla": "স্বাস্থ্য ও সৌন্দর্য",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "square",
@@ -80406,9 +80406,9 @@
       "patches",
       "pis"
     ],
-    "category": "Gadgets & Electronics",
-    "category_name": "Gadgets & Electronics",
-    "category_slug": "gadgets-electronics"
+    "category": "Health & Beauty",
+    "category_name": "Health & Beauty",
+    "category_slug": "health-beauty"
   },
   {
     "id": "fcee8be1-5230-465b-8e65-62d38489a7d0",
@@ -80419,9 +80419,9 @@
     "image": "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/7d88b43c-b203-4300-9c19-f3842b4ed771.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvN2Q4OGI0M2MtYjIwMy00MzAwLTljMTktZjM4NDJiNGVkNzcxLndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3NzQwNzI3LCJleHAiOjE5NDU0MjA3Mjd9.IGU4nljLPAxyD1t73no_oHQnAkI5cXvR9zra9cSU_-E",
     "rating": 4.7,
     "sold": 0,
-    "categorySlug": "gadgets-electronics",
-    "categoryName": "Gadgets & Electronics",
-    "categoryBangla": "ইলেকট্রনিক্স ও গ্যাজেটস",
+    "categorySlug": "home-lifestyle",
+    "categoryName": "Home & Lifestyle",
+    "categoryBangla": "হোম ও লাইফস্টাইল",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "square",
@@ -80432,9 +80432,9 @@
       "bottle",
       "cooking"
     ],
-    "category": "Gadgets & Electronics",
-    "category_name": "Gadgets & Electronics",
-    "category_slug": "gadgets-electronics"
+    "category": "Home & Lifestyle",
+    "category_name": "Home & Lifestyle",
+    "category_slug": "home-lifestyle"
   },
   {
     "id": "e0bbb6d7-b0f7-4ed4-b2a2-334a587a56ed",
@@ -80475,9 +80475,9 @@
     "image": "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/15c6612f-54b6-493f-86f3-f4cc07264465.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvMTVjNjYxMmYtNTRiNi00OTNmLTg2ZjMtZjRjYzA3MjY0NDY1LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3NzM4Mzk5LCJleHAiOjE5NDU0MTgzOTl9.dG6HuGbkmTx0nN_Rzfhev03130vUDmdz2tqaji-KD7o",
     "rating": 4.7,
     "sold": 0,
-    "categorySlug": "gadgets-electronics",
-    "categoryName": "Gadgets & Electronics",
-    "categoryBangla": "ইলেকট্রনিক্স ও গ্যাজেটস",
+    "categorySlug": "home-lifestyle",
+    "categoryName": "Home & Lifestyle",
+    "categoryBangla": "হোম ও লাইফস্টাইল",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "square",
@@ -80492,9 +80492,9 @@
       "camping",
       "outdoors"
     ],
-    "category": "Gadgets & Electronics",
-    "category_name": "Gadgets & Electronics",
-    "category_slug": "gadgets-electronics"
+    "category": "Home & Lifestyle",
+    "category_name": "Home & Lifestyle",
+    "category_slug": "home-lifestyle"
   },
   {
     "id": "b70917f4-e177-4450-ba72-daf237a77865",
@@ -80592,9 +80592,9 @@
     "image": "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/ed722608-e540-49cd-8071-910cbb038655.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvZWQ3MjI2MDgtZTU0MC00OWNkLTgwNzEtOTEwY2JiMDM4NjU1LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3NzI3NjQ0LCJleHAiOjE5NDU0MDc2NDR9.sfDBqbhe81iJ7t4GZ4GhdCqWwa87Km06TUHlNbS7WGg",
     "rating": 4.7,
     "sold": 0,
-    "categorySlug": "gadgets-electronics",
-    "categoryName": "Gadgets & Electronics",
-    "categoryBangla": "ইলেকট্রনিক্স ও গ্যাজেটস",
+    "categorySlug": "home-lifestyle",
+    "categoryName": "Home & Lifestyle",
+    "categoryBangla": "হোম ও লাইফস্টাইল",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "square",
@@ -80606,9 +80606,9 @@
       "crusher",
       "juicer"
     ],
-    "category": "Gadgets & Electronics",
-    "category_name": "Gadgets & Electronics",
-    "category_slug": "gadgets-electronics"
+    "category": "Home & Lifestyle",
+    "category_name": "Home & Lifestyle",
+    "category_slug": "home-lifestyle"
   },
   {
     "id": "be6370c4-1816-4a5b-9d7f-e3596fc2f016",
@@ -80619,9 +80619,9 @@
     "image": "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/ea41f5c1-f818-44ff-9409-d15aad335d84.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvZWE0MWY1YzEtZjgxOC00NGZmLTk0MDktZDE1YWFkMzM1ZDg0LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3NjU0NzgyLCJleHAiOjE5NDUzMzQ3ODJ9.pyCAEC5cHdzG_g7CasEbrFNK-UhNoN_qzEkpqKWEy-k",
     "rating": 4.7,
     "sold": 0,
-    "categorySlug": "gadgets-electronics",
-    "categoryName": "Gadgets & Electronics",
-    "categoryBangla": "ইলেকট্রনিক্স ও গ্যাজেটস",
+    "categorySlug": "foods",
+    "categoryName": "Foods",
+    "categoryBangla": "খাবার ও পুষ্টি",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "square",
@@ -80634,9 +80634,9 @@
       "management",
       "drink"
     ],
-    "category": "Gadgets & Electronics",
-    "category_name": "Gadgets & Electronics",
-    "category_slug": "gadgets-electronics"
+    "category": "Foods",
+    "category_name": "Foods",
+    "category_slug": "foods"
   },
   {
     "id": "b8e57650-ab4b-4dfe-bdf7-0086629b2d10",
@@ -80647,9 +80647,9 @@
     "image": "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/0ee23ea1-5a53-4d5d-928b-ef31df6b76c4.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvMGVlMjNlYTEtNWE1My00ZDVkLTkyOGItZWYzMWRmNmI3NmM0LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3NjUxOTU4LCJleHAiOjE5NDUzMzE5NTh9.atIYCymvsFmlB-n4ZCFL6h2GYx-u7pRF1BY-s57-ALQ",
     "rating": 4.7,
     "sold": 0,
-    "categorySlug": "gadgets-electronics",
-    "categoryName": "Gadgets & Electronics",
-    "categoryBangla": "ইলেকট্রনিক্স ও গ্যাজেটস",
+    "categorySlug": "health-beauty",
+    "categoryName": "Health & Beauty",
+    "categoryBangla": "স্বাস্থ্য ও সৌন্দর্য",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "square",
@@ -80661,9 +80661,9 @@
       "remover",
       "10ml"
     ],
-    "category": "Gadgets & Electronics",
-    "category_name": "Gadgets & Electronics",
-    "category_slug": "gadgets-electronics"
+    "category": "Health & Beauty",
+    "category_name": "Health & Beauty",
+    "category_slug": "health-beauty"
   },
   {
     "id": "f82eea8b-076c-4909-9e63-5b13f46b1920",
@@ -80752,9 +80752,9 @@
     "image": "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/2aca5a7c-a57b-4ed3-84ba-fca730838bbb.webp?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8wNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvMmFjYTVhN2MtYTU3Yi00ZWQzLTg0YmEtZmNhNzMwODM4YmJiLndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3NDgzNDQ4LCJleHAiOjE5NDUxNjM0NDh9.JrkTOyRZCUbKSI0SUk0B9LQAQhhXCZVKizjFsChajbM",
     "rating": 4.7,
     "sold": 0,
-    "categorySlug": "gadgets-electronics",
-    "categoryName": "Gadgets & Electronics",
-    "categoryBangla": "ইলেকট্রনিক্স ও গ্যাজেটস",
+    "categorySlug": "home-lifestyle",
+    "categoryName": "Home & Lifestyle",
+    "categoryBangla": "হোম ও লাইফস্টাইল",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "square",
@@ -80764,9 +80764,9 @@
       "siphon",
       "pump"
     ],
-    "category": "Gadgets & Electronics",
-    "category_name": "Gadgets & Electronics",
-    "category_slug": "gadgets-electronics"
+    "category": "Home & Lifestyle",
+    "category_name": "Home & Lifestyle",
+    "category_slug": "home-lifestyle"
   },
   {
     "id": "5a105290-6e13-47bf-b5bc-82a58a84311e",
@@ -83116,9 +83116,9 @@
     "image": "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/1d0c68ca-2c6d-4051-ad55-5b075eea25af.webp?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8wNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvMWQwYzY4Y2EtMmM2ZC00MDUxLWFkNTUtNWIwNzVlZWEyNWFmLndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg2OTQ5Njg3LCJleHAiOjE5NDQ2Mjk2ODd9.c2Vfy5iXvxxd1TQRajS3bzDkC4gL8ru2QNuJUFsz68I",
     "rating": 4.7,
     "sold": 0,
-    "categorySlug": "gadgets-electronics",
-    "categoryName": "Gadgets & Electronics",
-    "categoryBangla": "ইলেকট্রনিক্স ও গ্যাজেটস",
+    "categorySlug": "health-beauty",
+    "categoryName": "Health & Beauty",
+    "categoryBangla": "স্বাস্থ্য ও সৌন্দর্য",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "portrait",
@@ -83129,9 +83129,9 @@
       "body",
       "massager"
     ],
-    "category": "Gadgets & Electronics",
-    "category_name": "Gadgets & Electronics",
-    "category_slug": "gadgets-electronics"
+    "category": "Health & Beauty",
+    "category_name": "Health & Beauty",
+    "category_slug": "health-beauty"
   },
   {
     "id": "28ffafc6-5c17-4987-ac18-229a3d135462",
@@ -83329,9 +83329,9 @@
     "image": "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/df22fc90-227f-45c4-97c2-915aab8a02fe.webp?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8wNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvZGYyMmZjOTAtMjI3Zi00NWM0LTk3YzItOTE1YWFiOGEwMmZlLndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg2ODg4NzM3LCJleHAiOjE5NDQ1Njg3Mzd9.2FdTXG9KSJI044ZNaN1nfKjuPMRC5UGsKLaGENQCpRM",
     "rating": 4.7,
     "sold": 0,
-    "categorySlug": "gadgets-electronics",
-    "categoryName": "Gadgets & Electronics",
-    "categoryBangla": "ইলেকট্রনিক্স ও গ্যাজেটস",
+    "categorySlug": "health-beauty",
+    "categoryName": "Health & Beauty",
+    "categoryBangla": "স্বাস্থ্য ও সৌন্দর্য",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "square",
@@ -83344,9 +83344,9 @@
       "relief",
       "pads"
     ],
-    "category": "Gadgets & Electronics",
-    "category_name": "Gadgets & Electronics",
-    "category_slug": "gadgets-electronics"
+    "category": "Health & Beauty",
+    "category_name": "Health & Beauty",
+    "category_slug": "health-beauty"
   },
   {
     "id": "523909a4-bd54-41d9-b25b-74fda406e880",
@@ -83385,9 +83385,9 @@
     "image": "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/e0613094-f45f-4dc9-a738-e670d9815d7c.webp?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8wNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvZTA2MTMwOTQtZjQ1Zi00ZGM5LWE3MzgtZTY3MGQ5ODE1ZDdjLndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg2ODg3NDQ5LCJleHAiOjE5NDQ1Njc0NDl9.gI_cCNKN6CDddN_Y46DQki8iCWpK8sjTA_Ihb-U1os0",
     "rating": 4.7,
     "sold": 0,
-    "categorySlug": "gadgets-electronics",
-    "categoryName": "Gadgets & Electronics",
-    "categoryBangla": "ইলেকট্রনিক্স ও গ্যাজেটস",
+    "categorySlug": "foods",
+    "categoryName": "Foods",
+    "categoryBangla": "খাবার ও পুষ্টি",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "square",
@@ -83398,9 +83398,9 @@
       "gain",
       "supplement"
     ],
-    "category": "Gadgets & Electronics",
-    "category_name": "Gadgets & Electronics",
-    "category_slug": "gadgets-electronics"
+    "category": "Foods",
+    "category_name": "Foods",
+    "category_slug": "foods"
   },
   {
     "id": "d58729ef-cbc5-4f04-afdc-c2b52c5093e6",
@@ -84053,9 +84053,9 @@
     "image": "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/6a224a11-aa1d-4899-9449-ae0a5b1d916b.webp?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8wNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvNmEyMjRhMTEtYWExZC00ODk5LTk0NDktYWUwYTViMWQ5MTZiLndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg2Nzc4MTIzLCJleHAiOjE5NDQ0NTgxMjN9.Kj4DHPHa_Ucz6L5GDleaoMNiCpSICPjpAbXGOp6SCTU",
     "rating": 4.7,
     "sold": 0,
-    "categorySlug": "gadgets-electronics",
-    "categoryName": "Gadgets & Electronics",
-    "categoryBangla": "ইলেকট্রনিক্স ও গ্যাজেটস",
+    "categorySlug": "foods",
+    "categoryName": "Foods",
+    "categoryBangla": "খাবার ও পুষ্টি",
     "color": "Multi-color",
     "colorHex": "#6366f1",
     "aspect": "square",
@@ -84067,9 +84067,9 @@
       "gain",
       "formula"
     ],
-    "category": "Gadgets & Electronics",
-    "category_name": "Gadgets & Electronics",
-    "category_slug": "gadgets-electronics"
+    "category": "Foods",
+    "category_name": "Foods",
+    "category_slug": "foods"
   },
   {
     "id": "9072c746-bfc5-44cd-aa00-32c598249c82",

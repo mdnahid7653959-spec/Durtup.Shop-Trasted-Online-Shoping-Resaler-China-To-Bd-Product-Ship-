@@ -157,6 +157,53 @@ export const CATEGORY_IMAGES = {
     "https://images.unsplash.com/photo-1508296695146-257a814070b4?w=600&h=600&fit=crop",
     "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?w=600&h=600&fit=crop",
   ],
+  siphon_pump: [
+    "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/29b8c55c-2cf2-48aa-8082-be778be87584.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvMjliOGM1NWMtMmNmMi00OGFhLTgwODItYmU3NzhiZTg3NTg0LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg4NTE1MDI1LCJleHAiOjE5NDYxOTUwMjV9.1l_RorkgwmZ7Nl8dF1W51M-nksUmtAJEa1orsvfZ8Mw",
+  ],
+  massager: [
+    "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/22ee3ac7-b571-4252-9999-f55ff3493f87.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvMjJlZTNhYzctYjU3MS00MjUyLTk5OTktZjU1ZmYzNDkzZjg3LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3NzQ4NTU0LCJleHAiOjE5NDU0Mjg1NTR9.Pr4xJzAFa98obBVOrcU9F4XZfhLnhqPL8z2nQSNoZ_0",
+    "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=600&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1519823551278-64ac92734fb1?w=600&h=600&fit=crop",
+  ],
+  laser_pointer: [
+    "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/531d0175-d3fe-4bfa-99ef-0d7cb3b36cc5.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvNTMxZDAxNzUtZDNmZS00YmZhLTk5ZWYtMGQ3Y2IzYjM2Y2M1LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3NzQ4MDkxLCJleHAiOjE5NDU0MjgwOTF9.O0nDyMPrvNMsd0r2n7pcnjsZ9_IETy4c23bcSsrnaIA",
+    "https://mohasagor.com.bd/public/storage/images/products/wd2mkRKXo1pnLV76eJ5c20354PBGU93UDlCt2sgJ.png",
+  ],
+  iron_steamer: [
+    "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/18386270-f405-4a15-9e06-5706d56c30c9.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvMTgzODYyNzAtZjQwNS00YTE1LTllMDYtNTcwNmQ1NmMzMGM5LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3NzQxOTExLCJleHAiOjE5NDU0MjE5MTF9.df7l6EF1bhg6bC56Ckbzj9lv8Gj9jIJhuAI2b4MzXco",
+    "https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=600&h=600&fit=crop",
+  ],
+  knife_sharpener: [
+    "https://images.unsplash.com/photo-1593618998160-e34014e67546?w=600&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1589365278144-c9e705f843ba?w=600&h=600&fit=crop",
+  ],
+  neckband: [
+    "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/9ee3d720-1058-4339-a311-3bc39d62bae9.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvOWVlM2Q3MjAtMTA1OC00MzM5LWEzMTEtM2JjMzlkNjJiYWU5LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg4NDM3NzIxLCJleHAiOjE5NDYxMTc3MjF9.rX09PGh1xKG_uTGHw_Tllk7Rff9-atYZ3nJVKWLsmlY",
+    "https://mohasagor.com.bd/public/storage/images/products/8LA7UVvvkdFdePE1KA8oQE11ae86IgS8OO4M5owT.png",
+  ],
+  phone_holder: [
+    "https://images.unsplash.com/photo-1586105251261-72a756497a11?w=600&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1580910051074-3eb694886505?w=600&h=600&fit=crop",
+  ],
+  stove_cooking: [
+    "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/15c6612f-54b6-493f-86f3-f4cc07264465.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvMTVjNjYxMmYtNTRiNi00OTNmLTg2ZjMtZjRjYzA3MjY0NDY1LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3NzM4Mzk5LCJleHAiOjE5NDU0MTgzOTl9.dG6HuGbkmTx0nN_Rzfhev03130vUDmdz2tqaji-KD7o",
+    "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/603c8f5a-02df-4c95-bd65-411cdaeeba07.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvNjAzYzhmNWEtMDJkZi00Yzk1LWJkNjUtNDExY2RhZWViYTA3LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3OTE1ODYwLCJleHAiOjE5NDU1OTU4NjB9.KagkKRKkszLLEbP_HM7AAhnykJWsTBFLDM2mKdTrPmQ",
+  ],
+  juicer_blender: [
+    "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/ed722608-e540-49cd-8071-910cbb038655.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvZWQ3MjI2MDgtZTU0MC00OWNkLTgwNzEtOTEwY2JiMDM4NjU1LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3NzI3NjQ0LCJleHAiOjE5NDU0MDc2NDR9.sfDBqbhe81iJ7t4GZ4GhdCqWwa87Km06TUHlNbS7WGg",
+    "https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=600&h=600&fit=crop",
+  ],
+  lantern_torch: [
+    "https://mohasagor.com.bd/public/storage/images/products/YoNfaL13gQwsmcg2aZLsxUzxtqIiKYm1JbDHPP24.png",
+    "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/03e4c2c0-f1b8-4b73-b898-00052116e016.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvMDNlNGMyYzAtZjFiOC00YjczLWI4OTgtMDAwNTIxMTZlMDE2LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3ODI5NzMxLCJleHAiOjE5NDU1MDk3MzF9.GC4kv0AqExhAmE6AxU90gbzyi_foKI7_YTeg2U3SxPE",
+  ],
+  skincare_health: [
+    "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/92deb09f-3474-4017-8bcf-9a2625c2e05f.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvOTJkZWIwOWYtMzQ3NC00MDE3LThiY2YtOWEyNjI1YzJlMDVmLndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3NzQxMzExLCJleHAiOjE5NDU0MjEzMTF9.o2w_qUSqHD77Mm0eIt3Cg4z028ZIO4-gDeHUFqHfGjA",
+    "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/0ee23ea1-5a53-4d5d-928b-ef31df6b76c4.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvMGVlMjNlYTEtNWE1My00ZDVkLTkyOGItZWYzMWRmNmI3NmM0LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3NjUxOTU4LCJleHAiOjE5NDUzMzE5NTh9.atIYCymvsFmlB-n4ZCFL6h2GYx-u7pRF1BY-s57-ALQ",
+  ],
+  shake_nutrition: [
+    "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/ea41f5c1-f818-44ff-9409-d15aad335d84.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvZWE0MWY1YzEtZjgxOC00NGZmLTk0MDktZDE1YWFkMzM1ZDg0LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3NjU0NzgyLCJleHAiOjE5NDUzMzQ3ODJ9.pyCAEC5cHdzG_g7CasEbrFNK-UhNoN_qzEkpqKWEy-k",
+  ],
 };
 
 // Known Unsplash generic fallback patterns that were previously assigned in random places
@@ -268,7 +315,7 @@ export function getResponsiveImageSrcSet(
     trimmed.startsWith("data:") || 
     trimmed.startsWith("blob:") || 
     trimmed.includes(".svg") ||
-    trimmed.includes("supabase.co")
+    (trimmed.includes("supabase.co") && !trimmed.includes("wsrv.nl"))
   ) {
     return "";
   }
@@ -297,132 +344,192 @@ export function detectCategoryKey(name: string = "", category: string = ""): key
   const safeCat = catText.replace(/mouse\s*(&|and)?\s*cameras?/gi, "gadgets");
   const combined = `${nameText} ${safeCat}`;
 
-  // 1. Sunglasses, Eyeglasses, Spectacles, Clear glass frames (Must check product name first!)
+  // 1. Siphon fuel & liquid transfer pumps (Must check before fan!)
+  if (combined.match(/siphon|fuel.*pump|oil.*pump|liquid.*pump|transfer.*pump|pipe.*set|লিকুইড.*পাম্প|ফুয়েল.*পাম্প/i)) {
+    return "siphon_pump";
+  }
+
+  // 2. Massagers & EMS pain relief (Tens Units, body massagers, neck stretchers)
+  if (combined.match(/massag|ems.*mini|tens\s*units?|pulse.*massag|body.*massag|neck.*massag|stretcher|বডি.*ম্যাসাজ|ম্যাসাজার/i)) {
+    return "massager";
+  }
+
+  // 3. Laser Pointers & Laser Lights (Rechargeable pointer, laser beam)
+  if (combined.match(/laser.*pointer|laser.*light|laser.*pen|green.*laser|red.*laser|লেজার/i)) {
+    return "laser_pointer";
+  }
+
+  // 4. Steamer Iron & Garment Steamers (Must check before generic kitchen!)
+  if (combined.match(/steamer\s*iron|iron.*machine|handheld.*steamer|garment.*steamer|steam.*brush|electric.*iron|ইস্ত্রি/i)) {
+    return "iron_steamer";
+  }
+
+  // 5. Knife Sharpeners (Must check before generic kitchen!)
+  if (combined.match(/knife.*sharpener|blade.*sharpener|sharpener.*stone|ধারালো|ছুরি.*ধার/i)) {
+    return "knife_sharpener";
+  }
+
+  // 6. Phone Holders, Stands, Lazy Neck & Tripods (Must check before earbuds/electronics!)
+  if (combined.match(/phone.*holder|mobile.*holder|lazy.*neck|neck.*holder|table.*stand|phone.*stand|desk.*stand|tripod|mobile.*mount|car.*mount|স্ট্যান্ড/i)) {
+    return "phone_holder";
+  }
+
+  // 7. Gas Stoves, Camping Stoves, Sandwich Makers
+  if (combined.match(/gas.*stove|camping.*stove|foldable.*stove|sandwich.*maker|waffle.*maker|stove|চুলা/i)) {
+    return "stove_cooking";
+  }
+
+  // 8. Portable Crusher Juicers & Mini Blenders
+  if (combined.match(/crusher.*juicer|portable.*juicer|usb.*blender|crusher|জুসার/i)) {
+    return "juicer_blender";
+  }
+
+  // 9. Camping Lanterns, Emergency LED Lights & Torches
+  if (combined.match(/camping.*lantern|led.*lantern|torch.*light|flashlight|emergency.*light|টর্চ|হারিকেন|zoom.*light/i)) {
+    return "lantern_torch";
+  }
+
+  // 10. Pain Relief Patches, Wart, Mole & Skin Tag Removers
+  if (combined.match(/pain.*relief|relief.*patch|back.*pain|wart.*remover|mole.*remover|skin.*tag|হাঁটু.*ব্যথা|মলম|প্যাচ/i)) {
+    return "skincare_health";
+  }
+
+  // 11. Milk Shake & Weight Gain Supplements
+  if (combined.match(/milk\s*shake|weight\s*gain|supplement|protein\s*powder|nutrition/i)) {
+    return "shake_nutrition";
+  }
+
+  // 12. Wireless Neckbands (Check before TWS earbuds!)
+  if (!nameText.match(/cctv|camera/i) && combined.match(/neckband|wireless.*neck|bluetooth.*neck|he05|frb/i)) {
+    return "neckband";
+  }
+
+  // 13. Sunglasses, Eyeglasses, Spectacles, Clear glass frames (Must check product name first!)
   if (nameText.match(/sunglass|eyeglass|spectacle|clear.*glass|frame.*glass|reading.*glass|glasses|sunglasses|eyewear|goggles|goggle|shades|chasma|চশমা|সানগ্লাস/i)) {
     return "sunglasses";
   }
 
-  // 2. Jewelry, rings, necklace, crystal ring, gemstones, zircon, ornaments
+  // 14. Jewelry, rings, necklace, crystal ring, gemstones, zircon, ornaments
   // Exclude ring light, key ring, phone ring, etc.
   if (!nameText.match(/ring.*light|key.*ring|phone.*ring|holder.*ring|curtain.*ring|rubber.*ring/i) &&
       combined.match(/ring|jewelry|jewel|necklace|chain|pendant|bracelet|bangle|earring|zircon|crystal.*ring|gemstone|diamond|emerald|eternity.*ring|stone.*ring|gold|silver|ornament|আংটি|জুয়েলারি|নেকলেস|চেইন|দুল|গহনা|চুড়ি|ব্রেসলেট/i)) {
     return "jewelry";
   }
 
-  // 2.5 CCTV, Security Cameras, IP Cameras, Bulb Cameras, Spy Cameras (Must check before earbuds/keyboard!)
+  // 15. CCTV, Security Cameras, IP Cameras, Bulb Cameras, Spy Cameras (Must check before earbuds/keyboard!)
   if (combined.match(/cctv|ip\s*camera|security\s*camera|bulb\s*camera|night\s*vision.*camera|v380|a9\s*wi-?fi|ptz|surveillance|nanny\s*cam|spy\s*cam|spy.*camera|ডোম\s*ক্যামেরা|সিসিটিভি|সিকিউরিটি\s*ক্যামেরা/i) ||
       (nameText.match(/camera|cam\b|ক্যামেরা/i) && !nameText.match(/stand|holder|tripod|mount|strap|bag|case/i))) {
     return "cctv";
   }
 
-  // 3. Earbuds, headphones, airpods, headsets, wireless audio (must exclude cameras, speakers & mic)
+  // 16. Earbuds, headphones, airpods, headsets, wireless audio (must exclude cameras, speakers & mic)
   if (!nameText.match(/cctv|camera|cam\b|ক্যামেরা|speaker|স্পিকার|mic\b|microphone|মাইক্রোফোন|bulb/i) &&
-      combined.match(/earbud|airpod|headphone|earphone|headset|wireless.*ear|bluetooth.*ear|neckband|tws|pro.*4|m10|f9|anc.*ear|হেডফোন|ইয়ারবাড|ইয়ারফোন/i)) {
+      combined.match(/earbud|airpod|headphone|earphone|headset|wireless.*ear|bluetooth.*ear|tws|pro.*4|m10|f9|anc.*ear|হেডফোন|ইয়ারবাড|ইয়ারফোন/i)) {
     return "earbuds";
   }
 
-  // 4. Power bank, fast charging, chargers, cables
+  // 17. Power bank, fast charging, chargers, cables
   if (combined.match(/power.*bank|powerbank|charger|fast.*charg|cable|type-c|adapter|pd\s*\d+|10000mah|20000mah|পাওয়ার.*ব্যাংক|চার্জার|ক্যাবল/i) && !combined.match(/earbud|airpod|tws|headphone|earphone/i)) {
     return "powerbank";
   }
 
-  // 5. Speakers, Bluetooth audio, FM radio, sound system, soundbar
+  // 18. Speakers, Bluetooth audio, FM radio, sound system, soundbar
   if (combined.match(/speaker|sound.*system|soundbar|fm.*radio|bluetooth.*speaker|audio.*bass|extra.*bass|hi-fi|স্পিকার|সাউন্ড/i)) {
     return "speaker";
   }
 
-  // 6. Kitchen, cooking, chopper, vegetable cutter, blender, grinder, mixer, hot pot, air fryer, cleaver knife, spice box, dish rack
+  // 19. Kitchen, cooking, chopper, vegetable cutter, blender, grinder, mixer, hot pot, air fryer, cleaver knife, spice box, dish rack
   if (combined.match(/cook|kitchen|chopper|cutter|slicer|blender|grinder|hot.*pot|fryer|kettle|knife|cleaver|steamer|spice.*box|dish.*rack|food.*storage|fridge.*box|seasoning|oil.*bottle|oil.*dispenser|রান্না|ব্লেন্ডার|কুকার|চপার|ছুরি/i)) {
     return "kitchen";
   }
 
-  // 7. Fan, air pump, pump, compressor, cooling, humidifier, spray fan, mist fan
-  if (combined.match(/fan|humidifier|diffuser|spray.*fan|mist.*fan|air.*pump|pump|dispenser.*pump|water.*dispenser|cooling|wind|cooler|ফ্যান|পাম্প|হিউমিডিফায়ার/i)) {
+  // 20. Fan, cooling, humidifier, spray fan, mist fan (pumps removed!)
+  if (combined.match(/fan|humidifier|diffuser|spray.*fan|mist.*fan|cooling|wind|cooler|ফ্যান|হিউমিডিফায়ার/i)) {
     return "fan";
   }
 
-  // 8. Bags, backpack, handbag, travel bag, wallet, purse
+  // 21. Bags, backpack, handbag, travel bag, wallet, purse
   if (combined.match(/bag|backpack|wallet|purse|handbag|travel.*bag|crossbody|ব্যাগ|মানিব্যাগ|পার্স|ব্যাকপ্যাক/i)) {
     return "bags";
   }
 
-  // 9. Shoes, sneakers, loafers, boots, footwear, sandals
+  // 22. Shoes, sneakers, loafers, boots, footwear, sandals
   if (combined.match(/shoe|sneaker|footwear|sandal|boot|loafer|slipper|জুতা|স্যান্ডেল|স্নিকার্স/i)) {
     return "shoes";
   }
 
-  // 10. Smartwatch, fitness tracker, smart band
+  // 23. Smartwatch, fitness tracker, smart band
   if (combined.match(/smart.*watch|fitness.*watch|apple.*watch|ultra.*watch|t800|t900|d20|hw8|hw9|fitness.*band|smart.*band|স্মার্ট.*ওয়াচ|স্মার্ট.*ঘড়ি/i)) {
     return "smartwatch";
   }
 
-  // 11. Watches (analog, quartz, luxury, stainless steel wrist watch)
+  // 24. Watches (analog, quartz, luxury, stainless steel wrist watch)
   if (combined.match(/watch|clock|wrist|oliya|olevs|skmei|binbond|curren|naviforce|casio|quartz|chronograph|dial|stainless.*steel.*watch|analog|ঘড়ি|হাতঘড়ি/i)) {
     return "watch";
   }
 
-  // 12. Trimmers, shavers, clippers, grooming
+  // 25. Trimmers, shavers, clippers, grooming
   if (combined.match(/trimmer|clipper|shaver|grooming|hair.*beard|beard|at-1210|htc|vintage.*t9|kemei|vgr|nova|shaving|hair.*cut|ট্রিমার|শেভার|দাড়ি/i)) {
     return "trimmer";
   }
 
-  // 13. Jersey, sports, fitness wear
+  // 26. Jersey, sports, fitness wear
   if (combined.match(/jersey|football|soccer|cricket|sports|athlete|gym|workout|brazil|argentina|messi|neymar|ronaldo|জার্সি|ফুটবল|ক্রিকেট/i)) {
     return "jersey";
   }
 
-  // 14. Panjabi, kabli, kurta
+  // 27. Panjabi, kabli, kurta
   if (combined.match(/panjabi|punjabi|katua|kabli|kurta|পাঞ্জাবি|পাঞ্জাবী|কাবলি/i)) {
     return "panjabi";
   }
 
-  // 15. Pajama, trousers, pants
+  // 28. Pajama, trousers, pants
   if (combined.match(/pajama|pyjama|trouser|pant|salwar|পায়জামা|পাজামা|প্যান্ট/i)) {
     return "pajama";
   }
 
-  // 16. Saree, lehenga
+  // 29. Saree, lehenga
   if (combined.match(/saree|sharee|lehenga|georgette|শাড়ি|লেহেঙ্গা|জর্জেট/i)) {
     return "saree";
   }
 
-  // 17. Abaya, Borka, Burqa, Hijab, Khimar (Modest Islamic Wear)
+  // 30. Abaya, Borka, Burqa, Hijab, Khimar (Modest Islamic Wear)
   if (combined.match(/abaya|borkha|borka|burqa|khimar|hijab|বোরকা|বোরখা|আবায়া|হিজাব|খিমার/i)) {
     return "borka";
   }
 
-  // 18. Kurti, kameez, three piece
+  // 31. Kurti, kameez, three piece
   if (combined.match(/kurti|kameez|three.*piece|ladies|কামিজ|কটি|কুর্তি|থ্রি.*পিস/i)) {
     return "kurti";
   }
 
-  // 18. Shirts, t-shirts, polo, jackets, hoodies
+  // 32. Shirts, t-shirts, polo, jackets, hoodies
   if (combined.match(/shirt|t-shirt|tshirt|polo|jacket|suit|cloth|men's|mens|wear|sleeve|combo.*shirt|denim|jeans|hoodie|টি-শার্ট|টি\s*শার্ট|শার্ট|পোলো|পোশাক/i)) {
     return "shirt";
   }
 
-  // 19. Beauty, hair straightener, hair comb, hair dryer, curler, hair brush, perfume, cosmetics, skincare
+  // 33. Beauty, hair straightener, hair comb, hair dryer, curler, hair brush, perfume, cosmetics, skincare
   if (nameText.match(/comb\b|straightener|straight.*hair|hair.*straight|hair.*comb|hair.*brush|curler|hair.*dryer|hair.*iron|hair.*styler|চিরুনি|স্ট্রেইটনার/i) ||
       combined.match(/perfume|attar|body.*spray|fragrance|lotion|cream|serum|shampoo|face.*wash|skin.*care|lipstick|makeup|shaper|belt.*body|corset|আতর|পারফিউম|লোশন|ক্রিম|লিপস্টিক|মেকআপ|তেল/i)) {
     return "beauty";
   }
 
-  // 20. Pure foods, organic, honey, ghee, tea
+  // 34. Pure foods, organic, honey, ghee, tea
   if (combined.match(/honey|ghee|oil|tea|chia|organic|mustard|pure.*food|food|মধু|ঘি|তেল|চা|খাবার/i)) {
     return "pure_foods";
   }
 
-  // 21. Kids toys, baby items
+  // 35. Kids toys, baby items
   if (combined.match(/toy|kid|baby|doll|car.*toy|child|খেলনা|বাচ্চা/i)) {
     return "kids";
   }
 
-  // 22. Mouse (specific check before keyboard/general tech)
+  // 36. Mouse (specific check before keyboard/general tech)
   if (nameText.match(/\bmouse\b|gaming.*mouse|wireless.*mouse|optical.*mouse|মাউস/i) && !nameText.match(/trap|pad|mouse\s*pad/i)) {
     return "mouse";
   }
 
-  // 23. Keyboard, computer, tech
+  // 37. Keyboard, computer, tech
   // CRITICAL: Must be in product NAME (not from "Gadgets, Mouse & Cameras" category!)
   if (nameText.match(/\bkeyboard\b|\bkeypad\b|কিবোর্ড/i)) {
     return "keyboard";
@@ -431,17 +538,17 @@ export function detectCategoryKey(name: string = "", category: string = ""): key
     return "keyboard";
   }
 
-  // 24. Tools, hardware, repair
+  // 38. Tools, hardware, repair
   if (combined.match(/screwdriver|soldering|iron|solder|drill|tool|hardware|wrench|hammer|plier|screw|repair.*kit|machine|saw|socket|ড্রিল|স্ক্রু|টুলস/i)) {
     return "tools";
   }
 
-  // 25. General electronics & gadgets
+  // 39. General electronics & gadgets
   if (combined.match(/lens|tripod|ring.*light|mic|microphone|projector|gadget|electronic|মাইক্রোফোন/i)) {
     return "electronics";
   }
 
-  // 26. Home & living
+  // 40. Home & living
   if (combined.match(/\b(home\s*(decor|appliances?|living|kitchen)?|mug|lamp|dispenser|bottle|flask|pillow|cushion|shelf|rack|mop)\b|লাইট|মগ|বোতল|বালিশ/i)) {
     return "home";
   }
@@ -481,12 +588,11 @@ export function getCategoryFallbackImage(
   }
 
   const defaultImages = [
-    "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&h=600&fit=crop", // Watch
-    "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&h=600&fit=crop", // Earbuds
-    "https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=600&h=600&fit=crop", // Smartwatch
+    "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600&h=600&fit=crop", // Modern gadget / lifestyle
     "https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=600&h=600&fit=crop", // Power bank
     "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&h=600&fit=crop", // Backpack
-    "https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=600&h=600&fit=crop", // Ring
+    "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=600&h=600&fit=crop", // Fast charger
+    "https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=600&h=600&fit=crop", // Jewelry / accessories
   ];
   return defaultImages[Math.abs(index) % defaultImages.length];
 }
@@ -498,8 +604,8 @@ export function getCategoryFallbackImages(
 ): string[] {
   const key = detectCategoryKey(name, category);
   const images = (key && CATEGORY_IMAGES[key]) ? CATEGORY_IMAGES[key] : [
-    "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&h=600&fit=crop",
-    "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=600&h=600&fit=crop",
   ];
   return Array.from({ length: Math.min(count, images.length) }, (_, i) => images[i % images.length]);
 }
