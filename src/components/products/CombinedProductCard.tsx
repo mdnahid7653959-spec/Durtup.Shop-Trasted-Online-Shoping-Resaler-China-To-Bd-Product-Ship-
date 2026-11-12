@@ -62,6 +62,15 @@ const CombinedProductCardComponent: React.FC<CombinedProductCardProps> = ({ prod
     e.preventDefault();
     e.stopPropagation();
 
+    const hasVariants = Boolean(
+      ((product as any).product_variants && (product as any).product_variants.length > 0) ||
+      (Array.isArray((product as any).variants) && (product as any).variants.length > 0)
+    );
+    if (hasVariants) {
+      navigate(`/product/${product.slug || product.id}?action=buy`);
+      return;
+    }
+
     try {
       await handleAddToCart(e);
       navigate("/checkout");

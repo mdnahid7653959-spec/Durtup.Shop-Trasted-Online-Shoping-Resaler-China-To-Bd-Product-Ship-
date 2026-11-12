@@ -91,7 +91,7 @@ export function Footer() {
   const paymentMethods = config.payment_methods?.length ? config.payment_methods : defaultFooterConfig.payment_methods;
 
   return (
-    <footer className="bg-secondary border-t hidden md:block">
+    <footer className="bg-secondary border-t pb-24 md:pb-0">
       {/* Features bar */}
       <div className="border-b overflow-x-auto scrollbar-hide">
         <div className="container py-4 sm:py-6">

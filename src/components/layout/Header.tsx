@@ -680,7 +680,7 @@ export function Header() {
                 </Link>
 
                 <Link
-                  to="/track-order"
+                  to="/track"
                   onClick={() => setMenuDrawerOpen(false)}
                   className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-all group active:scale-[0.99]"
                 >

@@ -253,9 +253,13 @@ export default function CategoryPage() {
     };
 
     window.addEventListener("mohasagor_products_updated", handleUpdate);
+    window.addEventListener("ecomseller_products_updated", handleUpdate);
+    window.addEventListener("durtup_products_updated", handleUpdate);
     return () => {
       isMounted = false;
       window.removeEventListener("mohasagor_products_updated", handleUpdate);
+      window.removeEventListener("ecomseller_products_updated", handleUpdate);
+      window.removeEventListener("durtup_products_updated", handleUpdate);
     };
   }, [filterKey, formattedName]);
 

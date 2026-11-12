@@ -283,8 +283,17 @@ function buildSections(products: Product[]) {
 
 import { FAST_SEED_PRODUCTS } from "@/data/fastSeedCatalog";
 
-const CACHE_KEY = "mohasagor_cached_home_products_v13";
+const CACHE_KEY = "mohasagor_cached_home_products_v14";
 const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes 
+
+// Auto cleanup legacy cached versions
+if (typeof window !== "undefined") {
+  try {
+    ["v11", "v12", "v13"].forEach(v => {
+      localStorage.removeItem(`mohasagor_cached_home_products_${v}`);
+    });
+  } catch {}
+} 
 
 function cacheSectionsToLocalStorage(result: any) {
   if (typeof window === "undefined") return;

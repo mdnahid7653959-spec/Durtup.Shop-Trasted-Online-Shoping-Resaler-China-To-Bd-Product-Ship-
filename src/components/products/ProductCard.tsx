@@ -67,6 +67,15 @@ function ProductCardComponent({ product, priority = false }: ProductCardProps) {
   const handleBuyNow = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    const hasVariants = Boolean(
+      (product.product_variants && product.product_variants.length > 0) ||
+      (Array.isArray((product as any).variants) && (product as any).variants.length > 0)
+    );
+    if (hasVariants) {
+      saveFastProduct(product);
+      navigate(`/product/${product.slug || product.id}?action=buy`);
+      return;
+    }
     try {
       await addToCart(product, 1);
     } catch (err) {

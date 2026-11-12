@@ -22,7 +22,15 @@ export default function Cart() {
   const [couponCode, setCouponCode] = useState("");
 
   const handleProceedToCheckout = () => {
-    navigate("/checkout");
+    const code = couponCode.trim().toUpperCase();
+    if (code) {
+      try {
+        sessionStorage.setItem("durtup_pending_coupon", code);
+      } catch {}
+      navigate(`/checkout?coupon=${encodeURIComponent(code)}`);
+    } else {
+      navigate("/checkout");
+    }
   };
 
   const loading = regularLoading || cjLoading;
@@ -34,10 +42,14 @@ export default function Cart() {
   const total = subtotal + shipping;
 
   const handleApplyCoupon = () => {
-    if (couponCode.trim()) {
+    const code = couponCode.trim().toUpperCase();
+    if (code) {
+      try {
+        sessionStorage.setItem("durtup_pending_coupon", code);
+      } catch {}
       toast({
-        title: "Coupon applied",
-        description: `Coupon "${couponCode}" has been applied.`
+        title: "Coupon code saved! 🎉",
+        description: `Coupon "${code}" will be applied automatically at checkout.`
       });
     }
   };

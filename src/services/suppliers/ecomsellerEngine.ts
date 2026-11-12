@@ -96,8 +96,17 @@ const PRODUCTS_SERVER_FN = "5a01c59194865d30180a7f68b4912eb37e699345f2bbe311a9d2
 const DETAIL_SERVER_FN = "007261ee9d86e87592cfcd5491f56565cca84574c79db98974ab1951a1437f9d";
 const ECOMSELLER_BASE = "https://ecomsellerbd.com";
 
-const CACHE_KEY_CATALOG = "ecomseller_catalog_cache_v7";
+const CACHE_KEY_CATALOG = "ecomseller_catalog_cache_v8";
 const CACHE_KEY_PRICING = "durtup_supplier_pricing_config_v2";
+
+// Clean up old catalog versions on startup
+if (typeof window !== "undefined") {
+  try {
+    ["v5", "v6", "v7"].forEach(v => {
+      localStorage.removeItem(`ecomseller_catalog_cache_${v}`);
+    });
+  } catch {}
+}
 
 export class EcomsellerEngine {
   public static SUPPLIER_ID = "ecomseller_bd";

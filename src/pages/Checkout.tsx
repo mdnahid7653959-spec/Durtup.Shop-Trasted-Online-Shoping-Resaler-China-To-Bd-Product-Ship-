@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { CreditCard, Truck, Shield, ArrowLeft, Loader2, ChevronDown, ChevronUp, CheckCircle, Globe, Tag, X, MapPin, Phone, User as UserIcon, Plus, Edit3, CheckCircle2, Home, Banknote, Smartphone, ArrowRight, Copy, PackageCheck, ShoppingBag, Sparkles, Send, AlertCircle, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +37,7 @@ export default function Checkout() {
   const { items: cjItems, subtotal: cjSubtotal, clearCart: clearCJCart, loading: cjLoading } = useCJCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
@@ -226,8 +227,8 @@ export default function Checkout() {
     }));
   };
 
-  const applyCoupon = async () => {
-    const rawCode = couponCode.trim().toUpperCase();
+  const applyCoupon = async (explicitCode?: string) => {
+    const rawCode = (explicitCode || couponCode).trim().toUpperCase();
     if (!rawCode) {
       toast({ variant: "destructive", title: "Error", description: "Please enter a coupon code" });
       return;
@@ -333,6 +334,21 @@ export default function Checkout() {
     setAppliedCoupon(null);
     toast({ title: "Coupon removed" });
   };
+
+  // Auto-apply pending coupon passed from Cart page or URL query
+  useEffect(() => {
+    if (subtotal <= 0 || appliedCoupon) return;
+    const urlCoupon = searchParams.get("coupon")?.trim();
+    let storedCoupon = "";
+    try {
+      storedCoupon = sessionStorage.getItem("durtup_pending_coupon")?.trim() || "";
+    } catch {}
+    const incomingCode = urlCoupon || storedCoupon;
+    if (incomingCode) {
+      try { sessionStorage.removeItem("durtup_pending_coupon"); } catch {}
+      applyCoupon(incomingCode);
+    }
+  }, [subtotal, appliedCoupon, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
