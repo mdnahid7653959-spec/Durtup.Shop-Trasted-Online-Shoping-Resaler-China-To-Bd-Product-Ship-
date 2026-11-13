@@ -75,9 +75,9 @@ export function HeroBanner() {
     return unique.length > 0 ? unique : FAST_SEED_PRODUCTS;
   }, [homeData]);
 
-  // Initial random product selection per user session
-  const [prodIndex1, setProdIndex1] = useState<number>(() => getRandomIndex(FAST_SEED_PRODUCTS.length));
-  const [prodIndex2, setProdIndex2] = useState<number>(() => getRandomIndex(FAST_SEED_PRODUCTS.length, 0));
+  // Initial featured side promo products (Period Pain Belt & Olevs Watch)
+  const [prodIndex1, setProdIndex1] = useState<number>(0);
+  const [prodIndex2, setProdIndex2] = useState<number>(1);
 
   // Auto-rotate the side random products smoothly every 6.5 seconds
   useEffect(() => {
