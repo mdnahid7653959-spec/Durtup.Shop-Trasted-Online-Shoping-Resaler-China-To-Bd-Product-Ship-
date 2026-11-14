@@ -8,6 +8,17 @@
     <link rel="canonical" href="https://durtup.shop" />
     <meta name="google-site-verification" content="cboUIc-OB4S6hbMsXl9iQGE8Pr0fmGgF9r1hO-MmROU" />
 
+    <script>
+      // Immediate proactive Service Worker update & stale cache invalidation
+      if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+          for (var i = 0; i < regs.length; i++) {
+            regs[i].update();
+          }
+        }).catch(function() {});
+      }
+    </script>
+
     <!-- Favicon & Touch Icons (Google Search & Multi-Device Optimized) -->
     <link rel="icon" href="/favicon.ico" sizes="48x48 32x32 16x16" />
     <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />

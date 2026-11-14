@@ -1,6 +1,6 @@
-const CACHE_NAME = 'durtup-v26';
-const STATIC_CACHE = 'durtup-static-v26';
-const DYNAMIC_CACHE = 'durtup-dynamic-v26';
+const CACHE_NAME = 'durtup-v27';
+const STATIC_CACHE = 'durtup-static-v27';
+const DYNAMIC_CACHE = 'durtup-dynamic-v27';
 
 // Assets to cache immediately on SW install (Never cache HTML pages to prevent stale UI)
 const STATIC_ASSETS = [
@@ -14,7 +14,7 @@ const STATIC_ASSETS = [
 
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing service worker v26...');
+  console.log('[SW] Installing service worker v27...');
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => {
       console.log('[SW] Caching static assets');
@@ -24,22 +24,21 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate event - clean up old caches immediately
+// Activate event - clean up old caches immediately and claim clients
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating service worker v26...');
+  console.log('[SW] Activating service worker v27 and purging old caches...');
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
-        keys
-          .filter((key) => key !== STATIC_CACHE && key !== DYNAMIC_CACHE)
-          .map((key) => {
-            console.log('[SW] Removing old cache:', key);
-            return caches.delete(key);
-          })
+        keys.map((key) => {
+          console.log('[SW] Removing cache:', key);
+          return caches.delete(key);
+        })
       );
+    }).then(() => {
+      return self.clients.claim();
     })
   );
-  self.clients.claim();
 });
 
 // Fetch event
@@ -89,6 +88,11 @@ self.addEventListener('fetch', (event) => {
 
   // Production hashed assets (/assets/...) - Cache First (immutable)
   if (url.pathname.startsWith('/assets/')) {
+    // Rescue chunks should always fetch fresh from network
+    if (url.pathname.includes('ProductDetail-DQQf-Spg.js')) {
+      event.respondWith(fetch(request));
+      return;
+    }
     event.respondWith(
       caches.match(request).then((cachedResponse) => {
         if (cachedResponse) {
