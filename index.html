@@ -507,6 +507,29 @@
       </footer>
     </noscript>
 
+    <script>
+      window.addEventListener('vite:preloadError', function(e) {
+        if (e && e.preventDefault) e.preventDefault();
+        var last = sessionStorage.getItem('v_chunk_reload');
+        var now = Date.now();
+        if (!last || now - parseInt(last, 10) > 10000) {
+          sessionStorage.setItem('v_chunk_reload', now.toString());
+          if ('caches' in window) {
+            caches.keys().then(function(names) {
+              return Promise.all(names.map(function(n) { return caches.delete(n); }));
+            }).finally(function() {
+              var u = new URL(window.location.href);
+              u.searchParams.set('_v', now.toString());
+              window.location.replace(u.toString());
+            });
+          } else {
+            var u = new URL(window.location.href);
+            u.searchParams.set('_v', now.toString());
+            window.location.replace(u.toString());
+          }
+        }
+      });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

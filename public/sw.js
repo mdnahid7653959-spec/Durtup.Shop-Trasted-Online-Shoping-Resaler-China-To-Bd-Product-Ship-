@@ -1,6 +1,6 @@
-const CACHE_NAME = 'durtup-v25';
-const STATIC_CACHE = 'durtup-static-v25';
-const DYNAMIC_CACHE = 'durtup-dynamic-v25';
+const CACHE_NAME = 'durtup-v26';
+const STATIC_CACHE = 'durtup-static-v26';
+const DYNAMIC_CACHE = 'durtup-dynamic-v26';
 
 // Assets to cache immediately on SW install (Never cache HTML pages to prevent stale UI)
 const STATIC_ASSETS = [
@@ -14,7 +14,7 @@ const STATIC_ASSETS = [
 
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing service worker v25...');
+  console.log('[SW] Installing service worker v26...');
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => {
       console.log('[SW] Caching static assets');
@@ -26,7 +26,7 @@ self.addEventListener('install', (event) => {
 
 // Activate event - clean up old caches immediately
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating service worker v25...');
+  console.log('[SW] Activating service worker v26...');
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
@@ -91,9 +91,19 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.startsWith('/assets/')) {
     event.respondWith(
       caches.match(request).then((cachedResponse) => {
-        if (cachedResponse) return cachedResponse;
+        if (cachedResponse) {
+          const type = cachedResponse.headers.get('content-type') || '';
+          // Purge corrupted cached HTML that was saved under a JS asset path
+          if (url.pathname.endsWith('.js') && type.includes('text/html')) {
+            caches.open(STATIC_CACHE).then((c) => c.delete(request));
+          } else {
+            return cachedResponse;
+          }
+        }
         return fetch(request).then((response) => {
-          if (response.status === 200) {
+          const type = response.headers.get('content-type') || '';
+          // ONLY cache legitimate JS, CSS, fonts or media. NEVER cache 404 or text/html as JS!
+          if (response.status === 200 && (!url.pathname.endsWith('.js') || type.includes('javascript'))) {
             const clone = response.clone();
             caches.open(STATIC_CACHE).then((cache) => cache.put(request, clone));
           }
@@ -104,19 +114,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // For navigation requests, use network first with offline fallback
+  // For navigation requests, ALWAYS fetch directly from network without caching HTML
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const clonedResponse = response.clone();
-          caches.open(DYNAMIC_CACHE).then((cache) => {
-            cache.put(request, clonedResponse);
-          });
-          return response;
-        })
+      fetch(request, { cache: 'no-cache' })
         .catch(() => {
-          return caches.match(request).then((cachedResponse) => {
+          return caches.match('/index.html').then((cachedResponse) => {
             return cachedResponse || caches.match('/');
           });
         })
