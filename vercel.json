@@ -3,19 +3,6 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "redirects": [
-    {
-      "source": "/:path*",
-      "has": [
-        {
-          "type": "host",
-          "value": "www.durtup.shop"
-        }
-      ],
-      "destination": "https://durtup.shop/:path*",
-      "permanent": true
-    }
-  ],
   "rewrites": [
     { "source": "/api/mohasagor/:path*", "destination": "https://mohasagor.com.bd/:path*" },
     { "source": "/api/ecomseller/:path*", "destination": "https://ecomsellerbd.com/:path*" },
