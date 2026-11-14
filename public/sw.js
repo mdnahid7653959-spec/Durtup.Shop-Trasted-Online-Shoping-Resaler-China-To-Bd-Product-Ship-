@@ -1,257 +1,32 @@
-const CACHE_NAME = 'durtup-v27';
-const STATIC_CACHE = 'durtup-static-v27';
-const DYNAMIC_CACHE = 'durtup-dynamic-v27';
+// Durtup.shop Self-Healing Service Worker
+// Automatically purges corrupted/stale chunk caches, unregisters legacy workers, and restores direct network speed
 
-// Assets to cache immediately on SW install (Never cache HTML pages to prevent stale UI)
-const STATIC_ASSETS = [
-  '/manifest.json',
-  '/durtup-logo.svg',
-  '/icon-192.png',
-  '/icon-512.png',
-  '/banners/hero-banner-1.webp',
-  '/banners/hero-banner-2.webp',
-];
-
-// Install event - cache static assets
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing service worker v27...');
-  event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) => {
-      console.log('[SW] Caching static assets');
-      return cache.addAll(STATIC_ASSETS);
-    })
-  );
   self.skipWaiting();
 });
 
-// Activate event - clean up old caches immediately and claim clients
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating service worker v27 and purging old caches...');
   event.waitUntil(
     caches.keys().then((keys) => {
-      return Promise.all(
-        keys.map((key) => {
-          console.log('[SW] Removing cache:', key);
-          return caches.delete(key);
-        })
-      );
+      console.log('[SW] Purging all legacy caches:', keys);
+      return Promise.all(keys.map((key) => caches.delete(key)));
+    }).then(() => {
+      return self.registration.unregister();
     }).then(() => {
       return self.clients.claim();
+    }).then(() => {
+      return self.clients.matchAll({ type: 'window' }).then((clients) => {
+        clients.forEach((client) => {
+          if (client.url && client.navigate) {
+            client.navigate(client.url);
+          }
+        });
+      });
     })
   );
 });
 
-// Fetch event
+// Pass through all network requests directly - NEVER intercept or poison dynamic JS chunks
 self.addEventListener('fetch', (event) => {
-  const { request } = event;
-  const url = new URL(request.url);
-
-  // Skip non-GET requests
-  if (request.method !== 'GET') return;
-
-  // Skip chrome-extension and other non-http requests
-  if (!request.url.startsWith('http')) return;
-
-  // Skip Vite dev module files (prevents blank screens in local development)
-  if (
-    url.pathname.startsWith('/src/') ||
-    url.pathname.includes('/node_modules/') ||
-    url.pathname.startsWith('/@') ||
-    url.pathname.endsWith('.ts') ||
-    url.pathname.endsWith('.tsx') ||
-    url.searchParams.has('v')
-  ) {
-    return;
-  }
-
-  // Skip API requests from caching
-  if (url.pathname.startsWith('/rest/') || url.hostname.includes('supabase') || url.pathname.startsWith('/api/')) {
-    return;
-  }
-
-  // Stale-While-Revalidate for catalog slim (instant load on revisit)
-  if (url.pathname === '/mohasagor_catalog_slim.json') {
-    event.respondWith(
-      caches.open(DYNAMIC_CACHE).then(async (cache) => {
-        const cached = await cache.match(request);
-        const fetchPromise = fetch(request).then((response) => {
-          if (response.status === 200) {
-            cache.put(request, response.clone());
-          }
-          return response;
-        }).catch(() => cached);
-        return cached || fetchPromise;
-      })
-    );
-    return;
-  }
-
-  // Production hashed assets (/assets/...) - Cache First (immutable)
-  if (url.pathname.startsWith('/assets/')) {
-    // Rescue chunks should always fetch fresh from network
-    if (url.pathname.includes('ProductDetail-DQQf-Spg.js')) {
-      event.respondWith(fetch(request));
-      return;
-    }
-    event.respondWith(
-      caches.match(request).then((cachedResponse) => {
-        if (cachedResponse) {
-          const type = cachedResponse.headers.get('content-type') || '';
-          // Purge corrupted cached HTML that was saved under a JS asset path
-          if (url.pathname.endsWith('.js') && type.includes('text/html')) {
-            caches.open(STATIC_CACHE).then((c) => c.delete(request));
-          } else {
-            return cachedResponse;
-          }
-        }
-        return fetch(request).then((response) => {
-          const type = response.headers.get('content-type') || '';
-          // ONLY cache legitimate JS, CSS, fonts or media. NEVER cache 404 or text/html as JS!
-          if (response.status === 200 && (!url.pathname.endsWith('.js') || type.includes('javascript'))) {
-            const clone = response.clone();
-            caches.open(STATIC_CACHE).then((cache) => cache.put(request, clone));
-          }
-          return response;
-        });
-      })
-    );
-    return;
-  }
-
-  // For navigation requests, ALWAYS fetch directly from network without caching HTML
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request, { cache: 'no-cache' })
-        .catch(() => {
-          return caches.match('/index.html').then((cachedResponse) => {
-            return cachedResponse || caches.match('/');
-          });
-        })
-    );
-    return;
-  }
-
-  // Static images & fonts - Cache First with background refresh
-  if (
-    request.destination === 'image' ||
-    request.destination === 'font' ||
-    request.destination === 'style'
-  ) {
-    event.respondWith(
-      caches.match(request).then((cachedResponse) => {
-        if (cachedResponse) {
-          fetch(request).then((response) => {
-            if (response.status === 200 || response.type === 'opaque') {
-              caches.open(DYNAMIC_CACHE).then((cache) => cache.put(request, response));
-            }
-          }).catch(() => {});
-          return cachedResponse;
-        }
-
-        return fetch(request).then((response) => {
-          if (response.status === 200 || response.type === 'opaque') {
-            const clonedResponse = response.clone();
-            caches.open(DYNAMIC_CACHE).then((cache) => {
-              cache.put(request, clonedResponse);
-            });
-          }
-          return response;
-        });
-      })
-    );
-    return;
-  }
-
-  // Default: network first
-  event.respondWith(
-    fetch(request)
-      .then((response) => {
-        const clonedResponse = response.clone();
-        caches.open(DYNAMIC_CACHE).then((cache) => {
-          cache.put(request, clonedResponse);
-        });
-        return response;
-      })
-      .catch(() => {
-        return caches.match(request);
-      })
-  );
+  event.respondWith(fetch(event.request));
 });
-
-// Handle rich push notifications (with product images & sound/vibrate)
-self.addEventListener('push', (event) => {
-  if (!event.data) return;
-
-  try {
-    const data = event.data.json();
-    const title = data.title || '🛍️ New Order Received - Durtup.shop';
-    const prodImg = data.image || data.product_image;
-
-    event.waitUntil(
-      self.registration.showNotification(title, {
-        body: data.body || 'A new order has been placed on Durtup.shop!',
-        icon: prodImg || '/durtup-logo.png',
-        badge: '/durtup-logo.png',
-        image: prodImg || undefined,
-        vibrate: [400, 150, 400, 150, 400, 150, 800],
-        requireInteraction: true,
-        tag: data.tag || `durtup-${Date.now()}`,
-        data: {
-          url: data.url || '/admin/orders',
-          order_id: data.order_id
-        },
-        actions: [
-          { action: 'view_order', title: '🛍️ View Order' },
-          { action: 'open_admin', title: '⚡ Open Admin' }
-        ]
-      })
-    );
-  } catch (err) {
-    console.warn('[SW] Push notification parse error:', err);
-  }
-});
-
-// Handle custom messages from web app (Customer & Admin push notifications)
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
-    const payload = event.data.payload || {};
-    const prodImg = payload.image || payload.product_image || '/durtup-logo.png';
-    const targetUrl = (payload.data && payload.data.url) || '/';
-
-    self.registration.showNotification(payload.title || '🛍️ Durtup.shop - অর্ডার সফল হয়েছে!', {
-      body: payload.body || 'আপনার অর্ডারটি সফলভাবে গ্রহণ করা হয়েছে।',
-      icon: '/icon-192.png',
-      badge: '/favicon-32x32.png',
-      image: prodImg,
-      vibrate: [400, 150, 400, 150, 400, 150, 800],
-      requireInteraction: true,
-      tag: payload.tag || `durtup-msg-${Date.now()}`,
-      data: payload.data || { url: targetUrl }
-    });
-  }
-});
-
-// Handle notification clicks
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-  
-  const targetUrl = (event.notification.data && event.notification.data.url) || '/';
-  
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      for (let i = 0; i < windowClients.length; i++) {
-        const client = windowClients[i];
-        if ('focus' in client) {
-          if ('navigate' in client && targetUrl) {
-            client.navigate(targetUrl);
-          }
-          return client.focus();
-        }
-      }
-      if (clients.openWindow) {
-        return clients.openWindow(targetUrl);
-      }
-    })
-  );
-});
-

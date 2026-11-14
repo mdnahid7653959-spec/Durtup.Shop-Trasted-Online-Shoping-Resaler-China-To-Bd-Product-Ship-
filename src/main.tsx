@@ -83,17 +83,20 @@ if (typeof window !== "undefined") {
   });
 }
 
-// Manage Service Worker: Register for PWA installability and push notifications
+// Proactively unregister any legacy service workers to guarantee direct network access
 if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").then((reg) => {
-      console.log("[Storefront SW] Registered successfully:", reg.scope);
-      // Immediately check for newer service worker version on server
-      reg.update().catch(() => {});
-    }).catch((err) => {
-      console.warn("[Storefront SW] Registration warning:", err);
-    });
-  });
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (const registration of registrations) {
+      registration.unregister();
+    }
+  }).catch(() => {});
+  if ("caches" in window) {
+    caches.keys().then((keys) => {
+      for (const key of keys) {
+        caches.delete(key);
+      }
+    }).catch(() => {});
+  }
 }
 
 const rootElement = document.getElementById("root");

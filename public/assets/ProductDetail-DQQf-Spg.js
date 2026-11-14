@@ -2,11 +2,14 @@
 // Automatically unblocks legacy browsers requesting the old ProductDetail chunk
 if (typeof window !== 'undefined') {
   try {
-    sessionStorage.removeItem('chunk_retry_timestamp');
-    sessionStorage.removeItem('chunk_reload_timestamp');
-    sessionStorage.removeItem('chunk_eb_reload_ts');
-    sessionStorage.removeItem('v_chunk_reload');
-    sessionStorage.removeItem('vite_chunk_reload_ts');
+    sessionStorage.clear();
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(regs) {
+        for (var i = 0; i < regs.length; i++) {
+          regs[i].unregister();
+        }
+      }).catch(function() {});
+    }
 
     if ('caches' in window) {
       caches.keys().then(function(keys) {
