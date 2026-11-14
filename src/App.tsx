@@ -27,6 +27,7 @@ import { EcomsellerAutoSync } from "@/services/suppliers/ecomsellerAutoSync";
 
 // Eager load - Only critical landing page for instant first paint
 import Index from "./pages/Index";
+import ProductDetail from "./pages/ProductDetail";
 
 // Lazy load - customer browsing and auth pages
 const Login = lazy(() => import("./pages/Login"));
@@ -98,7 +99,6 @@ const EnterpriseThemeBuilder = lazy(() => import("./pages/admin/enterprise/Enter
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
-const ProductDetail = lazy(() => import("./pages/ProductDetail"));
 const CJProductDetail = lazy(() => import("./pages/CJProductDetail"));
 const CJProducts = lazy(() => import("./pages/CJProducts"));
 const Cart = lazy(() => import("./pages/Cart"));

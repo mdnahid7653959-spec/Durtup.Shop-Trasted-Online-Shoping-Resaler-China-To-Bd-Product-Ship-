@@ -6,7 +6,7 @@ const routeLoaders: Record<string, () => Promise<any>> = {
   "/products": () => import("@/pages/Products"),
   "/categories": () => import("@/pages/Categories"),
   "/category": () => import("@/pages/CategoryPage"),
-  "/product": () => import("@/pages/ProductDetail"),
+  "/product": () => Promise.resolve(),
   "/cart": () => import("@/pages/Cart"),
   "/checkout": () => import("@/pages/Checkout"),
   "/account": () => import("@/pages/Account"),
