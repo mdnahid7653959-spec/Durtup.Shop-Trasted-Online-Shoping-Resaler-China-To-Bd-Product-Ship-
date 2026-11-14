@@ -423,53 +423,58 @@ function ProductDetailContent() {
   const preloaded = (location.state as any)?.preloadedProduct;
 
   const initialProd = (() => {
-    if (preloaded) {
-      const mappedImages = mapSupplierImages(preloaded);
-      const mapped = mapSupplierProduct(preloaded, preloaded.slug || slug || "", mappedImages);
-      if (mappedImages.length > 1) {
-        saveFastProduct(mapped);
-      }
-      return mapped;
-    }
-    if (slug) {
-      const targetLower = String(slug).toLowerCase().trim();
-      const suffixMatch = targetLower.match(/-(\d+)$/);
-      const cleanId = targetLower.replace(/^product-/, "").replace(/^supplier-/, "").replace(/^cj_/, "").replace(/^cj-/, "").replace(/^ecom-/, "").replace(/^ecom_/, "");
-      const extractedId = suffixMatch ? suffixMatch[1] : (/^\d+$/.test(cleanId) ? cleanId : "");
-
-      // 1. Instant 0ms memory & session/local storage check (only if multi-image)
-      const fast = getFastProduct(slug) || 
-        (extractedId ? getFastProduct(extractedId) : null) || 
-        (cleanId ? getFastProduct(cleanId) : null);
-      if (fast && ((fast.product_images && fast.product_images.length > 1) || ((fast as any).images && (fast as any).images.length > 1))) {
-        return fast;
-      }
-
-      const cached = findMohasagorProductSync(slug) || 
-        (extractedId ? findMohasagorProductSync(extractedId) : null) || 
-        (cleanId ? findMohasagorProductSync(cleanId) : null) ||
-        (cleanId ? findMohasagorProductSync(`ecom-${cleanId}`) : null);
-
-      if (cached) {
-        const mappedImages = mapSupplierImages(cached);
-        const mapped = mapSupplierProduct(cached, cached.slug || slug, mappedImages);
+    try {
+      if (preloaded) {
+        const mappedImages = mapSupplierImages(preloaded);
+        const mapped = mapSupplierProduct(preloaded, preloaded.slug || slug || "", mappedImages);
         if (mappedImages.length > 1) {
           saveFastProduct(mapped);
         }
         return mapped;
       }
+      if (slug) {
+        const targetLower = String(slug).toLowerCase().trim();
+        const suffixMatch = targetLower.match(/-(\d+)$/);
+        const cleanId = targetLower.replace(/^product-/, "").replace(/^supplier-/, "").replace(/^cj_/, "").replace(/^cj-/, "").replace(/^ecom-/, "").replace(/^ecom_/, "");
+        const extractedId = suffixMatch ? suffixMatch[1] : (/^\d+$/.test(cleanId) ? cleanId : "");
 
-      if (fast) return fast;
+        // 1. Instant 0ms memory & session/local storage check (only if multi-image)
+        const fast = getFastProduct(slug) || 
+          (extractedId ? getFastProduct(extractedId) : null) || 
+          (cleanId ? getFastProduct(cleanId) : null);
+        if (fast && ((fast.product_images && fast.product_images.length > 1) || ((fast as any).images && (fast as any).images.length > 1))) {
+          return fast;
+        }
+
+        const cached = findMohasagorProductSync(slug) || 
+          (extractedId ? findMohasagorProductSync(extractedId) : null) || 
+          (cleanId ? findMohasagorProductSync(cleanId) : null) ||
+          (cleanId ? findMohasagorProductSync(`ecom-${cleanId}`) : null);
+
+        if (cached) {
+          const mappedImages = mapSupplierImages(cached);
+          const mapped = mapSupplierProduct(cached, cached.slug || slug, mappedImages);
+          if (mappedImages.length > 1) {
+            saveFastProduct(mapped);
+          }
+          return mapped;
+        }
+
+        if (fast) return fast;
+      }
+    } catch (e) {
+      console.warn("Failed to compute initialProd synchronously:", e);
     }
     return null;
   })();
 
   const initialVariantState = (() => {
-    if (initialProd?.product_variants && initialProd.product_variants.length > 0) {
+    if (initialProd?.product_variants && Array.isArray(initialProd.product_variants) && initialProd.product_variants.length > 0) {
       const initial: Record<string, string> = {};
-      const attrs = Array.from(new Set(initialProd.product_variants.map(v => v.attribute)));
+      const validVariants = initialProd.product_variants.filter((v): v is ProductVariant => Boolean(v && v.attribute && v.variant));
+      const attrs = Array.from(new Set(validVariants.map(v => v.attribute)));
       attrs.forEach(attr => {
-        const attrValues = initialProd.product_variants!.filter(v => v.attribute === attr).map(v => v.variant);
+        const attrValues = validVariants.filter(v => v.attribute === attr).map(v => v.variant);
         const sorted = sortVariantValues(attr, attrValues);
         if (sorted.length > 0) initial[attr] = sorted[0];
       });
@@ -517,15 +522,6 @@ function ProductDetailContent() {
       thumbnailScrollRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
     }
   };
-
-  // Immediate cached image sync: if browser already cached image, avoid any white opacity-0 state
-  useEffect(() => {
-    const img = mainImgRef.current;
-    if (img && img.complete && img.naturalWidth > 0 && !isCurrentMainLoaded) {
-      setLoadedMainImages(prev => ({ ...prev, [currentImage]: true }));
-      setPrevImage(currentImage);
-    }
-  }, [currentImage, isCurrentMainLoaded]);
 
   // Enable real-time sync for this product
   useProductRealtimeSync(product?.id);
@@ -673,6 +669,15 @@ function ProductDetailContent() {
   const images = galleryImages.length > 0 ? galleryImages : initialImages;
   const currentImage = images[selectedImage] || images[0] || "";
   const isCurrentMainLoaded = Boolean(loadedMainImages[currentImage]);
+
+  // Immediate cached image sync: if browser already cached image, avoid any white opacity-0 state
+  useEffect(() => {
+    const img = mainImgRef.current;
+    if (img && img.complete && img.naturalWidth > 0 && !isCurrentMainLoaded) {
+      setLoadedMainImages(prev => ({ ...prev, [currentImage]: true }));
+      setPrevImage(currentImage);
+    }
+  }, [currentImage, isCurrentMainLoaded]);
 
   // Preload hero above-the-fold image immediately
   useEffect(() => {
@@ -839,11 +844,12 @@ function ProductDetailContent() {
       if (ogImg && firstImg) ogImg.setAttribute("content", firstImg);
     }
 
-    if (variants && variants.length > 0) {
+    if (variants && Array.isArray(variants) && variants.length > 0) {
       const initial: Record<string, string> = {};
-      const attrs = Array.from(new Set(variants.map(v => v.attribute)));
+      const validVariants = variants.filter((v: any) => Boolean(v && v.attribute && v.variant));
+      const attrs = Array.from(new Set(validVariants.map(v => v.attribute)));
       attrs.forEach(attr => {
-        const attrValues = variants.filter(v => v.attribute === attr).map(v => v.variant);
+        const attrValues = validVariants.filter(v => v.attribute === attr).map(v => v.variant);
         const sorted = sortVariantValues(attr, attrValues);
         if (sorted.length > 0) {
           initial[attr] = sorted[0];
