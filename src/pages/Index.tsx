@@ -12,6 +12,7 @@ import { Clock } from "lucide-react";
 import { InfiniteProductFeed } from "@/components/home/InfiniteProductFeed";
 import { HomeMidBanner } from "@/components/home/HomeMidBanner";
 import { SEOHead } from "@/components/SEOHead";
+import { FAST_SEED_PRODUCTS } from "@/data/fastSeedCatalog";
 
 const SectionSkeleton = () => (
   <div className="py-3 sm:py-5">
@@ -47,13 +48,15 @@ const Index = () => {
     if (data?.allProducts && data.allProducts.length > 0) {
       return data.allProducts;
     }
-    return [
+    const combined = [
       ...(data?.trending || []),
       ...(data?.featured || []),
       ...(data?.flashSale || []),
       ...(data?.latestProducts || []),
       ...(data?.recommended || []),
     ];
+    if (combined.length > 0) return combined;
+    return FAST_SEED_PRODUCTS;
   }, [data]);
 
   return (
@@ -79,21 +82,21 @@ const Index = () => {
           </section>
         )}
 
-        {/* 2. Hero Banner (Sunset Gadget Showcase) */}
+        {/* 2. Hero Banner (Sunset Gadget Showcase + Featured Side Products) */}
         <HeroBanner />
 
-        {/* 3. Trust & Service Feature Strip */}
-        <TrustBadges />
-
-        {/* 4. Flash Sale Header + 8 Quick Category Shortcut Cards */}
-        <FlashSaleSection />
-
-        {/* 5. Deal of the Day Product Carousel */}
-        {isLoading ? (
+        {/* 3. Deal of the Day Product Carousel - Products immediately visible upon entering the site! */}
+        {isLoading && (!dealProducts || dealProducts.length === 0) ? (
           <SectionSkeleton />
         ) : (
           <DealOfTheDaySection products={dealProducts} />
         )}
+
+        {/* 4. Quick Category Shortcut Cards */}
+        <FlashSaleSection />
+
+        {/* 5. Trust & Service Feature Strip */}
+        <TrustBadges />
 
         {/* 6. Popular Categories Showcase (4 Pastel Banners) */}
         <PopularCategoriesSection />

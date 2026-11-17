@@ -1,20 +1,100 @@
 import { useEffect, useState, useRef } from "react";
 import { Loader2 } from "lucide-react";
 import { ProductCard, type Product } from "@/components/products/ProductCard";
-import { getCachedMohasagorProducts, interleaveCatalogs } from "@/utils/mohasagorCache";
+import { getCachedMohasagorProducts, interleaveCatalogs, getSyncProducts } from "@/utils/mohasagorCache";
 import { EcomsellerEngine } from "@/services/suppliers/ecomsellerEngine";
 import { prefetchProductImages } from "@/utils/productImageHelper";
 import { FAST_SEED_PRODUCTS } from "@/data/fastSeedCatalog";
 
 const BATCH_SIZE = 18;
 
+// Keep catalog & loaded products in memory so returning from product details restores immediately without re-fetch flash
+let cachedFeedAllCatalog: Product[] = [];
+let cachedFeedDisplayedProducts: Product[] = [];
+let cachedFeedPage = 1;
+let cachedFeedHasMore = true;
+let cachedFeedScrollY = 0;
+
 export function InfiniteProductFeed() {
-  const [allCatalog, setAllCatalog] = useState<Product[]>(() => FAST_SEED_PRODUCTS);
-  const [displayedProducts, setDisplayedProducts] = useState<Product[]>(() => FAST_SEED_PRODUCTS.slice(0, BATCH_SIZE));
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const [allCatalog, setAllCatalog] = useState<Product[]>(() => {
+    if (cachedFeedAllCatalog.length > 0) return cachedFeedAllCatalog;
+    const sync = getSyncProducts();
+    if (sync && sync.length > 10) {
+      cachedFeedAllCatalog = sync;
+      return sync;
+    }
+    return FAST_SEED_PRODUCTS;
+  });
+  const [displayedProducts, setDisplayedProducts] = useState<Product[]>(() => {
+    if (cachedFeedDisplayedProducts.length > 0) return cachedFeedDisplayedProducts;
+    const sync = getSyncProducts();
+    if (sync && sync.length > 10) {
+      const batch = sync.slice(0, BATCH_SIZE);
+      cachedFeedDisplayedProducts = batch;
+      return batch;
+    }
+    return FAST_SEED_PRODUCTS.slice(0, BATCH_SIZE);
+  });
+  const [page, setPage] = useState(() => cachedFeedPage);
+  const [hasMore, setHasMore] = useState(() => cachedFeedHasMore);
 
   const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // Restore scroll position when returning from product page
+  useEffect(() => {
+    const savedScrollY = cachedFeedScrollY || Number(sessionStorage.getItem("durtup_feed_scroll_y") || 0);
+    const lastClicked = sessionStorage.getItem("durtup_last_clicked_product");
+
+    if (savedScrollY > 0 || lastClicked) {
+      const attemptRestore = () => {
+        if (lastClicked) {
+          const targetEl =
+            document.getElementById(`product-card-${lastClicked}`) ||
+            document.querySelector(`[data-product-id="${lastClicked}"]`) ||
+            document.querySelector(`[data-product-slug="${lastClicked}"]`);
+          if (targetEl) {
+            targetEl.scrollIntoView({ block: "center", behavior: "auto" });
+            sessionStorage.removeItem("durtup_last_clicked_product");
+            return true;
+          }
+        }
+        if (savedScrollY > 0) {
+          window.scrollTo({ top: savedScrollY, behavior: "auto" });
+          return true;
+        }
+        return false;
+      };
+
+      // Try immediately, then retry after layout paint
+      if (!attemptRestore()) {
+        const timer = setTimeout(attemptRestore, 60);
+        const secondTimer = setTimeout(attemptRestore, 200);
+        return () => {
+          clearTimeout(timer);
+          clearTimeout(secondTimer);
+        };
+      }
+    }
+  }, []);
+
+  // Save scroll position on scroll & unmount
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 150) {
+        cachedFeedScrollY = window.scrollY;
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (window.scrollY > 150) {
+        cachedFeedScrollY = window.scrollY;
+        try {
+          sessionStorage.setItem("durtup_feed_scroll_y", String(window.scrollY));
+        } catch {}
+      }
+    };
+  }, []);
 
   // Load initial products from both supplier caches
   useEffect(() => {
@@ -27,8 +107,24 @@ export function InfiniteProductFeed() {
         const products = interleaveCatalogs(mohasagor, ecomseller);
         if (products && products.length > 0) {
           setAllCatalog(products);
-          setDisplayedProducts(products.slice(0, BATCH_SIZE));
-          setHasMore(products.length > BATCH_SIZE);
+          cachedFeedAllCatalog = products;
+
+          setDisplayedProducts((prev) => {
+            if (cachedFeedDisplayedProducts.length > 0) {
+              return cachedFeedDisplayedProducts;
+            }
+            const initialBatch = products.slice(0, BATCH_SIZE);
+            cachedFeedDisplayedProducts = initialBatch;
+            return initialBatch;
+          });
+
+          setHasMore(() => {
+            const currentCount = cachedFeedDisplayedProducts.length > 0 ? cachedFeedDisplayedProducts.length : BATCH_SIZE;
+            const more = products.length > currentCount;
+            cachedFeedHasMore = more;
+            return more;
+          });
+
           // Defer background warming slightly so visible cards render instantly with full priority
           setTimeout(() => {
             prefetchProductImages(products.slice(BATCH_SIZE, BATCH_SIZE + 12), 12);
@@ -90,10 +186,15 @@ export function InfiniteProductFeed() {
     if (!hasMore || allCatalog.length === 0) return;
     const nextPage = page + 1;
     const nextBatch = allCatalog.slice(0, nextPage * BATCH_SIZE);
+    const more = nextBatch.length < allCatalog.length;
 
     setDisplayedProducts(nextBatch);
     setPage(nextPage);
-    setHasMore(nextBatch.length < allCatalog.length);
+    setHasMore(more);
+
+    cachedFeedDisplayedProducts = nextBatch;
+    cachedFeedPage = nextPage;
+    cachedFeedHasMore = more;
   };
 
   // IntersectionObserver for Infinite Scroll with large 1000px look-ahead
@@ -128,7 +229,7 @@ export function InfiniteProductFeed() {
       {/* Grid Layout */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
         {displayedProducts.map((product, idx) => (
-          <ProductCard key={`${product.id}-${idx}`} product={product} priority={idx < 6} />
+          <ProductCard key={`${product.id}-${idx}`} product={product} index={idx} priority={idx < 12} />
         ))}
       </div>
 

@@ -4,6 +4,7 @@ import { auth, db } from "@/integrations/firebase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { findMohasagorProductSync } from "@/utils/mohasagorCache";
+import { getDirectImageUrl, getSmartProductImage } from "@/utils/productImageHelper";
 
 export interface CartItem {
   id: string;
@@ -158,7 +159,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           size: item.size || item.selected_variants?.Size || item.selected_variants?.size || null,
           variant_name: variantName,
           product: prodData,
-          image: item.image || matched?.image || "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=400"
+          image: getDirectImageUrl(item.image || matched?.image || matched?.product_images?.[0]?.image_url) || item.image || matched?.image || getSmartProductImage(prodData.name, "", "")
         };
       });
 
@@ -213,10 +214,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // Determine image
-      const prodImg = (isObject && (productOrId.image || productOrId.product_images?.[0]?.image_url || productOrId.images?.[0])) 
+      // Determine authentic product image
+      const rawCandidate = (isObject && (productOrId.image || productOrId.product_images?.[0]?.image_url || productOrId.images?.[0])) 
         ? (productOrId.image || productOrId.product_images?.[0]?.image_url || productOrId.images?.[0]) 
-        : (targetProd?.image || targetProd?.product_images?.[0]?.image_url || "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=400");
+        : (targetProd?.image || targetProd?.product_images?.[0]?.image_url || targetProd?.images?.[0]);
+      const prodImg = getDirectImageUrl(rawCandidate) || rawCandidate || getSmartProductImage(targetProd?.name || (productOrId as any)?.name || "", "", "");
 
       let updated: CartItem[] = [];
       setItems((prev) => {

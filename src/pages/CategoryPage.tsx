@@ -5,12 +5,12 @@ import { Footer } from "@/components/layout/Footer";
 import { ProductCard, type Product } from "@/components/products/ProductCard";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { 
-  getCachedMohasagorProducts, 
-  getSyncProducts, 
+import {
+  getCachedMohasagorProducts,
+  getSyncProducts,
   filterProductsByCategory,
   hydrateCatalog,
-  isCompleteCatalogReady 
+  isCompleteCatalogReady
 } from "@/utils/mohasagorCache";
 import { SEOHead } from "@/components/SEOHead";
 import { generateCategorySEOTitle, generateCategorySEODescription, DEFAULT_BANGLADESH_PRODUCT_FAQS } from "@/utils/seoHelper";
@@ -329,15 +329,15 @@ export default function CategoryPage() {
         }))}
         faqs={DEFAULT_BANGLADESH_PRODUCT_FAQS}
       />
-      
+
       <Header />
-      
+
       <main className="flex-1 pb-20 md:pb-0">
         <div className="px-3 sm:container py-2.5 sm:py-4">
           {/* Subcategory Pills Row with Water Droplet Theme */}
           {mainCat && mainCat.subcategories.length > 0 && (
             <div className="mb-3 sm:mb-4 select-none">
-              <div 
+              <div
                 ref={subScrollRef}
                 className={cn(
                   "relative flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none py-1 px-1.5 rounded-[24px]",
@@ -365,7 +365,7 @@ export default function CategoryPage() {
                       height: `${subDropletStyle.height}px`,
                     }}
                   >
-                    <div 
+                    <div
                       className={cn(
                         "w-full h-full p-0.5 transition-transform duration-150",
                         isSubDropletSliding && subDropletSlideDir === "right" && "scale-x-[1.12] scale-y-[0.90] origin-left",
@@ -373,7 +373,7 @@ export default function CategoryPage() {
                         !isSubDropletSliding && "scale-100"
                       )}
                     >
-                      <div 
+                      <div
                         className={cn(
                           "w-full h-full rounded-full relative overflow-hidden",
                           "bg-gradient-to-b from-white/95 via-white/45 to-white/75",
@@ -443,7 +443,7 @@ export default function CategoryPage() {
             <div className="space-y-6">
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-4">
                 {products.slice(0, visibleCount).map((product, idx) => (
-                  <ProductCard key={product.id} product={product} priority={idx < 4} />
+                  <ProductCard key={product.id} product={product} index={idx} priority={idx < 4} />
                 ))}
               </div>
               {visibleCount < products.length ? (
@@ -473,15 +473,15 @@ export default function CategoryPage() {
                   : "No products found in this category right now."}
               </p>
               {subcategoryParam ? (
-                <button 
-                  onClick={() => handleSubcategorySelect("")} 
+                <button
+                  onClick={() => handleSubcategorySelect("")}
                   className="text-orange-600 font-bold text-sm mt-3 inline-block hover:underline"
                 >
                   View All {mainCat?.name || "Category"} Products →
                 </button>
               ) : (
-                <Link 
-                  to="/products" 
+                <Link
+                  to="/products"
                   className="text-orange-600 font-bold text-sm mt-3 inline-block hover:underline"
                 >
                   View All Products →
@@ -493,7 +493,7 @@ export default function CategoryPage() {
         </div>
       </main>
 
-      
+
       <Footer />
     </div>
   );

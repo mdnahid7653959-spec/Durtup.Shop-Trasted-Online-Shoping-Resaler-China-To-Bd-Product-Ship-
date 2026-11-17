@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, lazy, Suspense } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigationType } from "react-router-dom";
 import { MobileBottomNav } from "./MobileBottomNav";
 import { useAppHistoryTracker } from "@/hooks/useSmartBack";
 
@@ -16,12 +16,14 @@ export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
   const path = location.pathname.toLowerCase();
   
-  // Scroll to top on page/route navigation only if not already at top
+  const navType = useNavigationType();
+  
+  // Scroll to top on page/route navigation only if not navigating backward (POP)
   useEffect(() => {
-    if (typeof window !== "undefined" && window.scrollY > 0) {
+    if (navType !== "POP" && typeof window !== "undefined" && window.scrollY > 0) {
       window.scrollTo({ top: 0, left: 0, behavior: "instant" });
     }
-  }, [location.pathname, location.search]);
+  }, [location.pathname, location.search, navType]);
 
   // Specific checks to exclude mobile bottom nav & floating chatbot
   const isCheckout = path === "/checkout" || path.startsWith("/checkout/");

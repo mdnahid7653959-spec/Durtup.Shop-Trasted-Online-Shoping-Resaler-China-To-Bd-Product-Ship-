@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { SigmaProductCardData } from "@/server/sigmaServerEngine";
+import { SafeProductImage } from "@/components/products/SafeProductImage";
 
 interface SigmaProductCardProps {
   product: SigmaProductCardData;
@@ -46,13 +47,14 @@ export const SigmaProductCard: React.FC<SigmaProductCardProps> = ({
       {/* Product Image */}
       <Link
         to={productUrl}
-        className="relative w-full aspect-square bg-sky-50/50 rounded-2xl overflow-hidden mb-3 block cursor-pointer border border-sky-100/60"
+        className="relative w-full aspect-square bg-sky-50/50 rounded-2xl overflow-hidden mb-3 block cursor-pointer border border-sky-100/60 p-1"
       >
-        <img
-          src={product.image || "/placeholder.svg"}
-          alt={product.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          loading="lazy"
+        <SafeProductImage
+          product={product as any}
+          width={240}
+          height={240}
+          fit="contain"
+          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
         />
       </Link>
 

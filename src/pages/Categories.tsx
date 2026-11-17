@@ -1,21 +1,21 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { 
-  getCachedMohasagorProducts, 
-  getSyncProducts, 
+import {
+  getCachedMohasagorProducts,
+  getSyncProducts,
   filterProductsByCategory,
   hydrateCatalog,
-  isCompleteCatalogReady 
+  isCompleteCatalogReady
 } from "@/utils/mohasagorCache";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { SEOHead } from "@/components/SEOHead";
 import { ProductCard, type Product } from "@/components/products/ProductCard";
 import { supabase } from "@/lib/firebaseAdapter";
-import { 
-  ChevronRight, Loader2, Package, 
-  Smartphone, Shirt, Home, Dumbbell, Gamepad2, 
-  Sparkles, Car, Gem, Baby, Watch, Headphones, 
+import {
+  ChevronRight, Loader2, Package,
+  Smartphone, Shirt, Home, Dumbbell, Gamepad2,
+  Sparkles, Car, Gem, Baby, Watch, Headphones,
   Wrench, ShoppingBag, Gift, Tag, LucideIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -131,7 +131,7 @@ const Categories = () => {
         }))}
       />
       <Header />
-      
+
       <main className="flex-1 pb-20 md:pb-0">
         {/* Mobile: Split sidebar + subcategories + products */}
         <div className="md:hidden flex h-[calc(100vh-60px-60px)]">
@@ -234,8 +234,8 @@ const Categories = () => {
                   </div>
                 ) : products.length > 0 ? (
                   <div className="grid grid-cols-2 gap-1.5">
-                    {products.map((product) => (
-                      <ProductCard key={product.id} product={product} />
+                    {products.map((product, idx) => (
+                      <ProductCard key={product.id} product={product} index={idx} />
                     ))}
                   </div>
                 ) : (
@@ -264,14 +264,14 @@ const Categories = () => {
               {categories.length} Major Categories
             </span>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {categories.map((category) => {
               const IconComponent = getCategoryIcon(category.slug);
 
               return (
-                <div 
-                  key={category.id} 
+                <div
+                  key={category.id}
                   className="bg-card rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-2xs hover:shadow-md transition-all hover:border-orange-500/40 flex flex-col justify-between group"
                 >
                   <div>
@@ -291,7 +291,7 @@ const Categories = () => {
                         />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <Link 
+                        <Link
                           to={`/category/${category.slug}`}
                           className="font-extrabold text-base sm:text-lg text-foreground group-hover:text-orange-600 transition-colors block truncate"
                         >

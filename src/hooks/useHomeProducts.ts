@@ -144,7 +144,6 @@ function mapDbProduct(p: ProductWithImages, index: number): Product {
 }
 
 function mapSupplierProduct(p: any, index: number): Product {
-  const base = "https://mohasagor.com.bd";
   const resolveUrl = (url: any): string => {
     if (!url || typeof url !== "string") return "";
     const trimmed = url.trim();
@@ -153,7 +152,15 @@ function mapSupplierProduct(p: any, index: number): Product {
       return trimmed;
     }
     if (trimmed.startsWith("//")) return `https:${trimmed}`;
-    return trimmed.startsWith("/") ? `${base}${trimmed}` : `${base}/${trimmed}`;
+    if (trimmed.startsWith("/uploads/") || trimmed.startsWith("uploads/")) {
+      const path = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+      return `https://ecomsellerbd.com${path}`;
+    }
+    if (trimmed.startsWith("/public/storage/") || trimmed.startsWith("public/storage/") || trimmed.startsWith("/storage/") || trimmed.startsWith("storage/")) {
+      const path = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+      return `https://mohasagor.com.bd${path}`;
+    }
+    return trimmed.startsWith("/") ? `https://mohasagor.com.bd${trimmed}` : `https://mohasagor.com.bd/${trimmed}`;
   };
 
   // Get the best image available from all potential properties
@@ -171,6 +178,35 @@ function mapSupplierProduct(p: any, index: number): Product {
   }
 
   const image = rawFirstImg || getSmartProductImage(p.name, "", p.category || "", index);
+
+  // Sanitize all image arrays as well
+  const sanitizedImages: string[] = [];
+  if (Array.isArray(p.images)) {
+    p.images.forEach((img: any) => {
+      const resolved = resolveUrl(typeof img === "string" ? img : img?.image_url || img?.image || img?.url || img?.product_image);
+      if (resolved && !sanitizedImages.includes(resolved)) sanitizedImages.push(resolved);
+    });
+  }
+  if (image && !sanitizedImages.includes(image)) {
+    sanitizedImages.unshift(image);
+  }
+
+  const sanitizedProductImages = Array.isArray(p.product_images) && p.product_images.length > 0
+    ? p.product_images.map((img: any, idx: number) => {
+        const u = resolveUrl(typeof img === "string" ? img : img?.product_image || img?.image_url || img?.image || img?.url);
+        return {
+          id: `img-${idx}`,
+          image_url: u || image,
+          is_primary: idx === 0,
+          sort_order: idx
+        };
+      })
+    : sanitizedImages.map((u, idx) => ({
+        id: `img-${idx}`,
+        image_url: u,
+        is_primary: idx === 0,
+        sort_order: idx
+      }));
 
   let price = 0;
   let originalPrice: number | undefined = undefined;
@@ -193,6 +229,8 @@ function mapSupplierProduct(p: any, index: number): Product {
     name: p.name,
     slug: p.slug || `product-${p.id}`,
     image,
+    images: sanitizedImages.length > 0 ? sanitizedImages : (image ? [image] : []),
+    product_images: sanitizedProductImages,
     price,
     originalPrice: (originalPrice && originalPrice > price) ? originalPrice : undefined,
     rating: 4.8,
@@ -283,13 +321,13 @@ function buildSections(products: Product[]) {
 
 import { FAST_SEED_PRODUCTS } from "@/data/fastSeedCatalog";
 
-const CACHE_KEY = "mohasagor_cached_home_products_v14";
+const CACHE_KEY = "mohasagor_cached_home_products_v15";
 const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes 
 
 // Auto cleanup legacy cached versions
 if (typeof window !== "undefined") {
   try {
-    ["v11", "v12", "v13"].forEach(v => {
+    ["v11", "v12", "v13", "v14"].forEach(v => {
       localStorage.removeItem(`mohasagor_cached_home_products_${v}`);
     });
   } catch {}

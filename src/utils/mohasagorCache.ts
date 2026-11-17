@@ -1,6 +1,6 @@
 import type { Product } from "@/components/products/ProductCard";
 import { calculateProductPrice } from "@/utils/pricingMargin";
-import { getSmartProductImage } from "@/utils/productImageHelper";
+import { getSmartProductImage, KNOWN_DEAD_ORIGIN_URLS, globalFailedImageUrls } from "@/utils/productImageHelper";
 import { extractProductVariants } from "@/utils/productVariantHelper";
 import { FAST_SEED_PRODUCTS } from "@/data/fastSeedCatalog";
 export { FAST_SEED_PRODUCTS };
@@ -254,8 +254,19 @@ export function findSeriesImages(productName: string, existingImages: string[] =
         ? m.images
         : (m.image_url || m.image ? [m.image_url || m.image] : []);
 
-      for (const rawUrl of rawImgs) {
-        if (!rawUrl || typeof rawUrl !== "string") continue;
+      // Sort so JPGs are prioritized over heavy PNGs
+      const sortedImgs = [...rawImgs].sort((a: any, b: any) => {
+        const aStr = typeof a === "string" ? a : "";
+        const bStr = typeof b === "string" ? b : "";
+        const aIsJpg = aStr.endsWith(".jpg") || aStr.endsWith(".jpeg");
+        const bIsJpg = bStr.endsWith(".jpg") || bStr.endsWith(".jpeg");
+        if (aIsJpg && !bIsJpg) return -1;
+        if (!aIsJpg && bIsJpg) return 1;
+        return 0;
+      });
+
+      for (const rawUrl of sortedImgs) {
+        if (!rawUrl || typeof rawUrl !== "string" || KNOWN_DEAD_ORIGIN_URLS.has(rawUrl) || globalFailedImageUrls.has(rawUrl)) continue;
         const k = addKey(rawUrl);
         if (k && !addedKeys.has(k)) {
           addedKeys.add(k);
@@ -301,7 +312,7 @@ export function findSeriesImages(productName: string, existingImages: string[] =
       : (m.image_url || m.image ? [m.image_url || m.image] : []);
 
     for (const rawUrl of rawImgs) {
-      if (!rawUrl || typeof rawUrl !== "string") continue;
+      if (!rawUrl || typeof rawUrl !== "string" || KNOWN_DEAD_ORIGIN_URLS.has(rawUrl) || globalFailedImageUrls.has(rawUrl)) continue;
       const k = addKey(rawUrl);
       if (k && !addedKeys.has(k)) {
         addedKeys.add(k);
@@ -768,6 +779,14 @@ export function mapSingleRawProduct(p: any, base: string = "https://mohasagor.co
       return trimmed;
     }
     if (trimmed.startsWith("//")) return `https:${trimmed}`;
+    if (trimmed.startsWith("/uploads/") || trimmed.startsWith("uploads/")) {
+      const path = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+      return `https://ecomsellerbd.com${path}`;
+    }
+    if (trimmed.startsWith("/public/storage/") || trimmed.startsWith("public/storage/") || trimmed.startsWith("/storage/") || trimmed.startsWith("storage/")) {
+      const path = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+      return `https://mohasagor.com.bd${path}`;
+    }
     return trimmed.startsWith("/") ? `${base}${trimmed}` : `${base}/${trimmed}`;
   };
 

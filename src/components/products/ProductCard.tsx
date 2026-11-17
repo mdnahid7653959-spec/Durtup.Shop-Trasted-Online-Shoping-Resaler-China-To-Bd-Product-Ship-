@@ -1,4 +1,4 @@
-import { memo, useState, useMemo } from "react";
+import { memo, useState, useMemo, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Heart, Star, ShoppingCart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -39,10 +39,76 @@ import { SafeProductImage } from "@/components/products/SafeProductImage";
 interface ProductCardProps {
   product: Product;
   priority?: boolean;
+  index?: number;
 }
 
-function ProductCardComponent({ product, priority = false }: ProductCardProps) {
+/**
+ * Extracts distinct variant / color / model tag from product name
+ * e.g. "OLEVS 9931G (Blue Dial)" -> { baseName: "OLEVS 9931G", variantTag: "Blue Dial" }
+ */
+function extractVariantBadge(name: string): { baseName: string; variantTag: string | null } {
+  if (!name) return { baseName: "", variantTag: null };
+
+  const parenMatch = name.match(/[\(\[]\s*([^()\[\]]{2,30})\s*[\)\]]/);
+  if (parenMatch && parenMatch[1]) {
+    const tag = parenMatch[1].trim();
+    if (/dial|black|white|blue|gold|golden|silver|red|green|navy|camo|ash|color|edition|combo|set|pack|pro|ultra|max/i.test(tag) || tag.length <= 16) {
+      const baseName = name.replace(parenMatch[0], "").replace(/\s{2,}/g, " ").trim();
+      return { baseName, variantTag: tag };
+    }
+  }
+
+  const dashMatch = name.match(/[-–]\s*([A-Za-z0-9\s]{2,20})$/);
+  if (dashMatch && dashMatch[1]) {
+    const tag = dashMatch[1].trim();
+    if (!/product|shop|bangladesh|online|bd/i.test(tag)) {
+      const baseName = name.replace(dashMatch[0], "").trim();
+      return { baseName, variantTag: tag };
+    }
+  }
+
+  return { baseName: name, variantTag: null };
+}
+
+function ProductCardComponent({ product, priority = false, index = 0 }: ProductCardProps) {
   const navigate = useNavigate();
+  const cardRef = useRef<HTMLDivElement>(null);
+  const isNearFold = priority || index < 18;
+  const [isVisible, setIsVisible] = useState(() => isNearFold);
+
+  // Progressive scroll-triggered entrance animation for cards below fold
+  useEffect(() => {
+    if (isVisible) return;
+    const el = cardRef.current;
+    if (!el) return;
+
+    if (!("IntersectionObserver" in window)) {
+      setIsVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      {
+        threshold: 0.02,
+        rootMargin: "450px 0px 100px 0px",
+      }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isVisible]);
+
+  // Serial stagger delay: 0ms for initial fold products, gentle stagger for scroll batches
+  const staggerDelay = isNearFold ? 0 : Math.min((index % 6) * 35, 140);
+
+  const { baseName, variantTag } = useMemo(() => extractVariantBadge(product.name), [product.name]);
+
   const finalPrice = Math.max(0, Math.round(Number(product.price) || 0));
   const rawOriginal = product.originalPrice ? Math.round(Number(product.originalPrice)) : 0;
   const discount = (rawOriginal > finalPrice && finalPrice > 0)
@@ -72,7 +138,7 @@ function ProductCardComponent({ product, priority = false }: ProductCardProps) {
       (Array.isArray((product as any).variants) && (product as any).variants.length > 0)
     );
     if (hasVariants) {
-      saveFastProduct(product);
+      handleCardClick();
       navigate(`/product/${product.slug || product.id}?action=buy`);
       return;
     }
@@ -94,8 +160,32 @@ function ProductCardComponent({ product, priority = false }: ProductCardProps) {
     saveFastProduct(product);
   };
 
+  const handleCardClick = () => {
+    saveFastProduct(product);
+    try {
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("durtup_last_clicked_product", String(product.slug || product.id));
+        sessionStorage.setItem("durtup_feed_scroll_y", String(window.scrollY));
+      }
+    } catch {}
+  };
+
   return (
-    <div className="group relative bg-card rounded-xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 w-full border border-border flex flex-col justify-between">
+    <div
+      ref={cardRef}
+      id={`product-card-${product.slug || product.id}`}
+      data-product-id={product.id}
+      data-product-slug={product.slug}
+      style={{
+        transitionDelay: isVisible ? `${staggerDelay}ms` : "0ms",
+      }}
+      className={cn(
+        "group relative bg-card rounded-xl overflow-hidden hover:shadow-[0_12px_28px_-6px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_12px_28px_-6px_rgba(0,0,0,0.4)] hover:-translate-y-1.5 transition-all duration-300 ease-out will-change-[transform,opacity] w-full border border-border flex flex-col justify-between",
+        isVisible
+          ? "opacity-100 translate-y-0 scale-100"
+          : "opacity-0 translate-y-6 scale-[0.97]"
+      )}
+    >
       <div>
         {/* Badges */}
         <div className="absolute top-1.5 left-1.5 z-10 flex flex-col gap-1 max-w-[calc(100%-48px)] pointer-events-none">
@@ -134,7 +224,7 @@ function ProductCardComponent({ product, priority = false }: ProductCardProps) {
           state={{ preloadedProduct: product }}
           onMouseEnter={handlePreload}
           onTouchStart={handlePreload}
-          onClick={() => saveFastProduct(product)}
+          onClick={handleCardClick}
           className="block"
         >
           <div className="relative aspect-square overflow-hidden bg-white dark:bg-slate-900/60 flex items-center justify-center p-1.5">
@@ -143,9 +233,9 @@ function ProductCardComponent({ product, priority = false }: ProductCardProps) {
               width={300}
               height={300}
               sizes={PRODUCT_CARD_SIZES}
-              priority={priority}
+              priority={priority || index < 12}
               fit="contain"
-              className="w-full h-full object-contain group-hover:scale-105 transition-all duration-300"
+              className="w-full h-full object-contain group-hover:scale-106 transition-transform duration-500 ease-out"
             />
           </div>
         </Link>
@@ -157,13 +247,18 @@ function ProductCardComponent({ product, priority = false }: ProductCardProps) {
             state={{ preloadedProduct: product }}
             onMouseEnter={handlePreload}
             onTouchStart={handlePreload}
-            onClick={() => saveFastProduct(product)}
+            onClick={handleCardClick}
           >
+            {variantTag && (
+              <span className="inline-block text-[9.5px] font-semibold text-orange-600 dark:text-orange-400 bg-orange-500/10 border border-orange-500/20 rounded px-1.5 py-0.5 mb-1 truncate max-w-full">
+                {variantTag}
+              </span>
+            )}
             <h3 
               title={product.name}
               className="font-medium text-[12px] sm:text-[13px] leading-tight text-foreground line-clamp-2 mb-1.5 min-h-[2rem] hover:text-orange-600 transition-colors break-words"
             >
-              {product.name}
+              {baseName || product.name}
             </h3>
           </Link>
 

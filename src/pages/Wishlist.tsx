@@ -10,6 +10,7 @@ import { Footer } from "@/components/layout/Footer";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
+import { getDirectImageUrl } from "@/utils/productImageHelper";
 
 export default function Wishlist() {
   const navigate = useNavigate();
@@ -157,7 +158,7 @@ export default function Wishlist() {
                       <Link to={`/product/${item.product?.slug || item.product_id}`} className="block w-full h-full">
                         {item.image ? (
                           <img
-                            src={item.image}
+                            src={getDirectImageUrl(item.image) || item.image}
                             alt={item.product?.name}
                             className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300"
                             loading="lazy"

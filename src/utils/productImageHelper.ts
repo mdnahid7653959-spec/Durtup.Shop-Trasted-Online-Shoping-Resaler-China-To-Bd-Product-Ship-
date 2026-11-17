@@ -26,10 +26,9 @@ export const CATEGORY_IMAGES = {
     "https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=600&h=600&fit=crop", // Cooker / Kitchen Tool
   ],
   fan: [
-    "https://mohasagor.com.bd/public/storage/images/products/DiVI7xC20llbGtU3bSB5gCkLE0JhJB4sht75WsBn.png", // Rechargeable Silent Desktop Fan
-    "https://mohasagor.com.bd/public/storage/images/products/NZW44TuG5js4dslxyabIASlulq5a5K1FZu9yviZE.webp", // Humidifier Double Spray Fan
-    "https://mohasagor.com.bd/public/storage/images/products/al3tSpwjGscb5je1SlxtmTPSIHqnC0uoofkSMqM6.webp", // Portable Spray Mist Fan
-    "https://mohasagor.com.bd/public/storage/images/products/SiKrl3qzKJCDfsqGSZxOXl5HAl3VKvPU8kdZWeHF.png", // Strong Wind Compact Fan
+    "https://images.unsplash.com/photo-1585338107529-13afc5f02586?w=600&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1618941707248-1296541f5341?w=600&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1590486803833-1c5dc8ddd4c8?w=600&h=600&fit=crop",
   ],
   bags: [
     "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&h=600&fit=crop", // Backpack
@@ -84,9 +83,9 @@ export const CATEGORY_IMAGES = {
     "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&h=600&fit=crop",
   ],
   borka: [
-    "https://mohasagor.com.bd/public/storage/images/products/LlOkqTA7TAs6jL7NIw6V1VV3Neyc5SGINPoxE3XR.png",
-    "https://mohasagor.com.bd/public/storage/images/products/soMg5idM194wOP68KoH5NcFZ1XunJtjYh75F1Kyl.png",
-    "https://mohasagor.com.bd/public/storage/images/products/1UJlzioi5Rkfze2fKMel5xJ3jYi72hbNAY4hSiF2.png",
+    "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=600&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1609357605129-26f69add5d6e?w=600&h=600&fit=crop",
   ],
   trimmer: [
     "https://images.unsplash.com/photo-1621607512214-68297480165e?w=600&h=600&fit=crop",
@@ -204,6 +203,29 @@ export const CATEGORY_IMAGES = {
   shake_nutrition: [
     "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/ea41f5c1-f818-44ff-9409-d15aad335d84.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvZWE0MWY1YzEtZjgxOC00NGZmLTk0MDktZDE1YWFkMzM1ZDg0LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3NjU0NzgyLCJleHAiOjE5NDUzMzQ3ODJ9.pyCAEC5cHdzG_g7CasEbrFNK-UhNoN_qzEkpqKWEy-k",
   ],
+  stationery: [
+    "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=600&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1585776245991-cf89dd7fc73a?w=600&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?w=600&h=600&fit=crop",
+  ],
+  toy_car: [
+    "https://images.unsplash.com/photo-1594787318286-3d835c1d207f?w=600&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1558877385-81a1c7e67d72?w=600&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1581235720704-06d3acfcb36f?w=600&h=600&fit=crop",
+  ],
+  toys: [
+    "https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=600&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=600&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?w=600&h=600&fit=crop",
+  ],
+  raincoat: [
+    "https://images.unsplash.com/photo-1515664069368-8097d76cbfa7?w=600&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&h=600&fit=crop",
+  ],
+  auto_accessories: [
+    "https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=600&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=600&h=600&fit=crop",
+  ],
 };
 
 // Known Unsplash generic fallback patterns that were previously assigned in random places
@@ -265,6 +287,14 @@ export function optimizeImageUrl(
   let full = trimmed;
   if (full.startsWith("//")) {
     full = `https:${full}`;
+  } else if (full.startsWith("http://")) {
+    full = full.replace(/^http:\/\//i, "https://");
+  } else if (full.startsWith("/uploads/") || full.startsWith("uploads/")) {
+    const p = full.startsWith("/") ? full : `/${full}`;
+    full = `https://ecomsellerbd.com${p}`;
+  } else if (full.startsWith("/public/storage/") || full.startsWith("public/storage/") || full.startsWith("/storage/") || full.startsWith("storage/")) {
+    const p = full.startsWith("/") ? full : `/${full}`;
+    full = `https://mohasagor.com.bd${p}`;
   }
 
   // Convert raw supplier images to ultra-lightweight WebP via Cloudflare Edge Cache (wsrv.nl)
@@ -286,16 +316,29 @@ export function getDirectImageUrl(url?: string): string {
     try {
       const parsed = new URL(trimmed);
       const raw = parsed.searchParams.get("url");
-      if (raw) return raw;
-    } catch {}
+      if (raw) trimmed = raw;
+    } catch { }
 
     try {
       const match = trimmed.match(/[?&]url=([^&]+)/);
       if (match && match[1]) {
-        return decodeURIComponent(match[1]);
+        trimmed = decodeURIComponent(match[1]);
       }
-    } catch {}
+    } catch { }
   }
+
+  if (trimmed.startsWith("//")) {
+    trimmed = `https:${trimmed}`;
+  } else if (trimmed.startsWith("http://")) {
+    trimmed = trimmed.replace(/^http:\/\//i, "https://");
+  } else if (trimmed.startsWith("/uploads/") || trimmed.startsWith("uploads/")) {
+    const p = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+    trimmed = `https://ecomsellerbd.com${p}`;
+  } else if (trimmed.startsWith("/public/storage/") || trimmed.startsWith("public/storage/") || trimmed.startsWith("/storage/") || trimmed.startsWith("storage/")) {
+    const p = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+    trimmed = `https://mohasagor.com.bd${p}`;
+  }
+
   return trimmed;
 }
 
@@ -311,9 +354,9 @@ export function getResponsiveImageSrcSet(
   if (!url || typeof url !== "string") return "";
   const trimmed = url.trim();
   if (
-    !trimmed || 
-    trimmed.startsWith("data:") || 
-    trimmed.startsWith("blob:") || 
+    !trimmed ||
+    trimmed.startsWith("data:") ||
+    trimmed.startsWith("blob:") ||
     trimmed.includes(".svg") ||
     (trimmed.includes("supabase.co") && !trimmed.includes("wsrv.nl"))
   ) {
@@ -412,19 +455,19 @@ export function detectCategoryKey(name: string = "", category: string = ""): key
   // 14. Jewelry, rings, necklace, crystal ring, gemstones, zircon, ornaments
   // Exclude ring light, key ring, phone ring, etc.
   if (!nameText.match(/ring.*light|key.*ring|phone.*ring|holder.*ring|curtain.*ring|rubber.*ring/i) &&
-      combined.match(/ring|jewelry|jewel|necklace|chain|pendant|bracelet|bangle|earring|zircon|crystal.*ring|gemstone|diamond|emerald|eternity.*ring|stone.*ring|gold|silver|ornament|আংটি|জুয়েলারি|নেকলেস|চেইন|দুল|গহনা|চুড়ি|ব্রেসলেট/i)) {
+    combined.match(/ring|jewelry|jewel|necklace|chain|pendant|bracelet|bangle|earring|zircon|crystal.*ring|gemstone|diamond|emerald|eternity.*ring|stone.*ring|gold|silver|ornament|আংটি|জুয়েলারি|নেকলেস|চেইন|দুল|গহনা|চুড়ি|ব্রেসলেট/i)) {
     return "jewelry";
   }
 
   // 15. CCTV, Security Cameras, IP Cameras, Bulb Cameras, Spy Cameras (Must check before earbuds/keyboard!)
   if (combined.match(/cctv|ip\s*camera|security\s*camera|bulb\s*camera|night\s*vision.*camera|v380|a9\s*wi-?fi|ptz|surveillance|nanny\s*cam|spy\s*cam|spy.*camera|ডোম\s*ক্যামেরা|সিসিটিভি|সিকিউরিটি\s*ক্যামেরা/i) ||
-      (nameText.match(/camera|cam\b|ক্যামেরা/i) && !nameText.match(/stand|holder|tripod|mount|strap|bag|case/i))) {
+    (nameText.match(/camera|cam\b|ক্যামেরা/i) && !nameText.match(/stand|holder|tripod|mount|strap|bag|case/i))) {
     return "cctv";
   }
 
   // 16. Earbuds, headphones, airpods, headsets, wireless audio (must exclude cameras, speakers & mic)
   if (!nameText.match(/cctv|camera|cam\b|ক্যামেরা|speaker|স্পিকার|mic\b|microphone|মাইক্রোফোন|bulb/i) &&
-      combined.match(/earbud|airpod|headphone|earphone|headset|wireless.*ear|bluetooth.*ear|tws|pro.*4|m10|f9|anc.*ear|হেডফোন|ইয়ারবাড|ইয়ারফোন/i)) {
+    combined.match(/earbud|airpod|headphone|earphone|headset|wireless.*ear|bluetooth.*ear|tws|pro.*4|m10|f9|anc.*ear|হেডফোন|ইয়ারবাড|ইয়ারফোন/i)) {
     return "earbuds";
   }
 
@@ -510,7 +553,7 @@ export function detectCategoryKey(name: string = "", category: string = ""): key
 
   // 33. Beauty, hair straightener, hair comb, hair dryer, curler, hair brush, perfume, cosmetics, skincare
   if (nameText.match(/comb\b|straightener|straight.*hair|hair.*straight|hair.*comb|hair.*brush|curler|hair.*dryer|hair.*iron|hair.*styler|চিরুনি|স্ট্রেইটনার/i) ||
-      combined.match(/perfume|attar|body.*spray|fragrance|lotion|cream|serum|shampoo|face.*wash|skin.*care|lipstick|makeup|shaper|belt.*body|corset|আতর|পারফিউম|লোশন|ক্রিম|লিপস্টিক|মেকআপ|তেল/i)) {
+    combined.match(/perfume|attar|body.*spray|fragrance|lotion|cream|serum|shampoo|face.*wash|skin.*care|lipstick|makeup|shaper|belt.*body|corset|আতর|পারফিউম|লোশন|ক্রিম|লিপস্টিক|মেকআপ|তেল/i)) {
     return "beauty";
   }
 
@@ -519,9 +562,29 @@ export function detectCategoryKey(name: string = "", category: string = ""): key
     return "pure_foods";
   }
 
-  // 35. Kids toys, baby items
-  if (combined.match(/toy|kid|baby|doll|car.*toy|child|খেলনা|বাচ্চা/i)) {
-    return "kids";
+  // 35. Stationery & School items (Pencil Box, Magic Pencil Box, Pen, Notebook)
+  if (combined.match(/pencil|pencil.*box|magic.*pencil|geometry|pen\b|notebook|stationery|color.*pencil|খাতা|পেন্সিল|জ্যামিতি/i)) {
+    return "stationery";
+  }
+
+  // 36. Toy Cars & Remote Vehicles
+  if (combined.match(/car.*toy|toy.*car|police.*car|rc.*car|racing.*car|car.*for.*kids|monster.*truck|টয়.*কার|খেলনা.*গাড়ি/i)) {
+    return "toy_car";
+  }
+
+  // 37. Kids toys, robots, climbing toys, baby items
+  if (combined.match(/toy|kid|baby|doll|robot|dancing|climbing|duck|cactus|game|board.*activity|puzzle|water.*gun|pop.*it|bubble|খেলনা|বাচ্চা|পুতুল/i)) {
+    return "toys";
+  }
+
+  // 38. Raincoat & Monsoon Wear
+  if (combined.match(/raincoat|rain.*coat|umbrella|রেইনকোট|ছাতা/i)) {
+    return "raincoat";
+  }
+
+  // 39. Auto Accessories & Glass Repair
+  if (combined.match(/glass.*repair|windshield|crack.*repair|resin|car.*clean|car.*wash|car.*pol|গ্লাস.*রিপেয়ার/i)) {
+    return "auto_accessories";
   }
 
   // 36. Mouse (specific check before keyboard/general tech)
@@ -568,10 +631,30 @@ export function generateProductSvgPlaceholder(name: string = "Product", category
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
 
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"><defs><linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#f8fafc"/><stop offset="100%" stop-color="#e2e8f0"/></linearGradient></defs><rect width="400" height="400" fill="url(#bgGrad)"/><circle cx="200" cy="170" r="54" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/><path d="M185 160h30v22h-30z M175 190h50v4h-50z" fill="#94a3b8"/><text x="200" y="260" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif" font-size="14" font-weight="600" fill="#475569">${safeName}</text></svg>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+      <defs>
+        <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#fff7ed"/>
+          <stop offset="100%" stop-color="#fed7aa"/>
+        </linearGradient>
+        <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#ea580c"/>
+          <stop offset="100%" stop-color="#f97316"/>
+        </linearGradient>
+      </defs>
+      <rect width="400" height="400" rx="16" fill="url(#bgGrad)"/>
+      <circle cx="200" cy="165" r="50" fill="#ffffff" filter="drop-shadow(0 4px 12px rgba(234,88,12,0.12))"/>
+      <g transform="translate(182, 147) scale(1.5)" stroke="url(#primaryGrad)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <path d="M16 10a4 4 0 0 1-8 0"/>
+      </g>
+      <text x="200" y="250" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif" font-size="13" font-weight="700" fill="#9a3412">${safeName}</text>
+      <text x="200" y="272" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif" font-size="10" font-weight="600" fill="#ea580c" opacity="0.8">DURTUP OFFICIAL</text>
+    </svg>`;
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
   } catch {
-    const staticSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"><rect width="400" height="400" fill="#f8fafc"/><circle cx="200" cy="170" r="54" fill="#ffffff"/><text x="200" y="260" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="600" fill="#475569">Product</text></svg>`;
+    const staticSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"><rect width="400" height="400" fill="#fff7ed"/><circle cx="200" cy="170" r="50" fill="#ffffff"/><text x="200" y="250" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#9a3412">Product</text></svg>`;
     return `data:image/svg+xml;utf8,${encodeURIComponent(staticSvg)}`;
   }
 }
@@ -632,6 +715,15 @@ export function getSmartProductImage(
   return getCategoryFallbackImage(name, category, index);
 }
 
+// Known dead origin URLs on supplier servers (returns 404 or text/html instead of image binary)
+export const KNOWN_DEAD_ORIGIN_URLS = new Set<string>([
+  "https://mohasagor.com.bd/public/storage/images/products/9jmg46R758uR1Ku8UpbB2fEjuLh1i8PJmX5ve9zb.jpg",
+  "https://mohasagor.com.bd/public/storage/images/products/obrg8iSsSHWoqpXuoRzuSYdSRnelkhB2qgsMM3Iw.jpg",
+  "https://mohasagor.com.bd/public/storage/images/products/06B4jK73bvMIABaFuuXtW2NirWrSpYRM1yLaMumJ.jpg",
+  "https://mohasagor.com.bd/public/storage/images/products/RxTAhyYXd0VI6a7YnCRY0f1KNnUUIdj0XoYJypNL.jpg",
+  "https://mohasagor.com.bd/public/storage/images/products/VKgvrT4uYKkDwOuJGZmKu3f4yiB7rsInfgYvnXFo.jpg",
+]);
+
 // Global in-memory cache of failed image URLs so broken supplier links fail in 0ms without re-trying
 export const globalFailedImageUrls = new Set<string>();
 
@@ -647,9 +739,23 @@ export function getProductImageCandidates(product: any, width: number = 400): st
 
   const addCandidate = (url?: string) => {
     if (!url || typeof url !== "string") return;
-    const clean = url.trim();
+    let clean = url.trim();
     if (!clean || clean.length < 5) return;
-    if (globalFailedImageUrls.has(clean)) return; // Skip known failed URLs across the session
+
+    if (clean.startsWith("//")) {
+      clean = `https:${clean}`;
+    } else if (clean.startsWith("http://")) {
+      clean = clean.replace(/^http:\/\//i, "https://");
+    } else if (clean.startsWith("/uploads/") || clean.startsWith("uploads/")) {
+      const p = clean.startsWith("/") ? clean : `/${clean}`;
+      clean = `https://ecomsellerbd.com${p}`;
+    } else if (clean.startsWith("/public/storage/") || clean.startsWith("public/storage/") || clean.startsWith("/storage/") || clean.startsWith("storage/")) {
+      const p = clean.startsWith("/") ? clean : `/${clean}`;
+      clean = `https://mohasagor.com.bd${p}`;
+    }
+
+    if (globalFailedImageUrls.has(clean) || KNOWN_DEAD_ORIGIN_URLS.has(clean)) return;
+
     if (!candidates.includes(clean)) {
       candidates.push(clean);
     }
@@ -659,11 +765,26 @@ export function getProductImageCandidates(product: any, width: number = 400): st
   const allRawImages: string[] = [];
   const collect = (u: any) => {
     if (!u) return;
-    const str = typeof u === "string" ? u.trim() : (u.image_url || u.url || u.image || u.product_image || u.path || u.src || "").trim();
-    if (str && !allRawImages.includes(str)) {
+    let str = typeof u === "string" ? u.trim() : (u.image_url || u.url || u.image || u.product_image || u.path || u.src || "").trim();
+    if (!str) return;
+
+    if (str.startsWith("//")) {
+      str = `https:${str}`;
+    } else if (str.startsWith("http://")) {
+      str = str.replace(/^http:\/\//i, "https://");
+    } else if (str.startsWith("/uploads/") || str.startsWith("uploads/")) {
+      const p = str.startsWith("/") ? str : `/${str}`;
+      str = `https://ecomsellerbd.com${p}`;
+    } else if (str.startsWith("/public/storage/") || str.startsWith("public/storage/") || str.startsWith("/storage/") || str.startsWith("storage/")) {
+      const p = str.startsWith("/") ? str : `/${str}`;
+      str = `https://mohasagor.com.bd${p}`;
+    }
+
+    if (str && !KNOWN_DEAD_ORIGIN_URLS.has(str) && !globalFailedImageUrls.has(str) && !allRawImages.includes(str)) {
       allRawImages.push(str);
     }
   };
+
   if (product.image) collect(product.image);
   if (product.image_url) collect(product.image_url);
   if (product.thumbnail) collect(product.thumbnail);
@@ -673,22 +794,39 @@ export function getProductImageCandidates(product: any, width: number = 400): st
   if (Array.isArray(product.product_images)) product.product_images.forEach(collect);
   if (Array.isArray(product.gallery)) product.gallery.forEach(collect);
   if (Array.isArray(product.photos)) product.photos.forEach(collect);
+  if (Array.isArray(product.product_variants)) {
+    product.product_variants.forEach((v: any) => v && (collect(v.image) || collect(v.image_url) || collect(v.variant_image) || collect(v.photo)));
+  }
+  if (Array.isArray(product.variants)) {
+    product.variants.forEach((v: any) => v && (collect(v.image) || collect(v.image_url) || collect(v.variant_image) || collect(v.photo)));
+  }
 
-  // Add CDN optimized and direct URLs for all available genuine photos of this product
+  // Prioritize lightweight JPG/JPEG over heavy 7MB uncompressed PNGs for lightning-fast loads
+  allRawImages.sort((a, b) => {
+    const aIsJpg = a.endsWith(".jpg") || a.endsWith(".jpeg");
+    const bIsJpg = b.endsWith(".jpg") || b.endsWith(".jpeg");
+    if (aIsJpg && !bIsJpg) return -1;
+    if (!aIsJpg && bIsJpg) return 1;
+    return 0;
+  });
+
+  // 1. Edge CDN Optimized WebP Candidates FIRST!
   for (const raw of allRawImages) {
     const cdnUrl = optimizeImageUrl(raw, width);
     if (cdnUrl) addCandidate(cdnUrl);
+  }
+
+  // 2. Direct Supplier Authentic Image as secondary fallback
+  for (const raw of allRawImages) {
     const directUrl = getDirectImageUrl(raw);
-    if (directUrl && directUrl !== cdnUrl) {
+    if (directUrl && !directUrl.includes("wsrv.nl")) {
       addCandidate(directUrl);
     }
   }
 
-  // 3. Guaranteed real category-matched product photo (instant fallback matching title & category)
-  // ONLY if all genuine images failed or none existed
-  const categoryFallback = getSmartProductImage(
+  // 3. Fallback to category image: ALWAYS provide curated real product photos
+  const categoryFallback = getCategoryFallbackImage(
     product.name || "",
-    "",
     product.category || product.category_name || (product as any).category_id || (product as any).categorySlug || "",
     typeof product.id === "number" ? product.id : (parseInt(product.id) || 0)
   );
@@ -696,7 +834,15 @@ export function getProductImageCandidates(product: any, width: number = 400): st
     addCandidate(categoryFallback);
   }
 
-  // 4. Last-resort clean branded SVG placeholder (guaranteed to render)
+  // Also add secondary fallbacks for maximum reliability
+  const extraFallbacks = getCategoryFallbackImages(
+    product.name || "",
+    product.category || product.category_name || "",
+    2
+  );
+  extraFallbacks.forEach(addCandidate);
+
+  // 4. Clean branded SVG placeholder with actual product name (absolute last resort)
   const svgPlaceholder = generateProductSvgPlaceholder(
     product.name || "Product",
     product.category || product.category_name || ""
@@ -718,13 +864,20 @@ export function prefetchProductImages(
 
   const warmImage = (rawUrl?: string) => {
     if (!rawUrl || typeof rawUrl !== "string") return;
-    const finalUrl = optimizeImageUrl(rawUrl, 240);
-    if (!finalUrl || preloadedUrls.has(finalUrl) || finalUrl.startsWith("data:")) return;
-    preloadedUrls.add(finalUrl);
-
-    const img = new Image();
-    img.decoding = "async";
-    img.src = finalUrl;
+    const direct = getDirectImageUrl(rawUrl);
+    if (direct && !preloadedUrls.has(direct) && !direct.startsWith("data:")) {
+      preloadedUrls.add(direct);
+      const img = new Image();
+      img.decoding = "async";
+      img.src = direct;
+    }
+    const cdn = optimizeImageUrl(rawUrl, 240);
+    if (cdn && !preloadedUrls.has(cdn) && !cdn.startsWith("data:")) {
+      preloadedUrls.add(cdn);
+      const imgCdn = new Image();
+      imgCdn.decoding = "async";
+      imgCdn.src = cdn;
+    }
   };
 
   const runWarm = () => {

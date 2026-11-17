@@ -83,8 +83,8 @@ function ProductSectionComponent({
         {/* Products grid */}
         <div className="p-2 sm:p-3">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-2.5">
-            {products.slice(0, visibleCount).map((product) => (
-              <ProductCard key={product.id} product={product} />
+            {products.slice(0, visibleCount).map((product, idx) => (
+              <ProductCard key={product.id} product={product} index={idx} priority={idx < 6} />
             ))}
           </div>
         </div>

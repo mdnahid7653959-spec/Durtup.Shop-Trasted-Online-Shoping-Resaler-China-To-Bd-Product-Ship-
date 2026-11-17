@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { getDirectImageUrl } from "@/utils/productImageHelper";
 
 const RecentlyViewedSection = () => {
   const { recentlyViewed, isLoading, clearRecentlyViewed } = useRecentlyViewed();
@@ -41,10 +42,15 @@ const RecentlyViewedSection = () => {
                 title={product.name}
               >
                 <img
-                  src={product.image_url || "/placeholder.svg"}
+                  src={getDirectImageUrl(product.image_url) || product.image_url || "/placeholder.svg"}
                   alt={product.name}
                   className="w-full h-full object-cover"
                   loading="lazy"
+                  onError={(e) => {
+                    const target = e.currentTarget as HTMLImageElement;
+                    target.onerror = null;
+                    target.src = "/category-gadgets.webp";
+                  }}
                 />
               </Link>
             ))}

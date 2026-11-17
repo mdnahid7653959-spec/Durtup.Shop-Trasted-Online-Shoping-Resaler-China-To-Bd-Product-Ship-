@@ -96,13 +96,13 @@ const PRODUCTS_SERVER_FN = "5a01c59194865d30180a7f68b4912eb37e699345f2bbe311a9d2
 const DETAIL_SERVER_FN = "007261ee9d86e87592cfcd5491f56565cca84574c79db98974ab1951a1437f9d";
 const ECOMSELLER_BASE = "https://ecomsellerbd.com";
 
-const CACHE_KEY_CATALOG = "ecomseller_catalog_cache_v8";
+const CACHE_KEY_CATALOG = "ecomseller_catalog_cache_v9";
 const CACHE_KEY_PRICING = "durtup_supplier_pricing_config_v2";
 
 // Clean up old catalog versions on startup
 if (typeof window !== "undefined") {
   try {
-    ["v5", "v6", "v7"].forEach(v => {
+    ["v5", "v6", "v7", "v8"].forEach(v => {
       localStorage.removeItem(`ecomseller_catalog_cache_${v}`);
     });
   } catch {}
@@ -137,7 +137,7 @@ export class EcomsellerEngine {
   private static async executeFetch(url: string, headers: Record<string, string> = {}): Promise<string> {
     const defaultHeaders = {
       "Accept": "application/json, text/plain, */*",
-      "x-tsr-serverfn": "true",
+      "x-tsr-serverFn": "true",
       "Referer": "https://ecomsellerbd.com/catalog",
       ...headers
     };
@@ -229,7 +229,16 @@ export class EcomsellerEngine {
 
       const sanitizeImg = (u: any): string => {
         if (!u || typeof u !== "string") return "";
-        return u.trim();
+        let trimmed = u.trim();
+        if (!trimmed) return "";
+        if (trimmed.startsWith("//")) return `https:${trimmed}`;
+        if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("data:")) return trimmed;
+        if (trimmed.startsWith("/uploads/") || trimmed.startsWith("uploads/")) {
+          const p = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+          return `https://ecomsellerbd.com${p}`;
+        }
+        if (trimmed.startsWith("/")) return `https://ecomsellerbd.com${trimmed}`;
+        return `https://ecomsellerbd.com/${trimmed}`;
       };
 
       const rawImgs = Array.isArray(p.images) && p.images.length > 0 ? p.images.map(sanitizeImg).filter(Boolean) : (p.image ? [sanitizeImg(p.image)] : []);
@@ -294,8 +303,8 @@ export class EcomsellerEngine {
               t: 10,
               i: 1,
               p: {
-                k: ["page", "perPage"],
-                v: [{ t: 0, s: page }, { t: 0, s: perPage }]
+                k: ["category", "brand", "q", "page", "perPage"],
+                v: [{ t: 2, s: 1 }, { t: 2, s: 1 }, { t: 2, s: 1 }, { t: 0, s: page }, { t: 0, s: perPage }]
               },
               o: 0
             }
@@ -303,7 +312,7 @@ export class EcomsellerEngine {
         },
         o: 0
       },
-      f: 127,
+      f: 63,
       m: []
     };
 
@@ -319,20 +328,39 @@ export class EcomsellerEngine {
     const decoded = parseTssResponse(rawJson);
     const result = decoded?.result || {};
     const rawProducts: any[] = result.products || [];
-    const products: EcomsellerRawProduct[] = rawProducts.map((p: any) => ({
-      id: p.id,
-      name: p.name || "Untitled Product",
-      slug: p.slug || `product-${p.id}`,
-      code: p.code || p.id,
-      short: p.short || "",
-      price: Number(p.price) || 0,
-      resellerPrice: Number(p.resellerPrice) || 0,
-      categoryId: p.categoryId,
-      brandId: p.brandId,
-      featured: Number(p.featured) || 0,
-      image: p.image || (Array.isArray(p.images) ? p.images[0] : ""),
-      images: Array.isArray(p.images) && p.images.length > 0 ? p.images : (p.image ? [p.image] : [])
-    }));
+    
+    const sanitize = (u: any): string => {
+      if (!u || typeof u !== "string") return "";
+      let trimmed = u.trim();
+      if (!trimmed) return "";
+      if (trimmed.startsWith("//")) return `https:${trimmed}`;
+      if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("data:")) return trimmed;
+      if (trimmed.startsWith("/uploads/") || trimmed.startsWith("uploads/")) {
+        const p = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+        return `https://ecomsellerbd.com${p}`;
+      }
+      if (trimmed.startsWith("/")) return `https://ecomsellerbd.com${trimmed}`;
+      return `https://ecomsellerbd.com/${trimmed}`;
+    };
+
+    const products: EcomsellerRawProduct[] = rawProducts.map((p: any) => {
+      const rawImgs = Array.isArray(p.images) && p.images.length > 0 ? p.images.map(sanitize).filter(Boolean) : (p.image ? [sanitize(p.image)] : []);
+      const primaryImg = sanitize(p.image) || rawImgs[0] || "";
+      return {
+        id: p.id,
+        name: p.name || "Untitled Product",
+        slug: p.slug || `product-${p.id}`,
+        code: p.code || p.id,
+        short: p.short || "",
+        price: Number(p.price) || 0,
+        resellerPrice: Number(p.resellerPrice) || 0,
+        categoryId: p.categoryId,
+        brandId: p.brandId,
+        featured: Number(p.featured) || 0,
+        image: primaryImg,
+        images: rawImgs
+      };
+    });
 
     return { products, total: Number(result.total) || products.length };
   }

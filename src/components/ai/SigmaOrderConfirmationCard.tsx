@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { SigmaOrderDraft } from "@/server/sigmaServerEngine";
+import { getDirectImageUrl } from "@/utils/productImageHelper";
 
 interface SigmaOrderConfirmationCardProps {
   draft: SigmaOrderDraft;
@@ -104,7 +105,7 @@ export const SigmaOrderConfirmationCard: React.FC<SigmaOrderConfirmationCardProp
               className="flex items-center justify-between gap-2 p-2 bg-slate-50 border border-slate-200/60 rounded-xl text-xs"
             >
               <img
-                src={item.image || "/placeholder.svg"}
+                src={getDirectImageUrl(item.image) || item.image || "/placeholder.svg"}
                 alt={item.name}
                 className="h-9 w-9 object-cover rounded-lg shrink-0 border border-slate-200"
               />

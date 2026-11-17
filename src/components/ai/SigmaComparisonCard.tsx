@@ -4,6 +4,7 @@ import { Scale, CheckCircle2, ShoppingBag, Zap, ArrowRight, Sparkles } from "luc
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { SigmaComparisonData } from "@/server/sigmaServerEngine";
+import { getDirectImageUrl } from "@/utils/productImageHelper";
 
 interface SigmaComparisonCardProps {
   data: SigmaComparisonData;
@@ -45,7 +46,7 @@ export const SigmaComparisonCard: React.FC<SigmaComparisonCardProps> = ({
         {/* Product A */}
         <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-2.5 flex flex-col">
           <img
-            src={prodA.image || "/placeholder.svg"}
+            src={getDirectImageUrl(prodA.image) || prodA.image || "/placeholder.svg"}
             alt={prodA.name}
             className="w-full h-24 sm:h-32 object-cover rounded-lg mb-2 border border-slate-200"
           />
@@ -83,7 +84,7 @@ export const SigmaComparisonCard: React.FC<SigmaComparisonCardProps> = ({
         {/* Product B */}
         <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-2.5 flex flex-col">
           <img
-            src={prodB.image || "/placeholder.svg"}
+            src={getDirectImageUrl(prodB.image) || prodB.image || "/placeholder.svg"}
             alt={prodB.name}
             className="w-full h-24 sm:h-32 object-cover rounded-lg mb-2 border border-slate-200"
           />

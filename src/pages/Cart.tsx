@@ -126,7 +126,8 @@ export default function Cart() {
                 const price = prod?.discount_price || prod?.regular_price || prod?.price || (item as any)?.price || 0;
                 const prodName = prod?.name || (item as any)?.name || "Product";
                 const prodSlug = prod?.slug || (item as any)?.slug || prod?.id || item.product_id || item.id;
-                const prodImage = item.image || prod?.image_url || prod?.thumbnail || prod?.images?.[0] || "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=200&h=200&fit=crop";
+                const rawImg = item.image || prod?.image_url || prod?.thumbnail || prod?.images?.[0] || prod?.image;
+                const prodImage = getDirectImageUrl(rawImg) || rawImg || getCategoryFallbackImage(prodName, (prod as any)?.category || "");
                 const maxStock = prod?.stock_quantity ?? 999;
 
                 return (

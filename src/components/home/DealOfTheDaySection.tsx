@@ -1,10 +1,10 @@
-import { memo, useMemo, useState, useRef, useEffect, useCallback } from "react";
+import { memo, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Star } from "lucide-react";
-import { getSmartProductImage, optimizeImageUrl, getResponsiveImageSrcSet, MINI_CARD_SIZES } from "@/utils/productImageHelper";
+import { MINI_CARD_SIZES } from "@/utils/productImageHelper";
 import { type Product } from "@/components/products/ProductCard";
-
 import { SafeProductImage } from "@/components/products/SafeProductImage";
+import { cn } from "@/lib/utils";
 
 interface DealOfTheDayProps {
   products?: Product[];
@@ -124,279 +124,59 @@ function ProductDealCard({
 interface DealRowProps {
   items: Product[];
   direction: "left" | "right";
-  speed?: number; // pixels per second
+  speed?: number;
   rowId: string;
 }
 
 function DealRow({
   items,
   direction,
-  speed = 36,
   rowId,
 }: DealRowProps) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
   const isDraggingRef = useRef<boolean>(false);
-  const isManuallyDraggingRef = useRef<boolean>(false);
-  const isMouseDownRef = useRef<boolean>(false);
-  const startXRef = useRef<number>(0);
-  const startScrollLeftRef = useRef<number>(0);
-  const dragDistRef = useRef<number>(0);
-  
-  // Touch refs
-  const touchStartXRef = useRef<number>(0);
-  const touchStartYRef = useRef<number>(0);
-  const touchStartScrollLeftRef = useRef<number>(0);
-  const isHorizontalDragRef = useRef<boolean>(false);
-  const isVerticalScrollRef = useRef<boolean>(false);
-  const isTouchingRef = useRef<boolean>(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const rafRef = useRef<number | null>(null);
-  const lastTimeRef = useRef<number>(performance.now());
-  const scrollPosRef = useRef<number>(0);
-
-  // Set initial scroll position for right-moving track so it can scroll backwards seamlessly
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-
-    const setInitialPos = () => {
-      const singleSetWidth = el.scrollWidth / 3;
-      if (singleSetWidth > 10) {
-        if (direction === "right" && el.scrollLeft < 5) {
-          el.scrollLeft = singleSetWidth;
-          scrollPosRef.current = singleSetWidth;
-        } else if (direction === "left" && el.scrollLeft === 0) {
-          scrollPosRef.current = el.scrollLeft;
-        }
-      }
-    };
-
-    setInitialPos();
-    const timer = setTimeout(setInitialPos, 150);
-    return () => clearTimeout(timer);
-  }, [direction, items]);
-
-  const [isVisible, setIsVisible] = useState<boolean>(true);
-
-  // IntersectionObserver to pause auto-scroll when off-screen (saves massive CPU & battery)
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsVisible(entry.isIntersecting);
-      },
-      { rootMargin: "150px" }
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  // RequestAnimationFrame Infinite Continuous Auto-Scroll Loop
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el || !isVisible) return;
-
-    lastTimeRef.current = performance.now();
-    scrollPosRef.current = el.scrollLeft;
-
-    const step = (time: number) => {
-      const dt = Math.min((time - lastTimeRef.current) / 1000, 0.1);
-      lastTimeRef.current = time;
-
-      // Only skip auto-scroll while user is actively dragging horizontally
-      if (!isManuallyDraggingRef.current && el) {
-        const singleSetWidth = el.scrollWidth / 3;
-        if (singleSetWidth > 20) {
-          const delta = speed * dt;
-
-          if (direction === "left") {
-            scrollPosRef.current += delta;
-            if (scrollPosRef.current >= singleSetWidth * 2) {
-              scrollPosRef.current -= singleSetWidth;
-            }
-          } else {
-            scrollPosRef.current -= delta;
-            if (scrollPosRef.current <= singleSetWidth * 0.1) {
-              scrollPosRef.current += singleSetWidth;
-            }
-          }
-
-          el.scrollLeft = scrollPosRef.current;
-        }
-      }
-
-      rafRef.current = requestAnimationFrame(step);
-    };
-
-    rafRef.current = requestAnimationFrame(step);
-
-    return () => {
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-      }
-    };
-  }, [direction, speed, isVisible]);
-
-  // Infinite Wrap helper
-  const handleWrapIfNeeded = useCallback(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const singleSetWidth = el.scrollWidth / 3;
-    if (singleSetWidth <= 20) return;
-
-    if (el.scrollLeft >= singleSetWidth * 2) {
-      el.scrollLeft -= singleSetWidth;
-      scrollPosRef.current = el.scrollLeft;
-      if (isMouseDownRef.current) startScrollLeftRef.current -= singleSetWidth;
-      if (isTouchingRef.current) touchStartScrollLeftRef.current -= singleSetWidth;
-    } else if (el.scrollLeft <= singleSetWidth * 0.1) {
-      el.scrollLeft += singleSetWidth;
-      scrollPosRef.current = el.scrollLeft;
-      if (isMouseDownRef.current) startScrollLeftRef.current += singleSetWidth;
-      if (isTouchingRef.current) touchStartScrollLeftRef.current += singleSetWidth;
+  // Take a clean slice and duplicate for 100% seamless, mathematically perfect loop
+  const slice = useMemo(() => {
+    if (!items || items.length === 0) return [];
+    let base = [...items];
+    while (base.length < 8) {
+      base = [...base, ...items];
     }
-  }, []);
+    return base.slice(0, 16);
+  }, [items]);
 
-  // Mouse Drag Events (Desktop)
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.button !== 0) return;
-    isMouseDownRef.current = true;
-    startXRef.current = e.clientX;
-    const el = containerRef.current;
-    startScrollLeftRef.current = el ? el.scrollLeft : 0;
-    scrollPosRef.current = el ? el.scrollLeft : 0;
-    dragDistRef.current = 0;
-    isDraggingRef.current = false;
-  };
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isMouseDownRef.current || !containerRef.current) return;
-    const dx = e.clientX - startXRef.current;
-    dragDistRef.current = Math.abs(dx);
-    if (dragDistRef.current > 5) {
-      isDraggingRef.current = true;
-      isManuallyDraggingRef.current = true;
-    }
-    if (isManuallyDraggingRef.current) {
-      const el = containerRef.current;
-      const targetScroll = startScrollLeftRef.current - dx;
-      el.scrollLeft = targetScroll;
-      scrollPosRef.current = targetScroll;
-      handleWrapIfNeeded();
-    }
-  };
-
-  const handleMouseUp = () => {
-    if (isMouseDownRef.current) {
-      isMouseDownRef.current = false;
-      isManuallyDraggingRef.current = false;
-      if (containerRef.current) {
-        scrollPosRef.current = containerRef.current.scrollLeft;
-      }
-      setTimeout(() => {
-        isDraggingRef.current = false;
-      }, 80);
-    }
-  };
-
-  const handleMouseLeave = () => {
-    if (isMouseDownRef.current) {
-      isMouseDownRef.current = false;
-      isManuallyDraggingRef.current = false;
-      if (containerRef.current) {
-        scrollPosRef.current = containerRef.current.scrollLeft;
-      }
-      setTimeout(() => {
-        isDraggingRef.current = false;
-      }, 80);
-    }
-  };
-
-  // Touch Events (Mobile) - seamlessly allows vertical page scrolling while enabling horizontal drag
-  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (e.touches.length !== 1) return;
-    const touch = e.touches[0];
-    touchStartXRef.current = touch.clientX;
-    touchStartYRef.current = touch.clientY;
-    const el = containerRef.current;
-    touchStartScrollLeftRef.current = el ? el.scrollLeft : 0;
-    scrollPosRef.current = el ? el.scrollLeft : 0;
-    isHorizontalDragRef.current = false;
-    isVerticalScrollRef.current = false;
-    isTouchingRef.current = true;
-    isDraggingRef.current = false;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (!isTouchingRef.current || !containerRef.current || e.touches.length !== 1) return;
-    const touch = e.touches[0];
-    const dx = touch.clientX - touchStartXRef.current;
-    const dy = touch.clientY - touchStartYRef.current;
-
-    // Check gesture direction if not locked yet
-    if (!isHorizontalDragRef.current && !isVerticalScrollRef.current) {
-      if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 5) {
-        // Vertical scroll -> let browser handle page scroll naturally without stopping anything
-        isVerticalScrollRef.current = true;
-        return;
-      } else if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 5) {
-        // Horizontal drag -> take control to swipe products
-        isHorizontalDragRef.current = true;
-        isManuallyDraggingRef.current = true;
-        isDraggingRef.current = true;
-      } else {
-        return;
-      }
-    }
-
-    if (isHorizontalDragRef.current) {
-      const el = containerRef.current;
-      const targetScroll = touchStartScrollLeftRef.current - dx;
-      el.scrollLeft = targetScroll;
-      scrollPosRef.current = targetScroll;
-      handleWrapIfNeeded();
-    }
-  };
-
-  const handleTouchEnd = () => {
-    isTouchingRef.current = false;
-    isHorizontalDragRef.current = false;
-    isVerticalScrollRef.current = false;
-    isManuallyDraggingRef.current = false;
-    if (containerRef.current) {
-      scrollPosRef.current = containerRef.current.scrollLeft;
-    }
-    setTimeout(() => {
-      isDraggingRef.current = false;
-    }, 80);
-  };
+  if (slice.length === 0) return null;
 
   return (
     <div
       ref={containerRef}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseLeave}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      onTouchCancel={handleTouchEnd}
-      className="relative overflow-x-auto overflow-y-hidden w-full cursor-grab active:cursor-grabbing select-none no-scrollbar touch-pan-y"
-      style={{
-        scrollbarWidth: "none",
-        msOverflowStyle: "none",
-        touchAction: "pan-y",
-        WebkitOverflowScrolling: "touch",
-      }}
+      className="relative overflow-hidden w-full select-none deal-marquee-track-container group/row cursor-default pointer-events-auto"
     >
-      <div className="flex w-max gap-1.5 sm:gap-2.5 md:gap-3 py-1 pointer-events-auto">
-        {items.map((product, idx) => (
+      <div
+        className={cn(
+          "flex w-max gap-2 sm:gap-3 py-1 group-hover/row:[animation-play-state:paused]",
+          direction === "left" ? "animate-durtup-marquee-left" : "animate-durtup-marquee-right"
+        )}
+        style={{
+          animationDuration: `${Math.max(26, slice.length * 3.0)}s`,
+          willChange: "transform",
+        }}
+      >
+        {/* Set 1 */}
+        {slice.map((product, idx) => (
           <ProductDealCard
-            key={`${rowId}-${product.id}-${idx}`}
+            key={`${rowId}-a-${product.id}-${idx}`}
+            product={product}
+            idx={idx}
+            isDraggingRef={isDraggingRef}
+          />
+        ))}
+
+        {/* Set 2 (Identical Clone for continuous 0% to -50% loop) */}
+        {slice.map((product, idx) => (
+          <ProductDealCard
+            key={`${rowId}-b-${product.id}-${idx}`}
             product={product}
             idx={idx}
             isDraggingRef={isDraggingRef}
@@ -408,7 +188,7 @@ function DealRow({
 }
 
 function DealOfTheDayComponent({ products = [] }: DealOfTheDayProps) {
-  // Split and format products into 2 distinct continuous rows with triple-buffer
+  // Split and format products into 2 distinct continuous rows
   const { row1, row2 } = useMemo(() => {
     if (!products || products.length === 0) return { row1: [], row2: [] };
 
@@ -439,34 +219,9 @@ function DealOfTheDayComponent({ products = [] }: DealOfTheDayProps) {
       }
     });
 
-    // Perfectly sized 14 items per row (42 with 3x buffer = 84 cards total, saving 91% DOM nodes)
-    const maxItemsPerRow = 14;
-    const timeShift = Math.floor(Date.now() / (3 * 60 * 1000));
-    
-    const sliceR1 = r1.length > maxItemsPerRow
-      ? [...r1.slice((timeShift * 15) % r1.length), ...r1.slice(0, (timeShift * 15) % r1.length)].slice(0, maxItemsPerRow)
-      : r1;
-      
-    const sliceR2 = r2.length > maxItemsPerRow
-      ? [...r2.slice((timeShift * 15) % r2.length), ...r2.slice(0, (timeShift * 15) % r2.length)].slice(0, maxItemsPerRow)
-      : r2;
-
-    const ensureBuffer = (arr: Product[]) => {
-      if (arr.length === 0) return [];
-      let result = [...arr];
-      while (result.length < 8) {
-        result = [...result, ...arr];
-      }
-      return result;
-    };
-
-    const baseR1 = ensureBuffer(sliceR1);
-    const baseR2 = ensureBuffer(sliceR2.length > 0 ? sliceR2 : sliceR1);
-
-    // Tripled buffer ensures seamless infinite scroll in both left & right directions
     return {
-      row1: [...baseR1, ...baseR1, ...baseR1],
-      row2: [...baseR2, ...baseR2, ...baseR2],
+      row1: r1.length > 0 ? r1 : items,
+      row2: r2.length > 0 ? r2 : items,
     };
   }, [products]);
 

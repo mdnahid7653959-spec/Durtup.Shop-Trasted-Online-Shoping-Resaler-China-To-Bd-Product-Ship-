@@ -335,14 +335,24 @@ function CJProductDetailContent() {
       </div>
       <main className="flex-1 pb-44 md:pb-8 overflow-x-hidden">
         <div className="w-full max-w-full px-3 sm:px-6 lg:container py-3 sm:py-6 overflow-x-hidden">
-          {/* Breadcrumb - Desktop only */}
-          <nav className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground mb-4 lg:mb-6">
-            <Link to="/" className="hover:text-primary transition-colors">Home</Link>
-            <span>/</span>
-            <Link to="/products?source=cj" className="hover:text-primary transition-colors">CJ Products</Link>
-            <span>/</span>
-            <span className="text-foreground line-clamp-1 max-w-[200px]">{product.nameEn || product.name}</span>
-          </nav>
+          {/* Breadcrumb & Back Bar - Desktop only */}
+          <div className="hidden sm:flex items-center justify-between gap-4 mb-4 lg:mb-6">
+            <button
+              onClick={handleSmartBack}
+              className="inline-flex items-center gap-1.5 font-semibold text-slate-700 hover:text-orange-600 dark:text-slate-200 dark:hover:text-orange-400 px-3 py-1.5 rounded-lg hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-all cursor-pointer group active:scale-95 border border-slate-200/80 dark:border-slate-700/60 shadow-2xs text-xs sm:text-sm"
+              aria-label="Back to previous page"
+            >
+              <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1 text-orange-600" />
+              <span>Back</span>
+            </button>
+            <nav className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Link to="/" className="hover:text-primary transition-colors">Home</Link>
+              <span>/</span>
+              <Link to="/products?source=cj" className="hover:text-primary transition-colors">CJ Products</Link>
+              <span>/</span>
+              <span className="text-foreground line-clamp-1 max-w-[200px]">{product.nameEn || product.name}</span>
+            </nav>
+          </div>
 
           <div className="grid lg:grid-cols-2 gap-4 lg:gap-10 w-full max-w-full min-w-0">
             {/* Product Images - Mobile Optimized */}

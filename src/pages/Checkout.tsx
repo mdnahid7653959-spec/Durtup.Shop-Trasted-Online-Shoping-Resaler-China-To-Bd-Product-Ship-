@@ -22,7 +22,7 @@ import { sendTelegramOrderNotification } from "@/utils/telegramNotifier";
 import { trackPurchase } from "@/components/FacebookPixel";
 import { checkFirstOrderDiscountEligibility, DiscountEligibilityResult } from "@/services/referralService";
 import { triggerCustomerOrderPhoneNotification } from "@/services/customerNotificationService";
-import { getCategoryFallbackImage } from "@/utils/productImageHelper";
+import { getCategoryFallbackImage, getDirectImageUrl } from "@/utils/productImageHelper";
 
 
 interface AppliedCoupon {
@@ -88,7 +88,7 @@ export default function Checkout() {
       try {
         const raw = localStorage.getItem("durtup_saved_address");
         if (raw) localAddr = JSON.parse(raw);
-      } catch {}
+      } catch { }
 
       if (!user) {
         if (localAddr?.address && localAddr?.city && localAddr?.phone) {
@@ -166,15 +166,15 @@ export default function Checkout() {
   // Combined items and totals
   const totalItems = regularItems.length + cjItems.length;
   const subtotal = regularSubtotal + cjSubtotal;
-  const totalQuantity = regularItems.reduce((acc, item) => acc + item.quantity, 0) + 
-                        cjItems.reduce((acc, item) => acc + item.quantity, 0);
+  const totalQuantity = regularItems.reduce((acc, item) => acc + item.quantity, 0) +
+    cjItems.reduce((acc, item) => acc + item.quantity, 0);
   const shipping = totalItems > 0 ? 60 : 0;
   const tax = 0; // Tax is removed
 
   // Calculate coupon discount (handles both "percentage" and "flat" types)
   const couponDiscount = useMemo(() => {
     if (!appliedCoupon) return 0;
-    
+
     let discount = 0;
     if (appliedCoupon.discount_type === "percentage") {
       discount = Math.round(subtotal * (appliedCoupon.discount_value / 100));
@@ -195,7 +195,7 @@ export default function Checkout() {
     let isMounted = true;
     checkFirstOrderDiscountEligibility(user?.id || null, subtotal).then(res => {
       if (isMounted) setReferralEligibility(res);
-    }).catch(() => {});
+    }).catch(() => { });
     return () => { isMounted = false; };
   }, [user?.id, subtotal]);
 
@@ -293,10 +293,10 @@ export default function Checkout() {
 
       // Check minimum order amount
       if (coupon.min_order_amount && subtotal < coupon.min_order_amount) {
-        toast({ 
-          variant: "destructive", 
-          title: "Minimum not met", 
-          description: `Minimum order amount is ৳${coupon.min_order_amount.toLocaleString()}` 
+        toast({
+          variant: "destructive",
+          title: "Minimum not met",
+          description: `Minimum order amount is ৳${coupon.min_order_amount.toLocaleString()}`
         });
         return;
       }
@@ -314,13 +314,13 @@ export default function Checkout() {
         max_discount_amount: coupon.max_discount_amount
       });
 
-      const calculatedDiscount = coupon.discount_type === "percentage" 
+      const calculatedDiscount = coupon.discount_type === "percentage"
         ? Math.min(Math.round(subtotal * (coupon.discount_value / 100)), coupon.max_discount_amount || Infinity)
         : coupon.discount_value;
 
-      toast({ 
-        title: "Coupon applied! 🎉", 
-        description: `Coupon "${coupon.code}" applied! You got 20% discount (Saved ৳${calculatedDiscount.toLocaleString()})` 
+      toast({
+        title: "Coupon applied! 🎉",
+        description: `Coupon "${coupon.code}" applied! You got 20% discount (Saved ৳${calculatedDiscount.toLocaleString()})`
       });
       setCouponCode("");
     } catch (error: any) {
@@ -342,10 +342,10 @@ export default function Checkout() {
     let storedCoupon = "";
     try {
       storedCoupon = sessionStorage.getItem("durtup_pending_coupon")?.trim() || "";
-    } catch {}
+    } catch { }
     const incomingCode = urlCoupon || storedCoupon;
     if (incomingCode) {
-      try { sessionStorage.removeItem("durtup_pending_coupon"); } catch {}
+      try { sessionStorage.removeItem("durtup_pending_coupon"); } catch { }
       applyCoupon(incomingCode);
     }
   }, [subtotal, appliedCoupon, searchParams]);
@@ -384,7 +384,7 @@ export default function Checkout() {
           email: shippingInfo.email
         }));
         setHasSavedAddress(true);
-      } catch {}
+      } catch { }
 
       // Move to Payment Step
       setCheckoutStep("payment");
@@ -474,7 +474,7 @@ export default function Checkout() {
         const firstCartItem = allCartItems[0];
         const primaryProductImage = (firstCartItem as any)?.image || (firstCartItem as any)?.product_image || (firstCartItem as any)?.productImage || (firstCartItem as any)?.product?.image_url || (firstCartItem as any)?.product?.images?.[0] || "/durtup-logo.png";
         const primaryProductName = (firstCartItem as any)?.product?.name || (firstCartItem as any)?.product_name || (firstCartItem as any)?.title || (firstCartItem as any)?.name || "Product";
-        const firstVariantStr = (firstCartItem as any)?.variant_name || 
+        const firstVariantStr = (firstCartItem as any)?.variant_name ||
           ((firstCartItem as any)?.selected_variants ? Object.entries((firstCartItem as any).selected_variants).map(([k, v]) => `${k}: ${v}`).join(", ") : "") || (firstCartItem as any)?.variant || "";
         const variantSuffix = firstVariantStr ? ` [${firstVariantStr}]` : "";
         const totalItemsCount = allCartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
@@ -506,9 +506,9 @@ export default function Checkout() {
           variant_name: firstVariantStr || null,
           total_items: totalItemsCount,
           items: allCartItems.map(item => {
-            const vStr = (item as any)?.variant_name || 
-              ((item as any)?.selected_variants ? Object.entries((item as any).selected_variants).map(([k, v]) => `${k}: ${v}`).join(", ") : null) || 
-              (item as any)?.variant || 
+            const vStr = (item as any)?.variant_name ||
+              ((item as any)?.selected_variants ? Object.entries((item as any).selected_variants).map(([k, v]) => `${k}: ${v}`).join(", ") : null) ||
+              (item as any)?.variant ||
               null;
             const baseName = (item as any)?.product?.name || (item as any)?.product_name || (item as any)?.name || (item as any)?.title || "Item";
             const itemPrice = (item as any)?.product?.discount_price || (item as any)?.product?.regular_price || (item as any)?.price || 0;
@@ -542,8 +542,8 @@ export default function Checkout() {
           bkash_details: paymentMethod === "bkash" ? { sender_number: bkashNumber, trx_id: bkashTrxId } : null,
           created_at: new Date().toISOString()
         };
-        
-        await setDoc(doc(db, "orders", orderId), firestoreOrderDoc, { merge: true }).catch(() => {});
+
+        await setDoc(doc(db, "orders", orderId), firestoreOrderDoc, { merge: true }).catch(() => { });
 
         // If referral attribution exists, create/record in referrals collection
         if (referralEligibility?.referrerId || referralEligibility?.referralCode) {
@@ -587,7 +587,7 @@ export default function Checkout() {
           read: false,
           created_at: new Date().toISOString()
         };
-        
+
         await setDoc(doc(db, "admin_notifications", orderId), adminNotificationDoc, { merge: true }).catch((e) => {
           console.warn("admin_notification sync warning:", e);
         });
@@ -599,7 +599,7 @@ export default function Checkout() {
           localList.unshift(firestoreOrderDoc);
           localStorage.setItem("enterprise_admin_orders", JSON.stringify(localList));
           localStorage.setItem("local_orders", JSON.stringify(localList));
-        } catch {}
+        } catch { }
       } catch (fsErr) {
         console.warn("Firestore order sync warning:", fsErr);
       }
@@ -655,14 +655,14 @@ export default function Checkout() {
             .select("used_count")
             .eq("code", appliedCoupon.code)
             .single();
-          
+
           if (currentCoupon) {
             await supabase
               .from("coupons")
               .update({ used_count: (currentCoupon.used_count || 0) + 1 })
               .eq("code", appliedCoupon.code);
           }
-        } catch {}
+        } catch { }
       }
 
       // Add regular order items
@@ -736,11 +736,11 @@ export default function Checkout() {
               .from("products")
               .select("id, seller_id, sku")
               .in("id", productIds);
-            
+
             if (products && products.length > 0) {
-              const hasMohasagorItems = products.some(p => 
-                p.seller_id === "mohasagor.com.bd" || 
-                p.seller_id === "Mohasagor" || 
+              const hasMohasagorItems = products.some(p =>
+                p.seller_id === "mohasagor.com.bd" ||
+                p.seller_id === "Mohasagor" ||
                 p.sku?.startsWith("MOH-")
               );
               if (hasMohasagorItems) {
@@ -821,7 +821,7 @@ export default function Checkout() {
         productName: primaryProductName
       });
       // Clear both carts in background
-      clearCart().catch(() => {});
+      clearCart().catch(() => { });
       clearCJCart();
 
       // 📱 Trigger Real Phone Push Notification on user device with product image & sound
@@ -837,8 +837,8 @@ export default function Checkout() {
         console.warn("Customer push notification warning:", err);
       });
 
-      toast({ 
-        title: "অর্ডার সফলভাবে সম্পন্ন হয়েছে! 🎉", 
+      toast({
+        title: "অর্ডার সফলভাবে সম্পন্ন হয়েছে! 🎉",
         description: `আপনার অর্ডার #${orderNumber} কনফার্ম করা হয়েছে।`
       });
 
@@ -853,10 +853,10 @@ export default function Checkout() {
       navigate(`/orders/${orderId}`, { replace: true, state: { orderPlaced: true, orderNumber: orderNumber } });
     } catch (error: any) {
       console.error("Order error:", error);
-      toast({ 
-        variant: "destructive", 
-        title: "অর্ডার সম্পন্ন হতে সমস্যা হয়েছে", 
-        description: error.message || "অনুগ্রহ করে পুনরায় চেষ্টা করুন।" 
+      toast({
+        variant: "destructive",
+        title: "অর্ডার সম্পন্ন হতে সমস্যা হয়েছে",
+        description: error.message || "অনুগ্রহ করে পুনরায় চেষ্টা করুন।"
       });
     } finally {
       setLoading(false);
@@ -890,7 +890,7 @@ export default function Checkout() {
                 <span className="text-muted-foreground text-xs sm:text-sm">অর্ডার নম্বর (Order ID):</span>
                 <div className="flex items-center gap-1.5 font-mono font-bold text-primary">
                   <span>#{confirmedOrderData.orderNumber}</span>
-                  <button 
+                  <button
                     type="button"
                     onClick={() => {
                       navigator.clipboard.writeText(confirmedOrderData.orderNumber);
@@ -988,11 +988,11 @@ export default function Checkout() {
       <Header />
       <main className="flex-1 pb-28 md:pb-12 w-full max-w-full overflow-x-hidden">
         <div className="w-full max-w-4xl mx-auto px-3.5 sm:px-6 py-3 sm:py-6 min-w-0">
-          
+
           {/* Top Breadcrumb Navigation */}
           <div className="flex items-center justify-between gap-2 mb-3 sm:mb-5">
-            <Link 
-              to="/cart" 
+            <Link
+              to="/cart"
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-primary transition-colors py-1"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
@@ -1001,19 +1001,17 @@ export default function Checkout() {
 
             {/* Step Indicators */}
             <div className="flex items-center gap-1.5 text-xs">
-              <span className={`px-2.5 py-0.5 rounded-full font-semibold transition-all ${
-                checkoutStep === "shipping" 
-                  ? "bg-primary text-primary-foreground shadow-xs" 
+              <span className={`px-2.5 py-0.5 rounded-full font-semibold transition-all ${checkoutStep === "shipping"
+                  ? "bg-primary text-primary-foreground shadow-xs"
                   : "bg-muted text-muted-foreground"
-              }`}>
+                }`}>
                 ১. ঠিকানা
               </span>
               <span className="text-muted-foreground">→</span>
-              <span className={`px-2.5 py-0.5 rounded-full font-semibold transition-all ${
-                checkoutStep === "payment" 
-                  ? "bg-primary text-primary-foreground shadow-xs" 
+              <span className={`px-2.5 py-0.5 rounded-full font-semibold transition-all ${checkoutStep === "payment"
+                  ? "bg-primary text-primary-foreground shadow-xs"
                   : "bg-muted text-muted-foreground"
-              }`}>
+                }`}>
                 ২. পেমেন্ট
               </span>
             </div>
@@ -1050,14 +1048,14 @@ export default function Checkout() {
                 </div>
               </div>
             </button>
-            
+
             {showOrderSummary && (
               <div className="mt-2.5 p-3.5 sm:p-4 bg-card border border-border/80 rounded-2xl shadow-sm space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
                 {/* Regular items */}
                 {regularItems.map(item => (
                   <div key={item.id} className="flex gap-3 items-center py-1">
                     <img
-                      src={item.image}
+                      src={getDirectImageUrl(item.image) || item.image}
                       alt={item.product.name}
                       className="w-12 h-12 object-cover rounded-xl border border-border/60 shrink-0"
                       onError={(e) => {
@@ -1349,8 +1347,8 @@ export default function Checkout() {
                               <div>
                                 <p className="font-bold text-emerald-700 dark:text-emerald-400 text-xs sm:text-sm">{appliedCoupon.code}</p>
                                 <p className="text-[11px] text-muted-foreground">
-                                  {appliedCoupon.discount_type === "percentage" 
-                                    ? `${appliedCoupon.discount_value}% ছাড় সক্রিয় হয়েছে` 
+                                  {appliedCoupon.discount_type === "percentage"
+                                    ? `${appliedCoupon.discount_value}% ছাড় সক্রিয় হয়েছে`
                                     : `৳${appliedCoupon.discount_value} ছাড় সক্রিয় হয়েছে`}
                                 </p>
                               </div>
@@ -1367,9 +1365,9 @@ export default function Checkout() {
                               onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                               className="h-10 flex-1 text-xs sm:text-sm rounded-xl font-mono uppercase"
                             />
-                            <Button 
-                              type="button" 
-                              variant="outline" 
+                            <Button
+                              type="button"
+                              variant="outline"
                               onClick={applyCoupon}
                               disabled={applyingCoupon}
                               className="h-10 px-4 text-xs font-bold rounded-xl border-primary/40 text-primary hover:bg-primary/10"
@@ -1415,13 +1413,12 @@ export default function Checkout() {
                       <CardContent className="p-3.5 sm:p-5 space-y-3 w-full min-w-0">
                         <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="space-y-3 w-full min-w-0">
                           {/* Cash on Delivery (COD) */}
-                          <div 
+                          <div
                             onClick={() => setPaymentMethod("cod")}
-                            className={`flex items-start gap-3 p-3.5 rounded-xl cursor-pointer transition-all border-2 w-full min-w-0 ${
-                              paymentMethod === "cod" 
-                                ? "border-primary bg-primary/[0.04] shadow-xs" 
+                            className={`flex items-start gap-3 p-3.5 rounded-xl cursor-pointer transition-all border-2 w-full min-w-0 ${paymentMethod === "cod"
+                                ? "border-primary bg-primary/[0.04] shadow-xs"
                                 : "border-border hover:border-primary/40 bg-card"
-                            }`}
+                              }`}
                           >
                             <RadioGroupItem value="cod" id="page-cod" className="shrink-0 mt-0.5" />
                             <Label htmlFor="page-cod" className="flex-1 cursor-pointer min-w-0 space-y-0.5">
@@ -1453,13 +1450,12 @@ export default function Checkout() {
                           )}
 
                           {/* bKash Option */}
-                          <div 
+                          <div
                             onClick={() => setPaymentMethod("bkash")}
-                            className={`flex items-start gap-3 p-3.5 rounded-xl cursor-pointer transition-all border-2 w-full min-w-0 ${
-                              paymentMethod === "bkash" 
-                                ? "border-[#E2136E] bg-[#E2136E]/[0.04] shadow-xs" 
+                            className={`flex items-start gap-3 p-3.5 rounded-xl cursor-pointer transition-all border-2 w-full min-w-0 ${paymentMethod === "bkash"
+                                ? "border-[#E2136E] bg-[#E2136E]/[0.04] shadow-xs"
                                 : "border-border hover:border-[#E2136E]/40 bg-card"
-                            }`}
+                              }`}
                           >
                             <RadioGroupItem value="bkash" id="page-bkash" className="shrink-0 mt-0.5" />
                             <Label htmlFor="page-bkash" className="flex-1 cursor-pointer min-w-0 space-y-0.5">
@@ -1661,7 +1657,7 @@ export default function Checkout() {
                       {regularItems.map(item => (
                         <div key={item.id} className="flex gap-2.5 items-center">
                           <img
-                            src={item.image}
+                            src={getDirectImageUrl(item.image) || item.image}
                             alt={item.product.name}
                             className="w-11 h-11 object-cover rounded-lg border shrink-0"
                             onError={(e) => {
@@ -1710,9 +1706,9 @@ export default function Checkout() {
                       <span className="text-primary font-black text-xl">৳{total.toLocaleString()}</span>
                     </div>
 
-                    <Button 
-                      type="submit" 
-                      className="w-full h-11 text-sm font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-md shadow-primary/20 transition-all active:scale-[0.99] flex items-center justify-center gap-2" 
+                    <Button
+                      type="submit"
+                      className="w-full h-11 text-sm font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-md shadow-primary/20 transition-all active:scale-[0.99] flex items-center justify-center gap-2"
                       disabled={loading}
                     >
                       {loading ? (
@@ -1743,8 +1739,8 @@ export default function Checkout() {
             </div>
 
             {/* Mobile Fixed Bottom Action Bar */}
-            <div 
-              className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-xl border-t border-border/80 px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]" 
+            <div
+              className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-xl border-t border-border/80 px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]"
               style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 12px)' }}
             >
               <div className="flex items-center justify-between gap-3 max-w-4xl mx-auto w-full">
@@ -1752,10 +1748,10 @@ export default function Checkout() {
                   <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">মোট প্রদেয় বিল</p>
                   <p className="text-lg font-black text-primary leading-tight">৳{total.toLocaleString()}</p>
                 </div>
-                <Button 
-                  type="submit" 
-                  size="lg" 
-                  className="h-11 px-6 text-sm font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl flex-1 max-w-[240px] shadow-md shadow-primary/25 transition-all active:scale-[0.99] flex items-center justify-center gap-1.5 ml-auto" 
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="h-11 px-6 text-sm font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl flex-1 max-w-[240px] shadow-md shadow-primary/25 transition-all active:scale-[0.99] flex items-center justify-center gap-1.5 ml-auto"
                   disabled={loading}
                 >
                   {loading ? (

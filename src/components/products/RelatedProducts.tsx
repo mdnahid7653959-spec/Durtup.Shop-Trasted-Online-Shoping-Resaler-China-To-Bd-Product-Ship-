@@ -141,8 +141,8 @@ function RelatedProductsComponent({
           ) : (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 lg:gap-5">
-                {visibleProducts.map((prod) => (
-                  <ProductCard key={prod.id} product={prod} priority={false} />
+                {visibleProducts.map((prod, idx) => (
+                  <ProductCard key={`${prod.id}-${idx}`} product={prod} index={idx} priority={idx < 12} />
                 ))}
               </div>
 

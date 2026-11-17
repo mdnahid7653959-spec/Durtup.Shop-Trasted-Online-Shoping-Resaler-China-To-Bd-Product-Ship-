@@ -21,7 +21,7 @@ import { StoreDetails } from "@/components/products/StoreDetails";
 import { ProductDescriptionSection } from "@/components/products/ProductDescriptionSection";
 import { getCachedMohasagorProducts, findMohasagorProduct, findMohasagorProductSync, findSeriesImages, FALLBACK_SUPPLIER_PRODUCTS } from "@/utils/mohasagorCache";
 import { calculateProductPrice } from "@/utils/pricingMargin";
-import { getSmartProductImage, getDirectImageUrl, optimizeImageUrl, getResponsiveImageSrcSet, PRODUCT_DETAIL_SIZES, getCategoryFallbackImage, getCategoryFallbackImages } from "@/utils/productImageHelper";
+import { getSmartProductImage, getDirectImageUrl, optimizeImageUrl, getResponsiveImageSrcSet, PRODUCT_DETAIL_SIZES, getCategoryFallbackImage, getCategoryFallbackImages, KNOWN_DEAD_ORIGIN_URLS, globalFailedImageUrls } from "@/utils/productImageHelper";
 import { getEnhancedProductDescription } from "@/utils/productDescriptionHelper";
 import { extractProductVariants, getColorHex, sortVariantValues, type ProductVariant } from "@/utils/productVariantHelper";
 import { db } from "@/integrations/firebase/client";
@@ -98,6 +98,54 @@ function MobileProductTopBar() {
           <Link to="/cart" className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 rounded-full text-slate-700 dark:text-slate-200" aria-label="Cart">
             <ShoppingCart className="h-5 w-5" />
           </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DesktopProductNavBar({
+  categoryName,
+  categorySlug,
+  productName,
+}: {
+  categoryName?: string;
+  categorySlug?: string;
+  productName?: string;
+}) {
+  const handleSmartBack = useSmartBack();
+  return (
+    <div className="hidden md:block w-full bg-slate-50/90 dark:bg-slate-900/60 border-b border-border/60 py-2.5 px-4 sm:px-6">
+      <div className="container max-w-7xl mx-auto flex items-center justify-between gap-4 text-xs sm:text-sm">
+        <button
+          onClick={handleSmartBack}
+          className="inline-flex items-center gap-1.5 font-semibold text-slate-700 hover:text-orange-600 dark:text-slate-200 dark:hover:text-orange-400 px-3 py-1.5 rounded-lg hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-all cursor-pointer group active:scale-95 border border-slate-200/80 dark:border-slate-700/60 shadow-2xs"
+          aria-label="Back to previous page"
+        >
+          <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1 text-orange-600" />
+          <span>Back</span>
+        </button>
+
+        <div className="flex items-center gap-2 text-muted-foreground truncate max-w-lg text-xs">
+          <Link to="/" className="hover:text-foreground transition-colors flex items-center gap-1">
+            <Home className="h-3.5 w-3.5" />
+            <span>Home</span>
+          </Link>
+          <span>/</span>
+          {categoryName && (
+            <>
+              <Link
+                to={`/category/${categorySlug || categoryName}`}
+                className="hover:text-foreground transition-colors truncate max-w-[160px]"
+              >
+                {categoryName}
+              </Link>
+              <span>/</span>
+            </>
+          )}
+          <span className="text-foreground font-medium truncate max-w-[240px]">
+            {productName || "Product Details"}
+          </span>
         </div>
       </div>
     </div>
@@ -530,21 +578,25 @@ function ProductDetailContent() {
   const resolveImage = (img: any): string => {
     const cat = (product as any)?.category || product?.category_id || "";
     if (!img) return getCategoryFallbackImage(product?.name || "", cat);
-    const url = typeof img === "string" ? img : img.image_url || img.url || img.product_image;
+    const url = typeof img === "string" ? img : img.image_url || img.url || img.product_image || img.path || img.src;
     if (!url || typeof url !== "string") return getCategoryFallbackImage(product?.name || "", cat);
     let trimmed = url.trim();
     if (!trimmed) return getCategoryFallbackImage(product?.name || "", cat);
     let fullUrl = trimmed;
     if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://") && !trimmed.startsWith("data:") && !trimmed.startsWith("blob:")) {
-      if (trimmed.startsWith("//")) fullUrl = `https:${trimmed}`;
-      else if (trimmed.startsWith("/")) fullUrl = `https://mohasagor.com.bd${trimmed}`;
-      else fullUrl = `https://mohasagor.com.bd/${trimmed}`;
-    }
-    if (fullUrl.includes("mohasagor.com.bd")) {
-      return fullUrl.replace(/^https?:\/\/mohasagor\.com\.bd/i, "/api/mohasagor");
-    }
-    if (fullUrl.includes("ecomsellerbd.com")) {
-      return fullUrl.replace(/^https?:\/\/ecomsellerbd\.com/i, "/api/ecomseller");
+      if (trimmed.startsWith("//")) {
+        fullUrl = `https:${trimmed}`;
+      } else if (trimmed.startsWith("/uploads/") || trimmed.startsWith("uploads/")) {
+        const p = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+        fullUrl = `https://ecomsellerbd.com${p}`;
+      } else if (trimmed.startsWith("/public/storage/") || trimmed.startsWith("public/storage/") || trimmed.startsWith("/storage/") || trimmed.startsWith("storage/")) {
+        const p = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+        fullUrl = `https://mohasagor.com.bd${p}`;
+      } else if (trimmed.startsWith("/")) {
+        fullUrl = `https://mohasagor.com.bd${trimmed}`;
+      } else {
+        fullUrl = `https://mohasagor.com.bd/${trimmed}`;
+      }
     }
     return fullUrl;
   };
@@ -619,16 +671,26 @@ function ProductDetailContent() {
     const seenImgKeys = new Set<string>();
     const res: string[] = [];
     for (const u of rawResolved) {
-      if (!u) continue;
+      if (!u || KNOWN_DEAD_ORIGIN_URLS.has(u) || globalFailedImageUrls.has(u)) continue;
       const key = extractImageDedupeKey(u);
       if (!seenImgKeys.has(key)) {
         seenImgKeys.add(key);
         res.push(u);
       }
     }
+
+    // Sort to prioritize fast, lightweight JPG over heavy uncompressed 7MB PNG
+    res.sort((a, b) => {
+      const aIsJpg = a.endsWith(".jpg") || a.endsWith(".jpeg");
+      const bIsJpg = b.endsWith(".jpg") || b.endsWith(".jpeg");
+      if (aIsJpg && !bIsJpg) return -1;
+      if (!aIsJpg && bIsJpg) return 1;
+      return 0;
+    });
+
     const cat = (product as any)?.category || product?.category_id || "";
     if (res.length === 0) {
-      const seriesImgs = findSeriesImages(product?.name || "");
+      const seriesImgs = findSeriesImages(product?.name || "").filter(u => !KNOWN_DEAD_ORIGIN_URLS.has(u) && !globalFailedImageUrls.has(u));
       if (seriesImgs.length > 0) {
         res.push(...seriesImgs);
       } else {
@@ -636,7 +698,7 @@ function ProductDetailContent() {
       }
     } else if (res.length === 1) {
       // If product has only 1 photo, check if an exact sibling model in catalog has the remaining photos
-      const seriesImgs = findSeriesImages(product?.name || "", res);
+      const seriesImgs = findSeriesImages(product?.name || "", res).filter(u => !KNOWN_DEAD_ORIGIN_URLS.has(u) && !globalFailedImageUrls.has(u));
       if (seriesImgs.length > res.length) {
         res.length = 0;
         res.push(...seriesImgs);
@@ -651,12 +713,12 @@ function ProductDetailContent() {
   // Synchronize gallery images when product or initialImages change
   useEffect(() => {
     if (initialImages && initialImages.length > 0) {
-      const valid = initialImages.filter(img => !failedUrlsRef.current.has(img));
+      const valid = initialImages.filter(img => !failedUrlsRef.current.has(img) && !KNOWN_DEAD_ORIGIN_URLS.has(img));
       if (valid.length > 0) {
         setGalleryImages(valid);
       } else {
         const cat = (product as any)?.category || product?.category_id || "";
-        const seriesImgs = findSeriesImages(product?.name || "");
+        const seriesImgs = findSeriesImages(product?.name || "").filter(u => !failedUrlsRef.current.has(u) && !KNOWN_DEAD_ORIGIN_URLS.has(u));
         if (seriesImgs.length > 0) {
           setGalleryImages(seriesImgs);
         } else {
@@ -701,7 +763,7 @@ function ProductDetailContent() {
   useEffect(() => {
     if (!images || images.length === 0) return;
     images.forEach((imgUrl) => {
-      if (!imgUrl || failedUrlsRef.current.has(imgUrl)) return;
+      if (!imgUrl || failedUrlsRef.current.has(imgUrl) || KNOWN_DEAD_ORIGIN_URLS.has(imgUrl)) return;
       const direct = getDirectImageUrl(imgUrl) || imgUrl;
       const img = new Image();
       img.decoding = "async";
@@ -716,57 +778,89 @@ function ProductDetailContent() {
     });
   }, [images]);
 
-  // Proactive safety watchdog: If main image hangs or fails to load within 12 seconds, safely advance
+  // Proactive safety watchdog: If main image hangs or fails to load within 1.2s, safely recover immediately
   useEffect(() => {
     if (!currentImage || isCurrentMainLoaded || currentImage.startsWith("data:")) return;
     const cat = (product as any)?.category || product?.category_id || "";
     const timer = setTimeout(() => {
       if (!loadedMainImages[currentImage]) {
-        const seriesImgs = findSeriesImages(product?.name || "");
-        if (seriesImgs.length > 0) {
-          setGalleryImages(seriesImgs);
+        const img = mainImgRef.current;
+        if (img && img.naturalWidth > 0) {
+          setLoadedMainImages(p => ({ ...p, [currentImage]: true }));
         } else {
-          setGalleryImages(getCategoryFallbackImages(product?.name || "", cat, 4));
+          // Stalled or dead image: advance immediately
+          handleMainImageError({ currentTarget: img || ({} as any) } as any);
         }
       }
-    }, 12000);
+    }, 1200);
     return () => clearTimeout(timer);
   }, [currentImage, isCurrentMainLoaded, product?.name]);
 
   const handleMainImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     const target = e.currentTarget;
-    target.removeAttribute("srcset");
+    if (target && typeof target.removeAttribute === "function") {
+      target.removeAttribute("srcset");
+    }
     const failedSrc = currentImage;
-    if (failedSrc) failedUrlsRef.current.add(failedSrc);
+    if (failedSrc) {
+      failedUrlsRef.current.add(failedSrc);
+      globalFailedImageUrls.add(failedSrc);
+      const direct = getDirectImageUrl(failedSrc);
+      if (direct) {
+        failedUrlsRef.current.add(direct);
+        globalFailedImageUrls.add(direct);
+      }
+    }
 
     const cat = (product as any)?.category || product?.category_id || "";
 
-    setGalleryImages(prev => {
-      const remaining = prev.filter(img => img !== failedSrc && !failedUrlsRef.current.has(img));
-      if (remaining.length > 0) {
-        return remaining;
-      }
-      const seriesImgs = findSeriesImages(product?.name || "");
+    const remaining = galleryImages.filter(img => img !== failedSrc && !failedUrlsRef.current.has(img) && !KNOWN_DEAD_ORIGIN_URLS.has(img));
+    let nextUrl = "";
+    if (remaining.length > 0) {
+      nextUrl = remaining[0];
+    } else {
+      const seriesImgs = findSeriesImages(product?.name || "").filter(u => !failedUrlsRef.current.has(u) && !KNOWN_DEAD_ORIGIN_URLS.has(u));
       const fallbacks = seriesImgs.length > 0 ? seriesImgs : getCategoryFallbackImages(product?.name || "", cat, 4);
-      if (fallbacks[0]) {
-        setLoadedMainImages(p => ({ ...p, [fallbacks[0]]: true }));
-        setPrevImage(fallbacks[0]);
+      nextUrl = fallbacks[0] || "";
+    }
+
+    if (nextUrl) {
+      if (target) {
+        target.src = nextUrl;
       }
-      return fallbacks;
+      setLoadedMainImages(p => ({ ...p, [nextUrl]: true }));
+      setPrevImage(nextUrl);
+    }
+
+    setGalleryImages(prev => {
+      const rem = prev.filter(img => img !== failedSrc && !failedUrlsRef.current.has(img) && !KNOWN_DEAD_ORIGIN_URLS.has(img));
+      if (rem.length > 0) {
+        return rem;
+      }
+      const seriesImgs = findSeriesImages(product?.name || "").filter(u => !failedUrlsRef.current.has(u) && !KNOWN_DEAD_ORIGIN_URLS.has(u));
+      return seriesImgs.length > 0 ? seriesImgs : getCategoryFallbackImages(product?.name || "", cat, 4);
     });
-    setSelectedImage(prev => (prev > 0 ? prev - 1 : 0));
+    setSelectedImage(0);
   };
 
   const handleThumbnailError = (index: number, failedUrl: string) => {
-    if (failedUrl) failedUrlsRef.current.add(failedUrl);
+    if (failedUrl) {
+      failedUrlsRef.current.add(failedUrl);
+      globalFailedImageUrls.add(failedUrl);
+      const direct = getDirectImageUrl(failedUrl);
+      if (direct) {
+        failedUrlsRef.current.add(direct);
+        globalFailedImageUrls.add(direct);
+      }
+    }
     const cat = (product as any)?.category || product?.category_id || "";
 
     setGalleryImages(prev => {
-      const remaining = prev.filter(img => img !== failedUrl && !failedUrlsRef.current.has(img));
+      const remaining = prev.filter(img => img !== failedUrl && !failedUrlsRef.current.has(img) && !KNOWN_DEAD_ORIGIN_URLS.has(img));
       if (remaining.length > 0) {
         return remaining;
       }
-      const seriesImgs = findSeriesImages(product?.name || "");
+      const seriesImgs = findSeriesImages(product?.name || "").filter(u => !failedUrlsRef.current.has(u) && !KNOWN_DEAD_ORIGIN_URLS.has(u));
       return seriesImgs.length > 0 ? seriesImgs : getCategoryFallbackImages(product?.name || "", cat, 4);
     });
     setSelectedImage(prev => (prev >= index && prev > 0 ? prev - 1 : 0));
@@ -774,6 +868,7 @@ function ProductDetailContent() {
 
   const heroSrcSet = useMemo(() => {
     if (!currentImage || currentImage.startsWith("data:") || currentImage.startsWith("blob:")) return undefined;
+    if (KNOWN_DEAD_ORIGIN_URLS.has(currentImage) || failedUrlsRef.current.has(currentImage)) return undefined;
     const set = getResponsiveImageSrcSet(currentImage, [400, 600, 800, 1000], 80);
     return set && set.trim().length > 0 ? set.trim() : undefined;
   }, [currentImage]);
@@ -1593,6 +1688,7 @@ function ProductDetailContent() {
         <div className="hidden md:block">
           <Header />
         </div>
+        <DesktopProductNavBar productName={fallbackFormattedName} />
         <MobileProductTopBar />
         <main className="flex-1 container py-4 sm:py-8 pb-20 md:pb-8 flex flex-col items-center justify-center">
           <div className="w-full max-w-5xl py-6">
@@ -1625,6 +1721,7 @@ function ProductDetailContent() {
         <div className="hidden md:block">
           <Header />
         </div>
+        <DesktopProductNavBar productName={fallbackFormattedName} />
         <MobileProductTopBar />
         <main className="flex-1 container py-8 pb-20 md:pb-8">
           <div className="max-w-xl mx-auto text-center py-6 px-4">
@@ -1722,6 +1819,11 @@ function ProductDetailContent() {
       <div className="hidden md:block">
         <Header />
       </div>
+      <DesktopProductNavBar 
+        categoryName={(product as any)?.category_name || (product as any)?.category}
+        categorySlug={(product as any)?.category_slug || (product as any)?.category}
+        productName={product?.name}
+      />
       <MobileProductTopBar />
 
       <main className="flex-1 pb-40 md:pb-8 w-full max-w-full overflow-hidden">
@@ -1988,12 +2090,25 @@ function ProductDetailContent() {
                             decoding="async"
                             referrerPolicy="strict-origin-when-cross-origin"
                             style={{ imageRendering: "-webkit-optimize-contrast" }}
-                            className={cn(
-                              "w-full h-full object-contain transition-opacity duration-200 relative z-1",
-                              isThumbLoaded ? "opacity-100" : "opacity-0"
-                            )}
+                            className="w-full h-full object-contain relative z-1"
                             onLoad={() => setLoadedThumbnails(prev => ({ ...prev, [img]: true }))}
-                            onError={() => handleThumbnailError(i, img)}
+                            onError={(e) => {
+                              // Step 1: If proxy fails, try direct unproxied supplier image
+                              const direct = getDirectImageUrl(img);
+                              if (direct && e.currentTarget.src !== direct) {
+                                e.currentTarget.src = direct;
+                                return;
+                              }
+                              // Step 2: Fall back to verified category photo
+                              const cat = (product as any)?.category || product?.category_id || "";
+                              const fallback = getCategoryFallbackImage(product.name, cat, i);
+                              if (fallback && e.currentTarget.src !== fallback) {
+                                e.currentTarget.src = fallback;
+                                setLoadedThumbnails(prev => ({ ...prev, [img]: true }));
+                                return;
+                              }
+                              handleThumbnailError(i, img);
+                            }}
                           />
                         </button>
                       );

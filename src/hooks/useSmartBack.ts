@@ -1,10 +1,10 @@
 import { useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-// Force manual scroll restoration so browser never jerks user to the bottom of the previous page
+// Allow browser native scroll restoration so returning to previous pages restores scroll position
 if (typeof window !== "undefined" && "scrollRestoration" in window.history) {
   try {
-    window.history.scrollRestoration = "manual";
+    window.history.scrollRestoration = "auto";
   } catch {}
 }
 
@@ -51,7 +51,7 @@ export function useAppHistoryTracker() {
 
 /**
  * Smart Back hook:
- * One single click on Back immediately and cleanly returns to the previous page at the top.
+ * Seamlessly returns to the previous page in history, preserving scroll position and state.
  * If no previous page on this site, cleanly navigates to fallbackPath ('/').
  */
 export function useSmartBack(fallbackPath: string = "/") {
@@ -64,11 +64,6 @@ export function useSmartBack(fallbackPath: string = "/") {
       e.stopPropagation?.();
     }
 
-    // Scroll to top instantly
-    if (typeof window !== "undefined") {
-      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-    }
-
     const currentUrl = location.pathname + (location.search ? location.search : "");
     const stack = getHistoryStack();
 
@@ -78,31 +73,23 @@ export function useSmartBack(fallbackPath: string = "/") {
     }
 
     if (stack.length > 0) {
-      const targetPreviousUrl = stack.pop();
+      stack.pop();
       setHistoryStack(stack);
 
-      if (targetPreviousUrl) {
-        navigate(targetPreviousUrl, { replace: false });
-      } else if (typeof window !== "undefined" && window.history.length > 1) {
+      // Perform a real browser history POP to restore previous page state & scroll
+      if (typeof window !== "undefined" && window.history.length > 1) {
         navigate(-1);
       } else {
-        navigate(fallbackPath);
+        navigate(fallbackPath, { replace: true });
       }
     } else {
       // Fallback for direct entrance
       if (typeof window !== "undefined" && window.history.length > 1) {
         navigate(-1);
       } else {
-        navigate(fallbackPath);
+        navigate(fallbackPath, { replace: true });
       }
     }
-
-    // Secondary instant scroll to top after route transition
-    setTimeout(() => {
-      if (typeof window !== "undefined") {
-        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-      }
-    }, 20);
   }, [navigate, location.pathname, location.search, fallbackPath]);
 
   return handleBack;

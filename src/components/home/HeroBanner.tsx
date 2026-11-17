@@ -148,7 +148,7 @@ export function HeroBanner() {
           {/* Main Hero Slider (8 cols on lg, 9 cols on xl) */}
           <div className="lg:col-span-8 xl:col-span-9 relative flex">
             <div
-              className="w-full relative overflow-hidden rounded-xl sm:rounded-2xl md:rounded-3xl shadow-md sm:shadow-lg bg-slate-950 select-none group/banner border border-border/40 aspect-[1024/400] max-h-[440px]"
+              className="w-full relative overflow-hidden rounded-xl sm:rounded-2xl md:rounded-3xl shadow-md sm:shadow-lg bg-slate-950 select-none group/banner border border-border/40 aspect-[1024/380] sm:aspect-[1024/340] max-h-[260px] sm:max-h-[300px] md:max-h-[330px]"
               onMouseEnter={() => setIsBannerPaused(true)}
               onMouseLeave={() => setIsBannerPaused(false)}
               onTouchStart={handleTouchStart}
@@ -261,10 +261,10 @@ const SideProductCard = memo(function SideProductCard({ product }: SideProductCa
       to={productUrl}
       onMouseEnter={() => prefetchRoute(productUrl)}
       onTouchStart={() => prefetchRoute(productUrl)}
-      className="group/card relative flex-1 flex flex-col justify-between p-3 rounded-2xl bg-card border border-border/80 hover:border-primary/50 shadow-xs hover:shadow-lg transition-all duration-300 overflow-hidden select-none animate-in fade-in zoom-in-95 duration-500 hover:-translate-y-1"
+      className="group/card relative flex-1 flex flex-col justify-between p-2 sm:p-2.5 rounded-2xl bg-card border border-border/80 hover:border-primary/50 shadow-xs hover:shadow-lg transition-all duration-300 overflow-hidden select-none animate-in fade-in zoom-in-95 duration-500 hover:-translate-y-1"
     >
       {/* 1. UPORE: Product Photo in Box */}
-      <div className="relative w-full h-24 sm:h-28 rounded-xl bg-slate-50 dark:bg-slate-900/60 p-1.5 flex items-center justify-center overflow-hidden border border-border/50 shadow-2xs group-hover/card:scale-[1.02] transition-transform duration-300">
+      <div className="relative w-full h-18 sm:h-20 md:h-22 rounded-xl bg-slate-50 dark:bg-slate-900/60 p-1 flex items-center justify-center overflow-hidden border border-border/50 shadow-2xs group-hover/card:scale-[1.02] transition-transform duration-300">
         <img
           src={displayImage}
           alt={product.name}

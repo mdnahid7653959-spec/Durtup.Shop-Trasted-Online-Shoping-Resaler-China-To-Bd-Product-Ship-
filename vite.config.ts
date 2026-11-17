@@ -252,6 +252,20 @@ export default defineConfig(({ mode }) => ({
           "origin": "https://ecomsellerbd.com",
         },
       },
+      "/uploads": {
+        target: "https://ecomsellerbd.com",
+        changeOrigin: true,
+        headers: {
+          "referer": "https://ecomsellerbd.com",
+        },
+      },
+      "/public/storage": {
+        target: "https://mohasagor.com.bd",
+        changeOrigin: true,
+        headers: {
+          "referer": "https://mohasagor.com.bd",
+        },
+      },
     },
   },
   plugins: [react(), sigmaDevApiPlugin()].filter(Boolean),
