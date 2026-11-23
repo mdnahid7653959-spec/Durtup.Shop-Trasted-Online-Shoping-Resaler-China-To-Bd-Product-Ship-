@@ -8,7 +8,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { FAST_SEED_PRODUCTS } from "../data/fastSeedCatalog";
-import { db } from "../integrations/firebase/client";
+import { db } from "./telegramAdminEngine";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { verifyAuthHeader, TokenVerificationResult } from "./tokenVerifier";
 import { sendTelegramOrderNotificationWithActions } from "./telegramAdminEngine";

@@ -9,9 +9,30 @@
  * - Webhook validation and idempotency protection
  */
 
-import { db } from "../integrations/firebase/client";
-import { doc, getDoc, setDoc, updateDoc, collection, getDocs, query, orderBy, limit, where } from "firebase/firestore";
-import { supabase } from "../lib/firebaseAdapter";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, query, orderBy, limit, where } from "firebase/firestore";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCIcvphAtwx7rup-aV3MZPDK0w-xCN1Xoc",
+  authDomain: "eshop-app-6119d.firebaseapp.com",
+  projectId: "eshop-app-6119d",
+  storageBucket: "eshop-app-6119d.firebasestorage.app",
+  messagingSenderId: "18064875571",
+  appId: "1:18064875571:web:0cd166f0bc0446c7bc0346"
+};
+
+const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+export const db = getFirestore(app);
+
+// Safe no-op adapter for optional legacy sync calls
+const supabase = {
+  from: () => ({
+    update: () => ({
+      or: async () => {},
+      eq: async () => {}
+    })
+  })
+};
 
 export interface TelegramBotConfig {
   bot_token: string;
