@@ -26,7 +26,7 @@ const CATEGORY_MAP = [
   },
   {
     name: 'category-foods.webp',
-    url: 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=500&h=500&fit=crop&q=80',
+    url: 'https://images.unsplash.com/photo-1587049352851-8d4e89133924?w=500&h=500&fit=crop&q=80',
   },
   {
     name: 'category-kids.webp',

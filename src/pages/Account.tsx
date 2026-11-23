@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { User, Mail, Phone, MapPin, Lock, Camera, Save, Eye, EyeOff, Store, Clock, CheckCircle, ShieldCheck, LogOut, Wallet, Share2, Gift } from "lucide-react";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
+import { User, Mail, Phone, MapPin, Lock, Camera, Save, Eye, EyeOff, Store, Clock, CheckCircle, ShieldCheck, LogOut, Wallet, Share2, Gift, BellRing, TrendingDown, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,12 +16,44 @@ import { Footer } from "@/components/layout/Footer";
 import { supabase } from "@/lib/firebaseAdapter";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "@/integrations/firebase/client";
+import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
+import { ProductCard } from "@/components/products/ProductCard";
+import { getCustomerStockAlerts, cancelStockAlert, BACK_IN_STOCK_EVENT, type StockAlertSubscription } from "@/services/backInStockService";
+import {
+  getCustomerPriceAlerts,
+  cancelPriceAlert,
+  deletePriceAlert,
+  PRICE_DROP_EVENT,
+  type PriceAlertSubscription,
+} from "@/services/priceDropService";
+import { ModernRadialLoader } from "@/components/common/ModernRadialLoader";
 
 export default function Account() {
   const { user, profile, loading, signOut } = useAuth();
   const { status: sellerStatus, sellerInfo, isApprovedSeller, isPendingSeller, hasApplied } = useSellerStatus();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentTab = searchParams.get("tab") || "profile";
+
+  const { recentlyViewed, clearRecentlyViewed } = useRecentlyViewed();
+  const [stockAlerts, setStockAlerts] = useState<StockAlertSubscription[]>([]);
+  const [priceAlerts, setPriceAlerts] = useState<PriceAlertSubscription[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchAlerts = () => {
+      getCustomerStockAlerts(user.id, user.email).then(setStockAlerts);
+      getCustomerPriceAlerts(user.id || user.email).then(setPriceAlerts);
+    };
+    fetchAlerts();
+    window.addEventListener(BACK_IN_STOCK_EVENT, fetchAlerts);
+    window.addEventListener(PRICE_DROP_EVENT, fetchAlerts);
+    return () => {
+      window.removeEventListener(BACK_IN_STOCK_EVENT, fetchAlerts);
+      window.removeEventListener(PRICE_DROP_EVENT, fetchAlerts);
+    };
+  }, [user]);
 
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -38,27 +70,27 @@ export default function Account() {
     }
   };
 
-  
+
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [saving, setSaving] = useState(false);
-  
+
   // Address fields
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [zipCode, setZipCode] = useState("");
   const [country, setCountry] = useState("");
-  
+
   // Password fields
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPasswords, setShowPasswords] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
-  
+
   // Theme
   const [isDarkMode, setIsDarkMode] = useState(false);
 
@@ -90,7 +122,7 @@ export default function Account() {
         .eq("is_default", true)
         .limit(1)
         .maybeSingle();
-      
+
       if (data) {
         setDefaultAddressId(data.id);
         setAddress(data.address_line1 || "");
@@ -220,10 +252,7 @@ export default function Account() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <span className="text-sm text-muted-foreground">Loading...</span>
-        </div>
+        <ModernRadialLoader size="lg" label="Loading..." showBrand />
       </div>
     );
   }
@@ -251,13 +280,29 @@ export default function Account() {
             </Button>
           </div>
 
-          <Tabs defaultValue="profile" className="space-y-4 sm:space-y-6">
+          <Tabs value={currentTab} onValueChange={(val) => setSearchParams({ tab: val })} className="space-y-4 sm:space-y-6">
             {/* Mobile-friendly horizontal scroll tabs */}
             <div className="overflow-x-auto scrollbar-hide -mx-3 px-3 sm:mx-0 sm:px-0">
-              <TabsList className="grid w-full grid-cols-3 min-w-[280px] h-10 sm:h-11">
-                <TabsTrigger value="profile" className="text-[11px] sm:text-sm px-2 sm:px-4">Profile</TabsTrigger>
-                <TabsTrigger value="address" className="text-[11px] sm:text-sm px-2 sm:px-4">Address</TabsTrigger>
-                <TabsTrigger value="password" className="text-[11px] sm:text-sm px-2 sm:px-4">Password</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-6 min-w-[580px] h-10 sm:h-11">
+                <TabsTrigger value="profile" className="text-[11px] sm:text-sm px-2 sm:px-3">Profile</TabsTrigger>
+                <TabsTrigger value="address" className="text-[11px] sm:text-sm px-2 sm:px-3">Address</TabsTrigger>
+                <TabsTrigger value="password" className="text-[11px] sm:text-sm px-2 sm:px-3">Password</TabsTrigger>
+                <TabsTrigger value="recently-viewed" className="text-[11px] sm:text-sm px-2 sm:px-3 flex items-center gap-1">
+                  <span>Viewing History</span>
+                  {recentlyViewed.length > 0 && (
+                    <span className="w-4 h-4 rounded-full bg-orange-600 text-white text-[9px] font-bold flex items-center justify-center">
+                      {recentlyViewed.length}
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="stock-alerts" className="text-[11px] sm:text-sm px-2 sm:px-3 flex items-center gap-1">
+                  <span>Stock Alerts</span>
+                  {stockAlerts.filter(s => s.status === "pending").length > 0 && (
+                    <span className="w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-bold flex items-center justify-center">
+                      {stockAlerts.filter(s => s.status === "pending").length}
+                    </span>
+                  )}
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -549,6 +594,187 @@ export default function Account() {
                         <Mail className="w-4 h-4" />
                         {sendingResetEmail ? "Sending Link..." : "Send Verification Link to Gmail"}
                       </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Viewing History Tab */}
+            <TabsContent value="recently-viewed">
+              <Card className="border-0 sm:border shadow-sm">
+                <CardHeader className="p-4 sm:p-6 pb-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                        <Clock className="w-5 h-5 text-orange-600" />
+                        ব্রাউজিং হিস্টোরি (Recently Viewed)
+                      </CardTitle>
+                      <CardDescription className="text-xs sm:text-sm">
+                        আপনার সম্প্রতি দেখা পণ্যের তালিকা (সর্বশেষ দেখা পণ্য প্রথমে)
+                      </CardDescription>
+                    </div>
+                    {recentlyViewed.length > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={async () => {
+                          await clearRecentlyViewed();
+                          toast({ title: "সফল", description: "হিস্টোরি মুছে ফেলা হয়েছে" });
+                        }}
+                        className="text-xs text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 mr-1" />
+                        হিস্টোরি মুছুন
+                      </Button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent className="p-4 sm:p-6 pt-0">
+                  {recentlyViewed.length === 0 ? (
+                    <div className="text-center py-12 px-4 rounded-xl border border-dashed bg-muted/20">
+                      <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3 text-muted-foreground">
+                        <Clock className="w-6 h-6 text-muted-foreground" />
+                      </div>
+                      <h3 className="font-bold text-sm sm:text-base text-foreground mb-1">
+                        কোনো ব্রাউজিং হিস্টোরি নেই
+                      </h3>
+                      <p className="text-xs text-muted-foreground max-w-sm mx-auto mb-4">
+                        আপনি যেকোনো পণ্য দেখলে তা স্বয়ংক্রিয়ভাবে এখানে সংরক্ষিত হবে।
+                      </p>
+                      <Button asChild className="rounded-xl font-bold text-xs bg-primary text-primary-foreground">
+                        <Link to="/products">পণ্য ব্রাউজ করুন</Link>
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                      {recentlyViewed.map((prod, idx) => (
+                        <ProductCard key={prod.id || idx} product={prod as any} index={idx} />
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Back in Stock Alerts Tab */}
+            <TabsContent value="stock-alerts">
+              <Card className="border-0 sm:border shadow-sm">
+                <CardHeader className="p-4 sm:p-6 pb-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                        <BellRing className="w-5 h-5 text-orange-600" />
+                        স্টক অ্যালার্ট ও নোটিফিকেশন (Back in Stock Alerts)
+                      </CardTitle>
+                      <CardDescription className="text-xs sm:text-sm">
+                        যেসব পণ্যের স্টকের জন্য আপনি অপেক্ষা করছেন সেগুলোর তালিকা
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-4 sm:p-6 pt-0">
+                  {stockAlerts.length === 0 ? (
+                    <div className="text-center py-12 px-4 rounded-xl border border-dashed bg-muted/20">
+                      <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3 text-muted-foreground">
+                        <BellRing className="w-6 h-6 text-muted-foreground" />
+                      </div>
+                      <h3 className="font-bold text-sm sm:text-base text-foreground mb-1">
+                        কোনো সক্রিয় স্টক অ্যালার্ট নেই
+                      </h3>
+                      <p className="text-xs text-muted-foreground max-w-sm mx-auto mb-4">
+                        যেকোনো আউট-অব-স্টক পণ্যের পেজে "Notify Me When in Stock" বাটনে ক্লিক করে নোটিফিকেশন সেট করতে পারেন।
+                      </p>
+                      <Button asChild className="rounded-xl font-bold text-xs bg-orange-600 hover:bg-orange-700 text-white">
+                        <Link to="/products">পণ্য ব্রাউজ করুন</Link>
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {stockAlerts.map((sub) => (
+                        <div
+                          key={sub.id}
+                          className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-border/80 bg-card hover:bg-muted/30 transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-14 h-14 rounded-lg bg-muted p-1 shrink-0 overflow-hidden border">
+                              <img
+                                src={sub.productImage || "/durtup-logo.png"}
+                                alt={sub.productName}
+                                className="w-full h-full object-contain"
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLImageElement).src = "/durtup-logo.png";
+                                }}
+                              />
+                            </div>
+                            <div className="min-w-0">
+                              <Link
+                                to={`/product/${sub.productSlug || sub.productId}`}
+                                className="font-bold text-xs sm:text-sm text-foreground hover:text-orange-600 transition line-clamp-1"
+                              >
+                                {sub.productName}
+                              </Link>
+                              {sub.variantLabel && (
+                                <p className="text-[11px] text-orange-600 dark:text-orange-400 font-semibold mt-0.5">
+                                  ভ্যারিয়েন্ট: {sub.variantLabel}
+                                </p>
+                              )}
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs font-black text-foreground">
+                                  ৳{Number(sub.productPrice).toLocaleString()}
+                                </span>
+                                <span className="text-[10px] text-muted-foreground">
+                                  • অনুরোধের তারিখ: {new Date(sub.createdAt).toLocaleDateString("bn-BD", { day: "numeric", month: "short", year: "numeric" })}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between sm:justify-end gap-2.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/60">
+                            {sub.status === "notified" ? (
+                              <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200">
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                স্টক এসেছে! (Notified)
+                              </Badge>
+                            ) : sub.status === "pending" ? (
+                              <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200">
+                                <Clock className="w-3 h-3 mr-1" />
+                                অপেক্ষায় রয়েছে (Pending)
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200">
+                                বাতিল (Cancelled)
+                              </Badge>
+                            )}
+
+                            {sub.status === "pending" && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={async () => {
+                                  await cancelStockAlert(sub.id);
+                                  toast({ title: "সফল", description: "স্টক অ্যালার্ট বাতিল করা হয়েছে" });
+                                  if (user) getCustomerStockAlerts(user.id, user.email).then(setStockAlerts);
+                                }}
+                                className="h-8 text-xs text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 className="w-3.5 h-3.5 mr-1" />
+                                বাতিল
+                              </Button>
+                            )}
+
+                            <Button
+                              asChild
+                              size="sm"
+                              className="h-8 text-xs bg-primary text-primary-foreground font-bold rounded-lg"
+                            >
+                              <Link to={`/product/${sub.productSlug || sub.productId}`}>
+                                দেখুন
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </CardContent>

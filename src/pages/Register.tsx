@@ -212,7 +212,12 @@ export default function Register() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full" size="lg" disabled={loading}>
+              <Button 
+                type="submit" 
+                className="w-full h-11 text-sm font-bold bg-orange-600 hover:bg-orange-700 active:scale-[0.98] text-white rounded-xl shadow-xs transition-all cursor-pointer" 
+                size="lg" 
+                disabled={loading}
+              >
                 {loading ? "Creating account..." : "Create Account"}
               </Button>
             </form>

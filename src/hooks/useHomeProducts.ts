@@ -119,7 +119,7 @@ interface ProductWithImages {
   product_images?: { image_url: string; is_primary: boolean | null }[];
 }
 
-import { getSmartProductImage, prefetchProductImages } from "@/utils/productImageHelper";
+import { getSmartProductImage, prefetchProductImages, isDeadSupplierOrigin } from "@/utils/productImageHelper";
 
 function mapDbProduct(p: ProductWithImages, index: number): Product {
   const primaryImage = p.product_images?.find((img) => img.is_primary)?.image_url;
@@ -147,7 +147,7 @@ function mapSupplierProduct(p: any, index: number): Product {
   const resolveUrl = (url: any): string => {
     if (!url || typeof url !== "string") return "";
     const trimmed = url.trim();
-    if (!trimmed) return "";
+    if (!trimmed || isDeadSupplierOrigin(trimmed)) return "";
     if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("data:") || trimmed.startsWith("blob:")) {
       return trimmed;
     }
@@ -158,9 +158,11 @@ function mapSupplierProduct(p: any, index: number): Product {
     }
     if (trimmed.startsWith("/public/storage/") || trimmed.startsWith("public/storage/") || trimmed.startsWith("/storage/") || trimmed.startsWith("storage/")) {
       const path = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
-      return `https://mohasagor.com.bd${path}`;
+      const full = `https://mohasagor.com.bd${path}`;
+      return isDeadSupplierOrigin(full) ? "" : full;
     }
-    return trimmed.startsWith("/") ? `https://mohasagor.com.bd${trimmed}` : `https://mohasagor.com.bd/${trimmed}`;
+    const full = trimmed.startsWith("/") ? `https://mohasagor.com.bd${trimmed}` : `https://mohasagor.com.bd/${trimmed}`;
+    return isDeadSupplierOrigin(full) ? "" : full;
   };
 
   // Get the best image available from all potential properties
@@ -177,7 +179,9 @@ function mapSupplierProduct(p: any, index: number): Product {
     rawFirstImg = typeof first === "string" ? resolveUrl(first) : resolveUrl(first?.image_url || first?.image || first?.url);
   }
 
-  const image = rawFirstImg || getSmartProductImage(p.name, "", p.category || "", index);
+  const image = (rawFirstImg && !isDeadSupplierOrigin(rawFirstImg))
+    ? rawFirstImg
+    : getSmartProductImage(p.name, "", p.category || "", index);
 
   // Sanitize all image arrays as well
   const sanitizedImages: string[] = [];
@@ -300,12 +304,15 @@ function buildSections(products: Product[]) {
   const uniqueAll: Product[] = [];
   for (const p of rotated) {
     if (!p) continue;
-    const key = (p.name || p.slug || p.id).trim().toLowerCase();
-    if (!seenAll.has(key)) {
-      seenAll.add(key);
+    const key = String(p.name || p.slug || p.id || "").trim().toLowerCase();
+    if (!key || !seenAll.has(key)) {
+      if (key) seenAll.add(key);
       uniqueAll.push(p);
     }
   }
+
+  // Pre-warm browser cache with top product images during browser idle time for 0ms instantaneous render
+  prefetchProductImages(uniqueAll.slice(0, 36));
 
   return {
     latestProducts,
@@ -321,13 +328,13 @@ function buildSections(products: Product[]) {
 
 import { FAST_SEED_PRODUCTS } from "@/data/fastSeedCatalog";
 
-const CACHE_KEY = "mohasagor_cached_home_products_v15";
+const CACHE_KEY = "mohasagor_cached_home_products_v23";
 const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes 
 
 // Auto cleanup legacy cached versions
 if (typeof window !== "undefined") {
   try {
-    ["v11", "v12", "v13", "v14"].forEach(v => {
+    ["v11", "v12", "v13", "v14", "v15", "v16", "v17", "v18", "v19", "v20", "v21", "v22"].forEach(v => {
       localStorage.removeItem(`mohasagor_cached_home_products_${v}`);
     });
   } catch {}
@@ -359,12 +366,22 @@ function getInitialCachedProducts() {
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
       const parsed = JSON.parse(cached);
-      if (parsed && parsed.latestProducts?.length) {
-        return parsed;
+      if (parsed && typeof parsed === "object" && Array.isArray(parsed.latestProducts) && parsed.latestProducts.length > 0) {
+        return {
+          latestProducts: Array.isArray(parsed.latestProducts) ? parsed.latestProducts : [],
+          flashSale: Array.isArray(parsed.flashSale) ? parsed.flashSale : [],
+          featured: Array.isArray(parsed.featured) ? parsed.featured : [],
+          newArrivals: Array.isArray(parsed.newArrivals) ? parsed.newArrivals : [],
+          trending: Array.isArray(parsed.trending) ? parsed.trending : [],
+          recommended: Array.isArray(parsed.recommended) ? parsed.recommended : [],
+          dealProducts: Array.isArray(parsed.dealProducts) ? parsed.dealProducts : [],
+          allProducts: Array.isArray(parsed.allProducts) ? parsed.allProducts : [],
+        };
       }
     }
   } catch (e) {
     console.warn("Failed to load cached home products", e);
+    try { localStorage.removeItem(CACHE_KEY); } catch {}
   }
   // Guaranteed Instant 0ms First-Paint fallback
   return buildSections(FAST_SEED_PRODUCTS);
@@ -409,8 +426,53 @@ async function fetchAllHomeProducts() {
     }
   } catch {}
 
-  // ── Strategy 1: Fetch Both Ecomseller BD & Mohasagor Catalogs with balanced interleaving ──
+  // ── Strategy 0.5: Ultra-Fast Homepage Static Feed (0ms delay, lean payload) ──
   try {
+    const feedRes = await fetchWithTimeout("/homepage_feed.json", {}, 2000);
+    if (feedRes.ok) {
+      const feedItems: Product[] = await feedRes.json();
+      if (Array.isArray(feedItems) && feedItems.length > 0) {
+        const merged = [
+          ...adminCreatedProducts,
+          ...feedItems.filter(m => !adminCreatedProducts.some(ap => ap.id === m.id))
+        ];
+        const result = buildSections(merged);
+        cacheSectionsToLocalStorage(result);
+        return result;
+      }
+    }
+  } catch (feedErr) {
+    // Non-blocking fallback to next strategies
+  }
+
+  // ── Strategy 1: Fetch from Hybrid Laravel Redis API & Supplier Catalogs ──
+  try {
+    let hybridProducts: Product[] = [];
+    try {
+      const { HybridApiClient } = await import("@/services/api/hybridApiClient");
+      const hybridRes = await HybridApiClient.getProducts({ per_page: 80 });
+      if (hybridRes && hybridRes.data && hybridRes.data.length > 0) {
+        hybridProducts = hybridRes.data.map(p => ({
+          id: p.id,
+          name: p.name,
+          slug: p.slug,
+          image: p.image,
+          images: p.images,
+          price: p.selling_price || p.price || 0,
+          originalPrice: p.regular_price,
+          rating: p.rating || 4.8,
+          reviews: p.reviews_count || 30,
+          sold: p.sold_count || 85,
+          freeShipping: p.free_shipping ?? true,
+          isNew: true,
+          isBestSeller: p.is_featured,
+          category: p.category?.name || "General"
+        }));
+      }
+    } catch (hybridErr) {
+      console.warn("[useHomeProducts] Hybrid API fetch note:", hybridErr);
+    }
+
     const { getCachedMohasagorProducts, interleaveCatalogs } = await import("@/utils/mohasagorCache");
     const { EcomsellerEngine } = await import("@/services/suppliers/ecomsellerEngine");
 
@@ -420,11 +482,23 @@ async function fetchAllHomeProducts() {
     ]);
 
     const combinedSuppliers = interleaveCatalogs(cachedMohasagor, cachedEcomseller);
+    const combinedAll = [...hybridProducts, ...combinedSuppliers];
 
-    if (combinedSuppliers && combinedSuppliers.length > 0) {
+    // Deduplicate strictly by unique name, ID, or slug
+    const seenMap = new Set<string>();
+    const deduplicatedCombined: Product[] = [];
+    for (const p of combinedAll) {
+      if (!p) continue;
+      const key = String(p.name || p.slug || p.id || "").trim().toLowerCase();
+      if (!key || seenMap.has(key)) continue;
+      seenMap.add(key);
+      deduplicatedCombined.push(p);
+    }
+
+    if (deduplicatedCombined && deduplicatedCombined.length > 0) {
       const merged = [
         ...adminCreatedProducts,
-        ...combinedSuppliers.filter(m => !adminCreatedProducts.some(ap => ap.id === m.id))
+        ...deduplicatedCombined.filter(m => !adminCreatedProducts.some(ap => ap.id === m.id))
       ];
       const result = buildSections(merged);
       cacheSectionsToLocalStorage(result);

@@ -57,7 +57,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(() => {
     if (typeof window === "undefined") return null;
     try {
-      const activeUid = auth.currentUser?.uid || JSON.parse(localStorage.getItem("durtup_active_user") || "{}")?.uid;
+      let activeUid = auth.currentUser?.uid;
+      if (!activeUid) {
+        const cached = localStorage.getItem("durtup_active_user");
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            activeUid = parsed?.uid || parsed?.id;
+          } catch {}
+        }
+      }
       if (activeUid) {
         const raw = localStorage.getItem("durtup_profile_" + activeUid);
         return raw ? JSON.parse(raw) : null;
@@ -234,6 +243,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         if (uid) localStorage.removeItem("durtup_profile_" + uid);
         localStorage.removeItem("durtup_active_user");
+        // M1 Privacy Requirement: Clear local cart and cart ownership keys
+        localStorage.removeItem("megamart_cart");
+        localStorage.removeItem("megamart_cart_owner");
+        localStorage.removeItem("cj_cart");
       } catch (e) {}
     }
     await firebaseSignOut(auth);

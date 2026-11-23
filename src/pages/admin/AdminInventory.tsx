@@ -217,6 +217,23 @@ export default function AdminInventory() {
       details: `Manual inventory adjustment: ${previous} -> ${newQuantity} (${newQuantity > previous ? '+' : ''}${newQuantity - previous})`,
     });
 
+    // Auto-trigger Back in Stock notifications when restocked
+    if (newQuantity > 0 && previous <= 0) {
+      import("@/services/backInStockService").then(({ triggerBackInStockNotifications, getStockAlertSettings }) => {
+        const settings = getStockAlertSettings();
+        if (settings.enabled && settings.autoTriggerOnRestock) {
+          triggerBackInStockNotifications(product.id, newQuantity).then((res) => {
+            if (res.notifiedCount > 0) {
+              toast({
+                title: "রিস্টক নোটিফিকেশন প্রেরিত!",
+                description: `${res.notifiedCount} জন অপেক্ষমান গ্রাহককে নোটিফিকেশন পাঠানো হয়েছে।`,
+              });
+            }
+          }).catch(() => {});
+        }
+      }).catch(() => {});
+    }
+
     toast({ title: "Success", description: "Stock updated" });
     fetchData();
   };

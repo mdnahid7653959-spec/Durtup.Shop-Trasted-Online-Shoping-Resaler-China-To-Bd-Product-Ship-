@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
-import { Home, Heart, ShoppingCart, ShoppingBag, Star, Shield, RotateCcw, Minus, Plus, Loader2, Play, ChevronLeft, ChevronRight, Share2, Zap, MessageSquare, ShieldCheck, Store, Truck, Award, Sparkles, TrendingUp, Package, ZoomIn, ZoomOut, X, Maximize2, Ruler, Check } from "lucide-react";
+import { Home, Heart, ShoppingCart, ShoppingBag, Star, Shield, RotateCcw, Minus, Plus, Loader2, Play, ChevronLeft, ChevronRight, Share2, Zap, MessageSquare, ShieldCheck, Store, Truck, Award, Sparkles, TrendingUp, TrendingDown, Package, ZoomIn, ZoomOut, X, Maximize2, Ruler, Check, BellRing } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/firebaseAdapter";
@@ -16,12 +16,18 @@ import { useProductRealtimeSync } from "@/hooks/useRealtimeSync";
 import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 import { useSmartBack } from "@/hooks/useSmartBack";
 import { RelatedProducts } from "@/components/products/RelatedProducts";
+import { FrequentlyBoughtTogether } from "@/components/products/FrequentlyBoughtTogether";
+import { recordProductInteraction } from "@/services/recommendationService";
+import { BackInStockModal } from "@/components/products/BackInStockModal";
+import { recordRecentlyViewedProduct } from "@/services/recentlyViewedService";
 import { ProductReviews } from "@/components/products/ProductReviews";
+import { ProductQASection } from "@/components/products/ProductQASection";
 import { StoreDetails } from "@/components/products/StoreDetails";
 import { ProductDescriptionSection } from "@/components/products/ProductDescriptionSection";
 import { getCachedMohasagorProducts, findMohasagorProduct, findMohasagorProductSync, findSeriesImages, FALLBACK_SUPPLIER_PRODUCTS } from "@/utils/mohasagorCache";
 import { calculateProductPrice } from "@/utils/pricingMargin";
-import { getSmartProductImage, getDirectImageUrl, optimizeImageUrl, getResponsiveImageSrcSet, PRODUCT_DETAIL_SIZES, getCategoryFallbackImage, getCategoryFallbackImages, KNOWN_DEAD_ORIGIN_URLS, globalFailedImageUrls } from "@/utils/productImageHelper";
+import { ModernRadialLoader } from "@/components/common/ModernRadialLoader";
+import { getSmartProductImage, getDirectImageUrl, optimizeImageUrl, getResponsiveImageSrcSet, PRODUCT_DETAIL_SIZES, getCategoryFallbackImage, getCategoryFallbackImages, generateExactProductViews, KNOWN_DEAD_ORIGIN_URLS, globalFailedImageUrls } from "@/utils/productImageHelper";
 import { getEnhancedProductDescription } from "@/utils/productDescriptionHelper";
 import { extractProductVariants, getColorHex, sortVariantValues, type ProductVariant } from "@/utils/productVariantHelper";
 import { db } from "@/integrations/firebase/client";
@@ -31,6 +37,7 @@ import { SEOHead } from "@/components/SEOHead";
 import { generateProductSEOTitle, generateProductSEODescription, DEFAULT_BANGLADESH_PRODUCT_FAQS } from "@/utils/seoHelper";
 import { getCanonicalProductUrl } from "@/utils/productSlugHelper";
 import { trackViewContent, trackAddToCart } from "@/components/FacebookPixel";
+import { CustomerAuthModal } from "@/components/auth/CustomerAuthModal";
 
 interface ProductImage {
   id: string;
@@ -217,7 +224,7 @@ function InlineStoreBar({ sellerId, onContactSeller, contactingSeller }: {
 
 // Helper to extract clean deduplication key from image URL
 // (handles proxy wrappers like wsrv.nl, CDN signed tokens, and query strings)
-export const extractImageDedupeKey = (url: string): string => {
+const extractImageDedupeKey = (url: string): string => {
   if (!url || typeof url !== "string") return "";
   try {
     let target = url.trim();
@@ -252,6 +259,14 @@ const mapSupplierImages = (raw: any): ProductImage[] => {
       return trimmed;
     }
     if (trimmed.startsWith("//")) return `https:${trimmed}`;
+    if (trimmed.startsWith("/uploads/") || trimmed.startsWith("uploads/")) {
+      const p = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+      return `https://ecomsellerbd.com${p}`;
+    }
+    if (trimmed.startsWith("/public/storage/") || trimmed.startsWith("public/storage/") || trimmed.startsWith("/storage/") || trimmed.startsWith("storage/")) {
+      const p = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+      return `https://mohasagor.com.bd${p}`;
+    }
     return trimmed.startsWith("/") ? `${base}${trimmed}` : `${base}/${trimmed}`;
   };
 
@@ -400,67 +415,11 @@ interface DurtupImageLoaderProps {
 
 function DurtupImageLoader({ className, label = "ছবি প্রস্তুত হচ্ছে..." }: DurtupImageLoaderProps) {
   return (
-    <div className={cn("relative flex flex-col items-center justify-center select-none pointer-events-none p-4", className)}>
-      {/* Ambient Radial Glowing Halo */}
-      <div className="absolute -inset-6 bg-gradient-to-r from-orange-500/20 via-amber-500/25 to-orange-600/20 rounded-full blur-2xl animate-durtup-glow pointer-events-none" />
-
-      {/* Luxury Concentric Orbital Spinner */}
-      <div className="relative w-20 h-20 sm:w-22 sm:h-22 flex items-center justify-center">
-        {/* Soft Background Ring */}
-        <div className="absolute inset-0 rounded-full border-2 border-orange-500/15 dark:border-orange-500/25" />
-
-        {/* Precision Smooth Spinning Gradient Track */}
-        <svg className="w-full h-full animate-durtup-spin" viewBox="0 0 100 100">
-          <defs>
-            <linearGradient id="durtupLoaderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#ea580c" stopOpacity="0.05" />
-              <stop offset="40%" stopColor="#f97316" stopOpacity="0.8" />
-              <stop offset="100%" stopColor="#f59e0b" stopOpacity="1" />
-            </linearGradient>
-          </defs>
-          <circle
-            cx="50"
-            cy="50"
-            r="42"
-            stroke="url(#durtupLoaderGrad)"
-            strokeWidth="3.5"
-            strokeLinecap="round"
-            strokeDasharray="200"
-            strokeDashoffset="50"
-            fill="none"
-          />
-        </svg>
-
-        {/* Center Insignia Medallion */}
-        <div className="absolute inset-2.5 rounded-full bg-card/95 shadow-lg border border-orange-500/20 flex items-center justify-center backdrop-blur-md">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 via-orange-600 to-amber-600 flex items-center justify-center shadow-md shadow-orange-500/30 relative overflow-hidden animate-durtup-float">
-            {/* Shimmer sweep effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/35 to-transparent animate-durtup-sweep" />
-            <ShoppingBag className="w-5 h-5 text-white stroke-[2.2]" />
-          </div>
-        </div>
-      </div>
-
-      {/* Durtup Brand Signature Pill */}
-      <div className="mt-3.5 flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-card/90 dark:bg-card/95 backdrop-blur-md border border-orange-500/25 shadow-md">
-        <Sparkles className="w-3.5 h-3.5 text-orange-500 animate-spin" style={{ animationDuration: "3s" }} />
-        <span className="text-xs sm:text-[13px] font-black tracking-tight select-none">
-          <span className="text-orange-500 font-black">Durtup</span>
-          <span className="text-foreground">.shop</span>
-        </span>
-      </div>
-
-      {/* Precision Micro-Progress Shimmer Bar & Label */}
-      <div className="mt-2.5 flex flex-col items-center gap-1.5">
-        <div className="w-32 h-1 rounded-full bg-muted/80 dark:bg-muted/40 overflow-hidden relative shadow-inner">
-          <div className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500 rounded-full animate-durtup-sweep" />
-        </div>
-        <span className="text-[11px] font-medium text-muted-foreground/90 tracking-wide flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-ping inline-block" />
-          {label}
-        </span>
-      </div>
-    </div>
+    <ModernRadialLoader
+      size={label?.includes("প্রোডাক্ট") ? "lg" : "md"}
+      className={className}
+      label={label}
+    />
   );
 }
 
@@ -544,7 +503,11 @@ function ProductDetailContent() {
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>(initialVariantState);
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [backInStockOpen, setBackInStockOpen] = useState(false);
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
+  const [isTitleExpanded, setIsTitleExpanded] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const { user: authUser } = useAuth();
   const variantSelectorRef = useRef<HTMLDivElement>(null);
   const {
     addToCart,
@@ -604,6 +567,8 @@ function ProductDetailContent() {
   const recordUserProductView = (p: any) => {
     if (typeof window === "undefined" || !p) return;
     try {
+      recordProductInteraction(p, "view");
+      recordRecentlyViewedProduct(p, user?.id);
       const cat = p.category_id || p.category_slug || p.category || "";
       if (cat) {
         const rawCats = localStorage.getItem("user_viewed_categories");
@@ -611,13 +576,6 @@ function ProductDetailContent() {
         const updatedCats = [cat, ...cats.filter((c: string) => c !== cat)].slice(0, 10);
         localStorage.setItem("user_viewed_categories", JSON.stringify(updatedCats));
       }
-      const rawProds = localStorage.getItem("recently_viewed_products");
-      const prods: any[] = rawProds ? JSON.parse(rawProds) : [];
-      const updatedProds = [
-        { id: p.id, name: p.name || p.title, slug: p.slug, category: cat, image: p.product_images?.[0]?.image_url || p.image || p.image_url },
-        ...prods.filter((item: any) => item.id !== p.id)
-      ].slice(0, 15);
-      localStorage.setItem("recently_viewed_products", JSON.stringify(updatedProds));
     } catch {}
   };
 
@@ -702,6 +660,12 @@ function ProductDetailContent() {
       if (seriesImgs.length > res.length) {
         res.length = 0;
         res.push(...seriesImgs);
+      } else {
+        const multiViews = generateExactProductViews(res[0], 4);
+        if (multiViews.length > 1) {
+          res.length = 0;
+          res.push(...multiViews);
+        }
       }
     }
     return res;
@@ -763,22 +727,35 @@ function ProductDetailContent() {
   useEffect(() => {
     if (!images || images.length === 0) return;
     images.forEach((imgUrl) => {
-      if (!imgUrl || failedUrlsRef.current.has(imgUrl) || KNOWN_DEAD_ORIGIN_URLS.has(imgUrl)) return;
-      const direct = getDirectImageUrl(imgUrl) || imgUrl;
+      if (!imgUrl || KNOWN_DEAD_ORIGIN_URLS.has(imgUrl)) return;
+      const target = optimizeImageUrl(imgUrl, 800, 80) || imgUrl;
       const img = new Image();
       img.decoding = "async";
-      img.src = direct;
+      img.src = target;
       img.onload = () => {
-        setLoadedMainImages(prev => ({ ...prev, [imgUrl]: true, [direct]: true }));
-        setLoadedThumbnails(prev => ({ ...prev, [imgUrl]: true, [direct]: true }));
+        setLoadedMainImages(prev => ({ ...prev, [imgUrl]: true, [target]: true }));
+        setLoadedThumbnails(prev => ({ ...prev, [imgUrl]: true, [target]: true }));
       };
       img.onerror = () => {
-        failedUrlsRef.current.add(imgUrl);
+        // If optimized proxy fails, attempt direct URL
+        const direct = getDirectImageUrl(imgUrl);
+        if (direct && direct !== target) {
+          const directImg = new Image();
+          directImg.decoding = "async";
+          directImg.src = direct;
+          directImg.onload = () => {
+            setLoadedMainImages(prev => ({ ...prev, [imgUrl]: true, [direct]: true }));
+            setLoadedThumbnails(prev => ({ ...prev, [imgUrl]: true, [direct]: true }));
+          };
+          directImg.onerror = () => {
+            failedUrlsRef.current.add(imgUrl);
+          };
+        }
       };
     });
   }, [images]);
 
-  // Proactive safety watchdog: If main image hangs or fails to load within 1.2s, safely recover immediately
+  // Proactive safety watchdog: If main image hangs or fails to load within 4.0s, safely recover immediately
   useEffect(() => {
     if (!currentImage || isCurrentMainLoaded || currentImage.startsWith("data:")) return;
     const cat = (product as any)?.category || product?.category_id || "";
@@ -792,7 +769,7 @@ function ProductDetailContent() {
           handleMainImageError({ currentTarget: img || ({} as any) } as any);
         }
       }
-    }, 1200);
+    }, 4000);
     return () => clearTimeout(timer);
   }, [currentImage, isCurrentMainLoaded, product?.name]);
 
@@ -1488,6 +1465,7 @@ function ProductDetailContent() {
 
     setAddingToCart(true);
     try {
+      recordProductInteraction(product, "cart");
       await addToCart(product, quantity, currentVariants);
       try {
         const pPrice = (product.discount_price || product.regular_price || 0) * quantity;
@@ -1525,10 +1503,18 @@ function ProductDetailContent() {
     setBuyingNow(true);
     try {
       await addToCart(product, quantity, currentVariants);
-      navigate("/checkout");
+      if (!authUser) {
+        setShowAuthModal(true);
+      } else {
+        navigate("/checkout");
+      }
     } catch (err) {
       console.error("handleBuyNow error:", err);
-      navigate("/checkout");
+      if (!authUser) {
+        setShowAuthModal(true);
+      } else {
+        navigate("/checkout");
+      }
     } finally {
       setBuyingNow(false);
     }
@@ -1594,7 +1580,6 @@ function ProductDetailContent() {
     target.src = defaultImages[0];
   };
 
-  const { user: authUser } = useAuth();
   const [contactingSeller, setContactingSeller] = useState(false);
 
   const handleContactSeller = async () => {
@@ -2054,21 +2039,21 @@ function ProductDetailContent() {
                             setShowVideo(false);
                           }}
                           onMouseEnter={() => {
-                            const direct = getDirectImageUrl(img) || img;
+                            const target = optimizeImageUrl(img, 800, 80) || img;
                             const pre = new Image();
                             pre.decoding = "async";
-                            pre.src = direct;
+                            pre.src = target;
                             pre.onload = () => {
-                              setLoadedMainImages(prev => ({ ...prev, [img]: true, [direct]: true }));
+                              setLoadedMainImages(prev => ({ ...prev, [img]: true, [target]: true }));
                             };
                           }}
                           onTouchStart={() => {
-                            const direct = getDirectImageUrl(img) || img;
+                            const target = optimizeImageUrl(img, 800, 80) || img;
                             const pre = new Image();
                             pre.decoding = "async";
-                            pre.src = direct;
+                            pre.src = target;
                             pre.onload = () => {
-                              setLoadedMainImages(prev => ({ ...prev, [img]: true, [direct]: true }));
+                              setLoadedMainImages(prev => ({ ...prev, [img]: true, [target]: true }));
                             };
                           }}
                           className={`w-16 h-16 sm:w-20 sm:h-20 lg:w-[84px] lg:h-[84px] rounded-2xl overflow-hidden border-2 transition-all duration-200 flex-shrink-0 bg-white dark:bg-card p-1.5 cursor-pointer relative ${
@@ -2156,68 +2141,92 @@ function ProductDetailContent() {
 
 
             {/* Product Info */}
-            <div className="w-full max-w-full min-w-0 space-y-5 sm:space-y-6 px-4 sm:px-0">
-              <div>
-                <div className="flex flex-wrap items-center gap-2 mb-3">
+            <div className="w-full max-w-full min-w-0 space-y-3 sm:space-y-6 px-3.5 sm:px-0">
+              <div className="space-y-2 sm:space-y-3">
+                {/* Micro Badges (Trending, Authentic, Best Seller) */}
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                   {product.is_featured && (
-                    <Badge className="bg-gradient-to-r from-warning to-primary text-white border-0 gap-1">
-                      <Sparkles className="h-3 w-3" /> Best Seller
-                    </Badge>
-                  )}
-                  {product.sold_count > 100 && (
-                    <Badge variant="outline" className="border-primary/30 text-primary gap-1">
-                      <TrendingUp className="h-3 w-3" /> Trending
-                    </Badge>
-                  )}
-                  <Badge variant="outline" className="border-success/30 text-success gap-1">
-                    <ShieldCheck className="h-3 w-3" /> Authentic
-                  </Badge>
-                </div>
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-3 leading-tight tracking-tight">
-                  {product.name}
-                </h1>
-
-                <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm">
-                  <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-warning/10">
-                    <Star className="h-4 w-4 fill-warning text-warning" />
-                    <span className="text-foreground font-semibold">
-                      {Number(product.rating_average ?? 4.8).toFixed(1)}
+                    <span className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-2xs">
+                      <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> Best Seller
                     </span>
-                    <span className="text-muted-foreground">
+                  )}
+                  {Number(product.sold_count ?? 0) > 50 && (
+                    <span className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 border border-orange-200/70 dark:border-orange-800/50">
+                      <TrendingUp className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> Trending
+                    </span>
+                  )}
+                  <span className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/70 dark:border-emerald-800/50">
+                    <ShieldCheck className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> Authentic
+                  </span>
+                </div>
+
+                {/* Responsive Product Title / Caption - Optimized for Mobile Screens */}
+                <div className="relative">
+                  <h1
+                    onClick={() => setIsTitleExpanded(!isTitleExpanded)}
+                    className={cn(
+                      "text-[15px] xs:text-base sm:text-xl lg:text-2xl font-semibold sm:font-bold text-slate-900 dark:text-slate-100 leading-snug tracking-tight break-words cursor-pointer sm:cursor-default transition-all select-text",
+                      !isTitleExpanded && "line-clamp-2 sm:line-clamp-none"
+                    )}
+                  >
+                    {product.name}
+                  </h1>
+                  {product.name && product.name.length > 55 && (
+                    <button
+                      type="button"
+                      onClick={() => setIsTitleExpanded(!isTitleExpanded)}
+                      className="sm:hidden text-[11px] font-bold text-primary hover:underline mt-0.5 inline-flex items-center gap-0.5"
+                    >
+                      {isTitleExpanded ? "সংক্ষেপ করুন ▲" : "সম্পূর্ণ ক্যাপশন দেখুন ▼"}
+                    </button>
+                  )}
+                </div>
+
+                {/* Rating & Sold Indicator Bar */}
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm pt-0.5">
+                  <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200/70 dark:border-amber-800/50 font-bold text-xs">
+                    <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                    <span>{Number(product.rating_average ?? 4.8).toFixed(1)}</span>
+                    <span className="text-muted-foreground font-normal text-[11px]">
                       ({Number(product.rating_count ?? 15)})
                     </span>
                   </div>
-                  <span className="text-muted-foreground flex items-center gap-1">
-                    <Package className="h-3.5 w-3.5" />
+                  <span className="text-slate-300 dark:text-slate-700 hidden xs:inline">•</span>
+                  <span className="text-muted-foreground flex items-center gap-1 text-xs font-medium">
+                    <Package className="h-3.5 w-3.5 text-primary" />
                     {Number(product.sold_count ?? 45).toLocaleString()} sold
+                  </span>
+                  <span className="text-slate-300 dark:text-slate-700 hidden xs:inline">•</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 text-[11px] sm:text-xs font-semibold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> In Stock
                   </span>
                 </div>
               </div>
 
-              {/* Premium price card */}
-              <div className="relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-primary/10 via-warning/5 to-primary/5 border border-primary/20">
-                <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/10 rounded-full blur-2xl pointer-events-none" />
-                <div className="relative flex items-baseline gap-3 flex-wrap">
-                  <span className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-primary to-warning bg-clip-text text-transparent">
+              {/* Clean, high-conversion price card (Unslop craft) */}
+              <div className="rounded-xl p-4 sm:p-5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200/90 dark:border-slate-800">
+                <div className="flex items-baseline gap-2.5 sm:gap-3 flex-wrap">
+                  <span className="text-3xl xs:text-4xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight tabular-nums">
                     ৳{Number(price || 0).toLocaleString()}
                   </span>
                   {discount > 0 && (
                     <>
-                      <span className="text-lg sm:text-xl text-muted-foreground line-through">
+                      <span className="text-base sm:text-lg text-slate-400 dark:text-slate-500 line-through tabular-nums">
                         ৳{Number(regularPrice || 0).toLocaleString()}
                       </span>
-                      <Badge variant="destructive" className="bg-sale text-base font-bold">-{discount}%</Badge>
+                      <span className="bg-rose-600 text-white text-xs font-bold px-2 py-0.5 rounded-md">
+                        -{discount}%
+                      </span>
                     </>
                   )}
                 </div>
                 {discount > 0 && (
-                  <p className="relative mt-2 text-sm text-success font-medium flex items-center gap-1">
-                    <Sparkles className="h-3.5 w-3.5" />
+                  <p className="mt-2 text-xs sm:text-sm text-emerald-600 dark:text-emerald-400 font-semibold">
                     You save ৳{Number(regularPrice - price).toLocaleString()}
                   </p>
                 )}
                 {product.free_shipping && (
-                  <div className="relative mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded-full">
+                  <div className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-semibold text-orange-600 bg-orange-50 dark:bg-orange-950/40 border border-orange-200/60 dark:border-orange-900/40 px-2.5 py-1 rounded-md">
                     <Truck className="h-3.5 w-3.5" /> Free Shipping
                   </div>
                 )}
@@ -2305,7 +2314,12 @@ function ProductDetailContent() {
               <div className="space-y-4 pt-4 border-t">
                 <div className="flex items-center gap-4">
                   <span className="text-sm font-medium">Quantity:</span>
-                  {product.stock_quantity > 1 ? (
+                  {product.stock_quantity <= 0 ? (
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 text-red-600 dark:text-red-400 text-xs font-bold">
+                      <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                      <span>বর্তমানে এই পণ্যটির স্টক শেষ (Out of Stock)</span>
+                    </div>
+                  ) : product.stock_quantity > 1 ? (
                     <>
                       <div className="flex items-center border-2 border-primary/20 rounded-xl overflow-hidden bg-background">
                         <button onClick={() => setQuantity(Math.max(1, quantity - 1))} disabled={quantity <= 1} className="p-3 hover:bg-primary hover:text-white transition-colors touch-manipulation disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-inherit">
@@ -2327,42 +2341,53 @@ function ProductDetailContent() {
                   )}
                 </div>
 
-
-
                 {/* Product Action Buttons (Desktop Only - Mobile uses sticky bottom bar) */}
                 <div className="hidden md:flex items-center gap-3 w-full max-w-full">
-                  <Button 
-                    size="lg" 
-                    variant="outline" 
-                    className="flex-1 h-12 sm:h-14 text-sm sm:text-base font-bold border-2 border-primary/30 hover:border-primary hover:bg-primary/5 rounded-2xl shadow-xs transition-all active:scale-[0.98]" 
-                    onClick={handleAddToCart} 
-                    disabled={addingToCart}
-                  >
-                    {addingToCart ? <Loader2 className="h-5 w-5 mr-2 animate-spin shrink-0" /> : <ShoppingCart className="h-5 w-5 mr-2 shrink-0" />}
-                    Add to Cart
-                  </Button>
-                  <Button 
-                    size="lg" 
-                    className="flex-1 h-12 sm:h-14 text-sm sm:text-base font-bold bg-orange-600 hover:bg-orange-500 text-white rounded-2xl shadow-md shadow-orange-600/25 transition-all active:scale-[0.98]" 
-                    onClick={handleBuyNow} 
-                    disabled={buyingNow}
-                  >
-                    {buyingNow ? <Loader2 className="h-5 w-5 mr-2 animate-spin shrink-0" /> : <Zap className="h-5 w-5 mr-2 shrink-0" />}
-                    Buy Now
-                  </Button>
+                  {product.stock_quantity <= 0 ? (
+                    <Button 
+                      size="lg" 
+                      onClick={() => setBackInStockOpen(true)}
+                      className="flex-1 h-12 text-sm sm:text-base font-bold bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-xs transition-all active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <BellRing className="w-5 h-5 shrink-0" />
+                      <span>স্টকে এলে জানান (Notify Me When in Stock)</span>
+                    </Button>
+                  ) : (
+                    <>
+                      <Button 
+                        size="lg" 
+                        variant="outline" 
+                        className="flex-1 h-12 text-sm sm:text-base font-bold border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-900 dark:text-white rounded-xl shadow-xs transition-all active:scale-[0.98] cursor-pointer" 
+                        onClick={handleAddToCart} 
+                        disabled={addingToCart}
+                      >
+                        {addingToCart ? <Loader2 className="h-5 w-5 mr-2 animate-spin shrink-0" /> : <ShoppingCart className="h-5 w-5 mr-2 shrink-0" />}
+                        Add to Cart
+                      </Button>
+                      <Button 
+                        size="lg" 
+                        className="flex-1 h-12 text-sm sm:text-base font-bold bg-orange-600 hover:bg-orange-700 active:scale-[0.98] text-white rounded-xl shadow-xs transition-all cursor-pointer" 
+                        onClick={handleBuyNow} 
+                        disabled={buyingNow}
+                      >
+                        {buyingNow ? <Loader2 className="h-5 w-5 mr-2 animate-spin shrink-0" /> : <Zap className="h-5 w-5 mr-2 shrink-0" />}
+                        Buy Now
+                      </Button>
+                    </>
+                  )}
                   <button
                     type="button"
                     onClick={handleWishlistToggle}
                     className={cn(
-                      "h-12 w-12 sm:h-14 sm:w-14 rounded-2xl border-2 shrink-0 flex items-center justify-center transition-all duration-200 shadow-xs active:scale-95 cursor-pointer",
+                      "h-12 w-12 rounded-xl border shrink-0 flex items-center justify-center transition-all duration-150 shadow-xs active:scale-95 cursor-pointer",
                       inWishlist
-                        ? "bg-rose-50 dark:bg-rose-950/40 border-rose-500 text-rose-600 shadow-rose-500/20"
-                        : "bg-card border-border hover:border-rose-400 hover:text-rose-600 text-muted-foreground hover:bg-rose-50/40 dark:hover:bg-rose-950/20"
+                        ? "bg-rose-50 dark:bg-rose-950/40 border-rose-300 text-rose-600"
+                        : "bg-card border-slate-200 dark:border-slate-800 hover:border-slate-300 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                     )}
                     aria-label={inWishlist ? "Wishlist থেকে সরান" : "Wishlist-এ যোগ করুন"}
                     title={inWishlist ? "Wishlist থেকে সরান" : "Wishlist-এ যোগ করুন"}
                   >
-                    <Heart className={cn("h-5 w-5 sm:h-6 sm:w-6 transition-transform duration-200", inWishlist ? "fill-current text-rose-600 scale-110" : "hover:scale-110")} />
+                    <Heart className={cn("h-5 w-5 transition-transform duration-150", inWishlist ? "fill-current text-rose-600 scale-105" : "")} />
                   </button>
                 </div>
               </div>
@@ -2441,7 +2466,24 @@ function ProductDetailContent() {
             />
           </div>
 
+          {/* Product Questions & Answers Section */}
+          <div className="w-full max-w-full min-w-0">
+            <ProductQASection
+              productId={product.id}
+              productName={product.name}
+              productSlug={product.slug}
+              productImage={images[0] || (product as any).image}
+              sellerId={(product as any).seller_id}
+              sellerName={(product as any).seller_name || (product as any).brand}
+            />
+          </div>
 
+
+
+          {/* Frequently Bought Together Bundle */}
+          <div className="w-full max-w-full min-w-0">
+            <FrequentlyBoughtTogether currentProduct={product as any} />
+          </div>
 
           {/* Related Products - Full width below product grid */}
           <div className="w-full max-w-full min-w-0">
@@ -2548,6 +2590,15 @@ function ProductDetailContent() {
         initialIndex={selectedImage}
         productName={product.name}
       />
+      {/* Back in Stock Notification Modal */}
+      {product && (
+        <BackInStockModal
+          isOpen={backInStockOpen}
+          onClose={() => setBackInStockOpen(false)}
+          product={product}
+          selectedVariants={selectedVariants}
+        />
+      )}
       {/* Size Guide Modal */}
       {sizeGuideOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setSizeGuideOpen(false)}>
@@ -2652,6 +2703,14 @@ function ProductDetailContent() {
           </div>
         </div>
       )}
+      <CustomerAuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={() => {
+          setShowAuthModal(false);
+          navigate("/checkout");
+        }}
+      />
       <Footer />
     </div>;
 }

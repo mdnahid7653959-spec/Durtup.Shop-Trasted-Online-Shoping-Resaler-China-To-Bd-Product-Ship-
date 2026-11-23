@@ -1,0 +1,11 @@
+#!/usr/bin/env php
+<?php
+
+define('LARAVEL_START', microtime(true));
+
+// Register the Composer Autoloader
+if (file_exists(__DIR__ . '/vendor/autoload.php')) {
+    require __DIR__ . '/vendor/autoload.php';
+}
+
+echo "Durtup Enterprise Marketplace Laravel CLI Ready\n";

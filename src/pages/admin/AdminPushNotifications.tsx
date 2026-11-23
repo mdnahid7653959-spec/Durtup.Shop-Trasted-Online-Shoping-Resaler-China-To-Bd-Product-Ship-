@@ -39,25 +39,53 @@ interface TokenStats {
 
 const TEMPLATES = [
   {
-    name: "🔥 Flash Sale Alert",
+    name: "⚡ Flash Sale Alert",
     title: "⚡ আজকের মেগা ফ্ল্যাশ সেল শুরু হয়েছে!",
     message: "সেরা গ্যাজেট ও লাইফস্টাইল প্রোডাক্টে ৫০% পর্যন্ত বিশাল ছাড়। স্টক সীমিত, এখনই অর্ডার করুন!",
     actionUrl: "/products?filter=flash-sale",
-    imageUrl: "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=600&h=300&fit=crop"
+    imageUrl: "/banner-flash-deals.webp"
   },
   {
-    name: "🚚 Free Shipping Offer",
-    title: "🎉 আজকের জন্য ফ্রি ডেলিভারি অফার!",
-    message: "যেকোনো অর্ডারে ফ্রি হোম ডেলিভারি উপভোগ করুন। কোনো কুপন কোডের প্রয়োজন নেই।",
+    name: "🎁 Special Offer / Discount",
+    title: "🎉 আজকের জন্য ফ্রি ডেলিভারি ও বিশেষ ছাড় অফার!",
+    message: "যেকোনো অর্ডারে ফ্রি হোম ডেলিভারি ও আকর্ষণীয় উপহার উপভোগ করুন।",
+    actionUrl: "/products?filter=offers",
+    imageUrl: "/banner-trust-delivery.webp"
+  },
+  {
+    name: "📦 Order Status Update",
+    title: "🚚 আপনার অর্ডারটি ডেলিভারিতে বের হয়েছে!",
+    message: "আপনার পার্সেলটি কুরিয়ারে হস্তান্তর করা হয়েছে। খুব দ্রুত আপনার ঠিকানায় পৌঁছাবে।",
+    actionUrl: "/orders",
+    imageUrl: "/icon-192.png"
+  },
+  {
+    name: "💰 Cashback Reward Awarded",
+    title: "💰 আপনার ওয়ালেটে ৳১৫০ ক্যাশব্যাক জমা হয়েছে!",
+    message: "অভিনন্দন! সফল ডেলিভারি উপলক্ষে ক্যাশব্যাক রিওয়ার্ড যুক্ত হয়েছে। পরবর্তী অর্ডারে ব্যবহার করুন।",
+    actionUrl: "/wallet",
+    imageUrl: "/favicon-96x96.png"
+  },
+  {
+    name: "⭐ Loyalty Points Credited",
+    title: "⭐ অভিনন্দন! +১০০ লয়্যালটি পয়েন্ট অর্জন করেছেন",
+    message: "আপনার অর্ডারের জন্য ১০০ পয়েন্ট যোগ হয়েছে। চেকআউটে এই পয়েন্ট দিয়ে ডিসকাউন্ট নিন।",
+    actionUrl: "/account?tab=loyalty",
+    imageUrl: "/favicon-96x96.png"
+  },
+  {
+    name: "🎉 Back in Stock Alert",
+    title: "🎉 স্টক ফিরে এসেছে! T900 Ultra Smartwatch",
+    message: "আপনার অপেক্ষার অবসান! পণ্যটি এখন আবার স্টকে পাওয়া যাচ্ছে। এখনই অর্ডার করুন।",
     actionUrl: "/products",
-    imageUrl: "https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=600&h=300&fit=crop"
+    imageUrl: "/icon-192.png"
   },
   {
-    name: "✨ New Trending Arrivals",
-    title: "🛍️ নতুন ট্রেন্ডিং কালেকশন এখন লাইভ!",
-    message: "আমাদের স্টোরে যোগ হয়েছে নতুন প্রিমিয়াম ফ্যাশন ও স্মার্ট গ্যাজেট। দেখে নিন এখনই।",
-    actionUrl: "/products?sort=newest",
-    imageUrl: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&h=300&fit=crop"
+    name: "🏷️ Price Drop Alert",
+    title: "🏷️ দারুণ সুখবর! আপনার পছন্দের পণ্যের দাম কমেছে",
+    message: "T800 Pro Smartwatch-এর দাম কমে এখন মাত্র ৳৯৫০ টাকা! আপনার টার্গেট প্রাইসে পৌঁছাল।",
+    actionUrl: "/products",
+    imageUrl: "/icon-192.png"
   }
 ];
 

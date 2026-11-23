@@ -166,59 +166,69 @@ export function productMatchesCategory(product: any, categoryQuery?: string | nu
   const targetParentClean = targetParentSlug ? cleanCat(targetParentSlug) : "";
 
   // 1. Direct Slug or Name exact matches (raw and cleaned)
+  // Cross-category pollution guard: Prevent "men's fashion" matching "women's fashion" through loose substrings
+  const isTargetWomen = targetSlugClean === "womens-fashion" || targetSlugClean.includes("women");
+  const isProductMen = (pCatClean === "mens-fashion" || pCatSlugClean === "mens-fashion" || (pCat.includes("men") && !pCat.includes("women")));
+  const isTargetMen = targetSlugClean === "mens-fashion" || (targetSlugClean.includes("men") && !isTargetWomen);
+  const isProductWomen = pCatClean === "womens-fashion" || pCatSlugClean === "womens-fashion" || pCat.includes("women");
+
+  if (isTargetWomen && isProductMen) {
+    const hasExplicitWomenKeyword = /\b(women|womens|women's|ladies|lady|মহিলা|মেয়ে)\b/i.test(pName);
+    if (!hasExplicitWomenKeyword) return false;
+  }
+  if (isTargetMen && isProductWomen) {
+    return false;
+  }
+
   if (pCatSlug && (pCatSlug === targetSlug || pCatSlug === targetParentSlug)) return true;
   if (pCatSlugClean && (pCatSlugClean === targetSlugClean || (targetParentClean && pCatSlugClean === targetParentClean))) return true;
 
-  if (pCat && (pCat === targetSlug || pCat === targetName || pCat.includes(targetSlug) || targetName.includes(pCat))) return true;
-  if (pCatClean && (pCatClean === targetSlugClean || (targetParentClean && pCatClean === targetParentClean))) return true;
+  if (pCat && (pCat === targetSlug || pCat === targetName || pCatClean === targetSlugClean || (targetParentClean && pCatClean === targetParentClean))) return true;
 
-  if (pCatName && (pCatName === targetSlug || pCatName === targetName || pCatName.includes(targetSlug))) return true;
-  if (pCatNameClean && (pCatNameClean === targetSlugClean || (targetParentClean && pCatNameClean === targetParentClean))) return true;
+  if (pCatName && (pCatName === targetSlug || pCatName === targetName || pCatNameClean === targetSlugClean || (targetParentClean && pCatNameClean === targetParentClean))) return true;
 
   if (pCatId && (pCatId === targetSlug || pCatId === targetParentSlug || cleanCat(pCatId) === targetSlugClean)) return true;
 
-  // 2. Women's Fashion Comprehensive Match
+  // 2. Women's Fashion Comprehensive Match (Strict word boundaries to prevent "braided", "spring", etc.)
   if (targetSlug === "womens-fashion" || targetSlugClean === "womens-fashion") {
+    // Explicit category check
     if (
+      pCat === "women's fashion" ||
       pCat.includes("women") ||
       pCatClean.includes("women") ||
       pCatSlug.includes("women") ||
-      pCatName.includes("women") ||
-      pName.includes("saree") ||
-      pName.includes("sari") ||
-      pName.includes("sharee") ||
-      pName.includes("kurti") ||
-      pName.includes("lehenga") ||
-      pName.includes("salwar") ||
-      pName.includes("kameez") ||
-      pName.includes("kamiz") ||
-      pName.includes("tunic") ||
-      pName.includes("palazzo") ||
-      pName.includes("two piece") ||
-      pName.includes("three piece") ||
-      pName.includes("hijab") ||
-      pName.includes("abaya") ||
-      pName.includes("borkha") ||
-      pName.includes("burqa") ||
-      pName.includes("khimar") ||
-      pName.includes("niqab") ||
-      pName.includes("jewelry") ||
-      pName.includes("jewellery") ||
-      pName.includes("ring") ||
-      pName.includes("necklace") ||
-      pName.includes("earring") ||
-      pName.includes("bracelet") ||
-      pName.includes("bangle") ||
-      pName.includes("bra") ||
-      pName.includes("lingerie") ||
-      pName.includes("nighty") ||
-      pName.includes("মহিলা") ||
-      pName.includes("লেহেঙ্গা") ||
-      pName.includes("বোরকা") ||
-      pName.includes("হিজাব") ||
-      pName.includes("শাড়ি")
+      pCatName.includes("women")
     ) {
-      if (!pName.includes("panjabi") && !pName.includes("boxer") && !pName.includes("lungi")) {
+      return true;
+    }
+
+    // Exclude other major categories unless explicit women's clothing/jewelry keyword
+    const isOtherMajorCat =
+      pCat.includes("gadget") ||
+      pCat.includes("electronic") ||
+      pCat.includes("mobile") ||
+      pCat.includes("food") ||
+      (pCat.includes("men") && !pCat.includes("women"));
+
+    const hasExplicitWomenKeyword = /\b(women|womens|women's|ladies|lady|মহিলা|মেয়ে)\b/i.test(pName);
+
+    if (isOtherMajorCat && !hasExplicitWomenKeyword) {
+      return false;
+    }
+
+    // Authentic Women's Fashion keywords with strict word boundaries
+    const womenKeywordRegex =
+      /\b(saree|sari|sharee|kurti|kurtis|lehenga|lehengas|salwar|kameez|kamiz|tunic|palazzo|two piece|three piece|hijab|hijabs|abaya|borkha|burqa|khimar|niqab|jewelry|jewellery|necklace|necklaces|earring|earrings|bracelet|bracelets|bangle|bangles|lingerie|nighty|bra|bras|ring|rings)\b/i;
+    const isBengaliWomen = /শাড়ি|লেহেঙ্গা|বোরকা|হিজাব|মহিলা|মেয়ে/.test(pName);
+
+    if (womenKeywordRegex.test(pName) || isBengaliWomen) {
+      // Exclude obvious non-apparel false positives like braided cables, brackets, car springs, etc.
+      const isFalsePositive =
+        /\b(braided|bracket|brake|spring|bearing|hearing|steering|cable|charger|panjabi|punjabi|boxer|lungi|gents|men|mens)\b/i.test(
+          pName
+        ) && !hasExplicitWomenKeyword;
+
+      if (!isFalsePositive) {
         return true;
       }
     }
@@ -472,7 +482,7 @@ export function productMatchesCategory(product: any, categoryQuery?: string | nu
   // Inferred category match from product name
   try {
     const inferred = inferProductCategory(pName, pCat);
-    if (inferred === targetSlug || cleanCat(inferred) === targetSlugClean || (targetParentSlug && inferred === targetParentSlug)) {
+    if (inferred && (inferred === targetSlug || cleanCat(inferred) === targetSlugClean || (targetParentSlug && inferred === targetParentSlug))) {
       return true;
     }
   } catch {}
@@ -494,7 +504,7 @@ function inferProductCategory(name: string, category?: string): string {
     return "watch";
   }
   if (n.includes("milk shake") || n.includes("honey") || n.includes("ghee") || n.includes("supplement") || c === "foods" || c.includes("food")) return "foods";
-  if (n.includes("hoodie") || n.includes("winter") || n.includes("jacket") || c === "winter") return "winter";
+  if (n.includes("hoodie") || n.includes("hooded") || n.includes("scarf") || n.includes("winter") || n.includes("jacket") || c === "winter") return "winter";
   if (n.includes("panjabi") || n.includes("kabli") || n.includes("shirt") || n.includes("pant") || c === "mens-fashion") return "mens-fashion";
   if (n.includes("saree") || n.includes("kurti") || n.includes("hijab") || n.includes("borkha") || n.includes("jewelry") || c === "womens-fashion" || c.includes("women")) return "womens-fashion";
   if (n.includes("pot") || n.includes("pan") || n.includes("blender") || n.includes("kitchen") || n.includes("light") || c === "home-lifestyle" || c.includes("home")) return "home-lifestyle";
@@ -503,7 +513,14 @@ function inferProductCategory(name: string, category?: string): string {
   if (n.includes("gift") || n.includes("custom") || n.includes("mug") || n.includes("crest") || c === "customize-gift" || c.includes("gift")) return "customize-gift";
   if (n.includes("combo") || n.includes("offer") || n.includes("deal") || c === "offer" || c.includes("offer")) return "offer";
   if (c.includes("other")) return "others";
-  return "gadgets-electronics";
+  if (
+    n.includes("gadget") || n.includes("mobile") || n.includes("phone") || n.includes("earbuds") ||
+    n.includes("headphone") || n.includes("camera") || n.includes("router") || n.includes("cable") ||
+    n.includes("charger") || n.includes("tws") || n.includes("bluetooth") || c === "gadgets-electronics" || c.includes("electronic") || c.includes("gadget")
+  ) {
+    return "gadgets-electronics";
+  }
+  return "";
 }
 
 

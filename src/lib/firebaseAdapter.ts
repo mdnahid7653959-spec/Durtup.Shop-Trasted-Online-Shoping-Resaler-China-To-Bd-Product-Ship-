@@ -168,8 +168,9 @@ class FirebaseQueryBuilder {
         const q = fsQuery(colRef, ...constraints);
         return await getDocs(q);
       } catch (err2: any) {
-        // Fallback: fetch all and let in-memory filtering handle it
-        return await getDocs(colRef);
+        // Fallback: fetch bounded subset and let in-memory filtering handle it
+        const fallbackLimit = this.limitNum ? Math.min(this.limitNum, 50) : 50;
+        return await getDocs(fsQuery(colRef, fsLimit(fallbackLimit)));
       }
     }
   }

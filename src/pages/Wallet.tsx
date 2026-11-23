@@ -15,7 +15,13 @@ import {
   Smartphone,
   Info,
   Copy,
-  Check
+  Check,
+  Star,
+  Award,
+  Gift,
+  Trophy,
+  Coins,
+  Percent
 } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { db } from "@/integrations/firebase/client";
@@ -42,6 +48,20 @@ import { useToast } from "@/hooks/use-toast";
 import { useSmartBack } from "@/hooks/useSmartBack";
 import { cn } from "@/lib/utils";
 import { getReferralSettings, ReferralSettings, requestWithdrawal } from "@/services/referralService";
+import {
+  getUserLoyaltyAccount,
+  getUserLoyaltyHistory,
+  getLoyaltySettings,
+  type LoyaltyAccount,
+  type LoyaltyTransaction,
+  type LoyaltySettings
+} from "@/services/loyaltyService";
+import {
+  getUserCashbackHistory,
+  getActiveCashbackCampaigns,
+  type CashbackTransaction,
+  type CashbackCampaign
+} from "@/services/cashbackService";
 
 interface Transaction {
   id: string;
@@ -65,6 +85,18 @@ export default function Wallet() {
   const [settings, setSettings] = useState<ReferralSettings | null>(null);
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [totalEarned, setTotalEarned] = useState<number>(0);
+
+  // Loyalty Points State
+  const [loyaltyAccount, setLoyaltyAccount] = useState<LoyaltyAccount | null>(null);
+  const [loyaltyHistory, setLoyaltyHistory] = useState<LoyaltyTransaction[]>([]);
+  const [loyaltySettings, setLoyaltySettings] = useState<LoyaltySettings | null>(null);
+  
+  // Cashback State
+  const [cashbackHistory, setCashbackHistory] = useState<CashbackTransaction[]>([]);
+  const [activeCampaigns, setActiveCampaigns] = useState<CashbackCampaign[]>([]);
+  const [totalCashbackEarned, setTotalCashbackEarned] = useState<number>(0);
+  
+  const [activeLedgerTab, setActiveLedgerTab] = useState<"wallet" | "loyalty" | "cashback">("wallet");
 
   // Withdraw Modal State
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
@@ -266,6 +298,37 @@ export default function Wallet() {
 
       txList.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       setTransactions(txList);
+
+      // 4. Fetch Loyalty Account, Settings & History
+      try {
+        const [lAcc, lHist, lSet] = await Promise.all([
+          getUserLoyaltyAccount(user.id, user.email, profile?.full_name),
+          getUserLoyaltyHistory(user.id),
+          getLoyaltySettings()
+        ]);
+        setLoyaltyAccount(lAcc);
+        setLoyaltyHistory(lHist);
+        setLoyaltySettings(lSet);
+      } catch (lErr) {
+        console.warn("Loyalty data fetch notice:", lErr);
+      }
+
+      // 5. Fetch Cashback History & Active Campaigns
+      try {
+        const [cbHist, cbCamps] = await Promise.all([
+          getUserCashbackHistory(user.id),
+          getActiveCashbackCampaigns()
+        ]);
+        setCashbackHistory(cbHist);
+        setActiveCampaigns(cbCamps);
+
+        const earnedTotal = cbHist
+          .filter(t => t.type === "credit" && t.status === "credited")
+          .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+        setTotalCashbackEarned(earnedTotal);
+      } catch (cbErr) {
+        console.warn("Cashback data fetch notice:", cbErr);
+      }
     } catch (error) {
       console.error("Error fetching wallet transactions:", error);
     } finally {
@@ -433,6 +496,117 @@ export default function Wallet() {
             </Card>
           </div>
 
+          {/* Dedicated Loyalty Points Overview Card */}
+          <Card className="rounded-2xl border border-amber-500/30 shadow-md bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-card overflow-hidden">
+            <CardContent className="p-5 sm:p-6 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-500 text-white flex items-center justify-center shadow-md shadow-orange-500/20">
+                    <Star className="h-6 w-6 fill-current text-amber-200" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-black text-base sm:text-lg text-foreground">
+                        লয়্যালটি পয়েন্ট (Loyalty Points)
+                      </h3>
+                      <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full shadow-xs">
+                        {loyaltyAccount?.tier || "Bronze"} Tier
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      প্রতি সফল ডেলিভারি অর্ডারে ৳১০০ কেনাকাটায় {loyaltySettings?.pointsPerHundredSpent || 5} পয়েন্ট পান!
+                    </p>
+                  </div>
+                </div>
+
+                <div className="text-left sm:text-right bg-white dark:bg-card p-3 rounded-xl border border-amber-500/20 sm:border-0 sm:bg-transparent sm:p-0">
+                  <div className="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400">
+                    ★ {Number(loyaltyAccount?.points || 0).toLocaleString()} <span className="text-xs font-bold text-muted-foreground">পয়েন্ট</span>
+                  </div>
+                  <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                    ≈ ৳{Number((loyaltyAccount?.points || 0) * (loyaltySettings?.pointValueInTaka || 0.50)).toLocaleString()} চেকআউট ছাড়
+                  </p>
+                </div>
+              </div>
+
+              {/* Loyalty rules micro-strip */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-amber-500/20 text-[11px] sm:text-xs">
+                <div className="p-2 rounded-lg bg-background/60">
+                  <span className="text-muted-foreground block">লাইফটাইম অর্জিত</span>
+                  <span className="font-bold text-foreground">★ {Number(loyaltyAccount?.lifetime_points || 0).toLocaleString()}</span>
+                </div>
+                <div className="p-2 rounded-lg bg-background/60">
+                  <span className="text-muted-foreground block">ডিসকাউন্টে ব্যবহৃত</span>
+                  <span className="font-bold text-foreground">★ {Number(loyaltyAccount?.points_spent || 0).toLocaleString()}</span>
+                </div>
+                <div className="p-2 rounded-lg bg-background/60 col-span-2 sm:col-span-1">
+                  <span className="text-muted-foreground block">পয়েন্ট মেয়াদ</span>
+                  <span className="font-bold text-foreground">{loyaltySettings?.expiryDays ? `${loyaltySettings.expiryDays} দিন` : "আজীবন (No Expiry)"}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Dedicated Automated Cashback Rewards Overview Card */}
+          <Card className="rounded-2xl border border-emerald-500/30 shadow-md bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-card overflow-hidden">
+            <CardContent className="p-5 sm:p-6 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/20">
+                    <Coins className="h-6 w-6 text-emerald-100" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-black text-base sm:text-lg text-foreground">
+                        ক্যাশব্যাক রিওয়ার্ড (Cashback Rewards)
+                      </h3>
+                      <Badge className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white border-0 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full shadow-xs">
+                        Auto-Credited
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      প্রতিটি সফল ডেলিভারি অর্ডারে স্বয়ংক্রিয় ক্যাশব্যাক সরাসরি ওয়ালেটে জমা হয়।
+                    </p>
+                  </div>
+                </div>
+
+                <div className="text-left sm:text-right bg-white dark:bg-card p-3 rounded-xl border border-emerald-500/20 sm:border-0 sm:bg-transparent sm:p-0">
+                  <div className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400">
+                    ৳{Number(totalCashbackEarned || 0).toLocaleString()}
+                  </div>
+                  <p className="text-xs font-bold text-muted-foreground">
+                    মোট অর্জিত ক্যাশব্যাক
+                  </p>
+                </div>
+              </div>
+
+              {/* Active Cashback Campaigns Banner Strip */}
+              {activeCampaigns.length > 0 && (
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                    <span className="flex items-center gap-1.5">
+                      <Percent className="w-3.5 h-3.5" /> চলতি অফার: {activeCampaigns[0].name}
+                    </span>
+                    <span className="bg-emerald-600 text-white px-2 py-0.5 rounded-md text-[10px] font-black">
+                      {activeCampaigns[0].cashback_percent}% ক্যাশব্যাক
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    {activeCampaigns[0].min_order_amount ? `ন্যূনতম ৳${activeCampaigns[0].min_order_amount} কেনাকাটায় ` : ""}
+                    সর্বোচ্চ ৳{activeCampaigns[0].max_cashback_amount || 500} পর্যন্ত ক্যাশব্যাক!
+                  </p>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between pt-1 text-xs text-muted-foreground">
+                <span>পরবর্তী যেকোনো অর্ডারে চেকআউটের সময় ওয়ালেট থেকে সরাসরি ক্যাশব্যাক টাকা খরচ করা যায়।</span>
+                <Button asChild size="sm" variant="ghost" className="text-emerald-600 hover:text-emerald-700 font-bold p-0 h-auto">
+                  <Link to="/products">কেনাকাটা করুন →</Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Quick Action Promo */}
           <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-primary/5 to-transparent border border-amber-500/20 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -449,16 +623,55 @@ export default function Wallet() {
             </Button>
           </div>
 
-          {/* Transaction History */}
+          {/* Transaction History & Points Ledger Tabs */}
           <Card className="rounded-2xl border shadow-sm overflow-hidden bg-card">
             <CardHeader className="pb-3 border-b bg-muted/20">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-primary" />
-                  Transaction History
-                </CardTitle>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    variant={activeLedgerTab === "wallet" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setActiveLedgerTab("wallet")}
+                    className="rounded-xl text-xs font-bold gap-1.5 h-8"
+                  >
+                    <WalletIcon className="h-3.5 w-3.5" />
+                    টাকা লেনদেন ({transactions.length})
+                  </Button>
+                  <Button
+                    variant={activeLedgerTab === "cashback" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setActiveLedgerTab("cashback")}
+                    className={cn(
+                      "rounded-xl text-xs font-bold gap-1.5 h-8",
+                      activeLedgerTab === "cashback"
+                        ? "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600"
+                        : "text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
+                    )}
+                  >
+                    <Coins className="h-3.5 w-3.5" />
+                    ক্যাশব্যাক হিস্ট্রি ({cashbackHistory.length})
+                  </Button>
+                  <Button
+                    variant={activeLedgerTab === "loyalty" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setActiveLedgerTab("loyalty")}
+                    className={cn(
+                      "rounded-xl text-xs font-bold gap-1.5 h-8",
+                      activeLedgerTab === "loyalty"
+                        ? "bg-amber-500 hover:bg-amber-600 text-white border-amber-500"
+                        : "text-amber-700 dark:text-amber-400 border-amber-500/30"
+                    )}
+                  >
+                    <Star className="h-3.5 w-3.5 fill-current" />
+                    পয়েন্ট বিবরণী ({loyaltyHistory.length})
+                  </Button>
+                </div>
                 <span className="text-xs text-muted-foreground font-semibold">
-                  {transactions.length} Transactions
+                  {activeLedgerTab === "wallet"
+                    ? `${transactions.length} Transactions`
+                    : activeLedgerTab === "cashback"
+                    ? `${cashbackHistory.length} Cashback Records`
+                    : `${loyaltyHistory.length} Points Records`}
                 </span>
               </div>
             </CardHeader>
@@ -467,6 +680,162 @@ export default function Wallet() {
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-7 w-7 animate-spin text-primary" />
                 </div>
+              ) : activeLedgerTab === "loyalty" ? (
+                /* Loyalty Points History Ledger */
+                loyaltyHistory.length === 0 ? (
+                  <div className="text-center py-12 px-4 space-y-2">
+                    <Star className="h-12 w-12 mx-auto text-amber-500/40 mb-2" />
+                    <p className="font-semibold text-muted-foreground text-sm">কোনো লয়্যালটি পয়েন্টের রেকর্ড নেই</p>
+                    <p className="text-xs text-muted-foreground">সফল অর্ডার ডেলিভারি হলে স্বয়ংক্রিয়ভাবে পয়েন্ট এখানে যুক্ত হবে।</p>
+                  </div>
+                ) : (
+                  <div className="divide-y">
+                    {loyaltyHistory.map((item) => {
+                      const isPositive = item.points > 0;
+                      return (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between p-4 hover:bg-muted/20 transition-colors gap-3"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div
+                              className={cn(
+                                "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
+                                isPositive
+                                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                  : "bg-red-500/10 text-red-600"
+                              )}
+                            >
+                              {item.type === "admin_bonus" ? (
+                                <Gift className="h-5 w-5" />
+                              ) : isPositive ? (
+                                <Star className="h-5 w-5 fill-current" />
+                              ) : (
+                                <ArrowUpRight className="h-5 w-5" />
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-bold text-sm text-foreground">
+                                {item.description}
+                              </p>
+                              <div className="flex items-center gap-2 flex-wrap text-[11px] text-muted-foreground mt-0.5">
+                                <span>
+                                  {new Date(item.created_at).toLocaleDateString("en-BD", {
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </span>
+                                {item.order_number && (
+                                  <Badge variant="outline" className="text-[10px] py-0 px-1.5 h-4">
+                                    Order #{item.order_number}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="text-right shrink-0">
+                            <p
+                              className={cn(
+                                "font-black text-sm sm:text-base",
+                                isPositive ? "text-amber-600 dark:text-amber-400" : "text-orange-600"
+                              )}
+                            >
+                              {isPositive ? "+" : ""}{item.points} pts
+                            </p>
+                            <p className="text-[11px] text-muted-foreground">
+                              ব্যালেন্স: {item.balance_after}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
+              ) : activeLedgerTab === "cashback" ? (
+                /* Automated Cashback History Ledger */
+                cashbackHistory.length === 0 ? (
+                  <div className="text-center py-12 px-4 space-y-2">
+                    <Coins className="h-12 w-12 mx-auto text-emerald-500/40 mb-2" />
+                    <p className="font-semibold text-muted-foreground text-sm">কোনো ক্যাশব্যাকের রেকর্ড নেই</p>
+                    <p className="text-xs text-muted-foreground">সফল ডেলিভারি অর্ডারে স্বয়ংক্রিয়ভাবে ক্যাশব্যাক ক্রেডিট হবে।</p>
+                  </div>
+                ) : (
+                  <div className="divide-y">
+                    {cashbackHistory.map((item) => {
+                      const isCredit = item.type === "credit";
+                      return (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between p-4 hover:bg-muted/20 transition-colors gap-3"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div
+                              className={cn(
+                                "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
+                                isCredit
+                                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                  : "bg-red-500/10 text-red-600"
+                              )}
+                            >
+                              <Coins className="h-5 w-5" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-bold text-sm text-foreground">
+                                {item.description}
+                              </p>
+                              <div className="flex items-center gap-2 flex-wrap text-[11px] text-muted-foreground mt-0.5">
+                                <span>
+                                  {new Date(item.created_at).toLocaleDateString("en-BD", {
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </span>
+                                {item.order_number && (
+                                  <Badge variant="outline" className="text-[10px] py-0 px-1.5 h-4">
+                                    Order #{item.order_number}
+                                  </Badge>
+                                )}
+                                <Badge
+                                  className={cn(
+                                    "text-[9px] uppercase px-1.5 py-0 border-0 font-bold",
+                                    item.status === "credited"
+                                      ? "bg-emerald-500/10 text-emerald-600"
+                                      : item.status === "reversed"
+                                      ? "bg-red-500/10 text-red-600"
+                                      : "bg-amber-500/10 text-amber-600"
+                                  )}
+                                >
+                                  {item.status}
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="text-right shrink-0">
+                            <p
+                              className={cn(
+                                "font-black text-sm sm:text-base",
+                                isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-red-600"
+                              )}
+                            >
+                              {isCredit ? "+" : "-"}৳{Number(item.amount).toLocaleString()}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground">
+                              ব্যালেন্স: ৳{Number(item.balance_after || 0).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
               ) : transactions.length === 0 ? (
                 <div className="text-center py-12 px-4 space-y-2">
                   <WalletIcon className="h-12 w-12 mx-auto text-muted-foreground/40 mb-2" />

@@ -13,6 +13,11 @@ function sigmaDevApiPlugin() {
     name: "sigma-dev-api-plugin",
     configureServer(server: any) {
       server.middlewares.use(async (req: any, res: any, next: any) => {
+        const cleanPath = (req.url || "").split("?")[0].toLowerCase();
+        if (cleanPath.endsWith(".webp") || cleanPath.endsWith(".png") || cleanPath.endsWith(".jpg") || cleanPath.endsWith(".jpeg") || cleanPath.endsWith(".svg") || cleanPath.endsWith(".json")) {
+          res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+        }
+
         if (req.url && req.url.startsWith("/api/ai/")) {
           if (req.method === "OPTIONS") {
             res.setHeader("Access-Control-Allow-Origin", "*");
@@ -223,6 +228,104 @@ function sigmaDevApiPlugin() {
           }
         }
 
+        if (req.url && req.url.startsWith("/api/v1")) {
+          if (req.method === "OPTIONS") {
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE");
+            res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+            res.statusCode = 200;
+            return res.end();
+          }
+
+          const execute = async (body: any) => {
+            try {
+              const { handleHybridApiRequest } = await server.ssrLoadModule("./src/server/hybridServerEngine.ts");
+              const result = await handleHybridApiRequest(req.url, req.method, req.headers, body);
+              res.setHeader("Content-Type", "application/json; charset=utf-8");
+              res.setHeader("Access-Control-Allow-Origin", "*");
+              res.statusCode = result.status || 200;
+              return res.end(JSON.stringify(result.body));
+            } catch (err: any) {
+              console.error("[Hybrid Dev API Error]:", err);
+              res.statusCode = 500;
+              res.setHeader("Content-Type", "application/json; charset=utf-8");
+              return res.end(JSON.stringify({ error: err.message || "Hybrid API error" }));
+            }
+          };
+
+          if (req.method === "GET" || req.method === "HEAD") {
+            return execute({});
+          }
+
+          let bodyStr = "";
+          req.on("data", (chunk: any) => { bodyStr += chunk; });
+          req.on("end", () => {
+            let parsedBody = {};
+            try {
+              if (bodyStr) parsedBody = JSON.parse(bodyStr);
+            } catch {}
+            execute(parsedBody);
+          });
+          return;
+        }
+
+        if (req.url && (req.url === "/api/orders" || req.url.startsWith("/api/orders"))) {
+          if (req.method === "OPTIONS") {
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+            res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+            res.statusCode = 200;
+            return res.end();
+          }
+
+          if (req.method !== "POST") {
+            res.setHeader("Content-Type", "application/json; charset=utf-8");
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            res.statusCode = 405;
+            return res.end(JSON.stringify({ error: "Method not allowed. Use POST." }));
+          }
+
+          const bodyChunks: Buffer[] = [];
+          req.on("data", (chunk: any) => {
+            bodyChunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+          });
+
+          req.on("end", async () => {
+            try {
+              const rawBuffer = Buffer.concat(bodyChunks);
+              let bodyStr = rawBuffer.toString("utf8").trim();
+              if (bodyStr.charCodeAt(0) === 0xFEFF) bodyStr = bodyStr.slice(1); // Strip BOM
+
+              let parsedBody: any = {};
+              if (bodyStr) {
+                try {
+                  parsedBody = JSON.parse(bodyStr);
+                } catch {
+                  const cleaned = bodyStr
+                    .replace(/([{,]\s*)([a-zA-Z0-9_]+)\s*:/g, '$1"$2":')
+                    .replace(/'([^']*)'/g, '"$1"');
+                  parsedBody = JSON.parse(cleaned);
+                }
+              }
+
+              const { handleOrderServerRequest } = await server.ssrLoadModule("./src/server/orderServerEngine.ts");
+              const result = await handleOrderServerRequest(req.url, req.method, req.headers, parsedBody);
+
+              res.setHeader("Content-Type", "application/json; charset=utf-8");
+              res.setHeader("Access-Control-Allow-Origin", "*");
+              res.statusCode = result.status || 200;
+              return res.end(JSON.stringify(result.body));
+            } catch (err: any) {
+              console.error("[Orders Dev API Error]:", err);
+              res.setHeader("Content-Type", "application/json; charset=utf-8");
+              res.setHeader("Access-Control-Allow-Origin", "*");
+              res.statusCode = 500;
+              return res.end(JSON.stringify({ success: false, error: err.message || "Internal server error" }));
+            }
+          });
+          return;
+        }
+
         next();
       });
     }
@@ -297,7 +400,6 @@ export default defineConfig(({ mode }) => ({
           "vendor-react": ["react", "react-dom", "react-router-dom"],
           "vendor-query": ["@tanstack/react-query"],
           "vendor-icons": ["lucide-react"],
-          "vendor-recharts": ["recharts"],
           "vendor-carousel": ["embla-carousel-react"],
           "vendor-dompurify": ["dompurify"],
           "vendor-firebase": ["firebase/app", "firebase/auth", "firebase/firestore"],

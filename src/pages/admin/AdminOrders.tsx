@@ -33,6 +33,8 @@ import { SupplierFulfillmentGroup } from "@/services/suppliers/supplierTypes";
 import { EcomsellerEngine } from "@/services/suppliers/ecomsellerEngine";
 import { isMockOrder, purgeMockOrdersFromStorage } from "@/utils/orderValidation";
 import { processOrderReferralReward } from "@/services/referralService";
+import { awardDeliveredOrderPoints, reconcileOrderPointsOnCancelOrRefund } from "@/services/loyaltyService";
+import { awardDeliveredOrderCashback, reconcileOrderCashbackOnCancelOrRefund } from "@/services/cashbackService";
 import { logAdminActivity } from "@/services/auditLogger";
 
 import { Badge } from "@/components/ui/badge";
@@ -562,6 +564,42 @@ export default function AdminOrders() {
       }).catch((e) => {
         console.warn("Referral reward execution notice:", e);
       });
+
+      // 6. Automated Loyalty Points Engine: Award on Delivery, Reconcile on Cancel/Refund
+      if (newStatus === "delivered" && targetOrder) {
+        awardDeliveredOrderPoints(targetOrder).then((lpRes) => {
+          if (lpRes.success && !lpRes.duplicate && lpRes.pointsAwarded > 0) {
+            toast({
+              title: "★ Loyalty Points Awarded",
+              description: lpRes.message
+            });
+          }
+        }).catch((e) => console.warn("Loyalty points award error:", e));
+      } else if ((newStatus === "cancelled" || newStatus === "refunded") && targetOrder) {
+        reconcileOrderPointsOnCancelOrRefund(targetOrder).then((recRes) => {
+          if (recRes.success) {
+            console.log("[Loyalty] Points reconciled on status change:", recRes.message);
+          }
+        }).catch((e) => console.warn("Loyalty reconciliation error:", e));
+      }
+
+      // 7. Automated Cashback Engine: Award on Delivery, Reconcile on Cancel/Refund
+      if (newStatus === "delivered" && targetOrder) {
+        awardDeliveredOrderCashback(targetOrder).then((cbRes) => {
+          if (cbRes.success && !cbRes.duplicate && cbRes.cashbackAwarded > 0) {
+            toast({
+              title: "💰 Cashback Awarded!",
+              description: cbRes.message
+            });
+          }
+        }).catch((e) => console.warn("Cashback award error:", e));
+      } else if ((newStatus === "cancelled" || newStatus === "refunded") && targetOrder) {
+        reconcileOrderCashbackOnCancelOrRefund(targetOrder).then((recRes) => {
+          if (recRes.success && (recRes.cashbackDeducted > 0 || recRes.walletRefunded > 0)) {
+            console.log("[Cashback] Reconciled on status change:", recRes.message);
+          }
+        }).catch((e) => console.warn("Cashback reconciliation error:", e));
+      }
 
       toast({ title: "Order status updated", description: `Changed status to ${newStatus}` });
       invalidateOrders();

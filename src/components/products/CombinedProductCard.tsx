@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import type { CombinedProduct } from "@/hooks/useCombinedSearch";
 import { SafeProductImage } from "@/components/products/SafeProductImage";
+import { CustomerAuthModal } from "@/components/auth/CustomerAuthModal";
 
 interface CombinedProductCardProps {
   product: CombinedProduct;
@@ -22,6 +23,7 @@ const CombinedProductCardComponent: React.FC<CombinedProductCardProps> = ({ prod
   const { addToCart: addToCJCart } = useCJCart();
   const { items: wishlistItems, addToWishlist, removeFromWishlist } = useWishlist();
   const { user } = useAuth();
+  const [showAuthModal, setShowAuthModal] = React.useState(false);
 
   const finalPrice = Math.max(0, Math.round(Number(product.price) || 0));
   const rawOriginal = product.originalPrice ? Math.round(Number(product.originalPrice)) : 0;
@@ -73,9 +75,17 @@ const CombinedProductCardComponent: React.FC<CombinedProductCardProps> = ({ prod
 
     try {
       await handleAddToCart(e);
+      if (!user) {
+        setShowAuthModal(true);
+        return;
+      }
       navigate("/checkout");
     } catch (err) {
       console.error("CombinedProductCard handleBuyNow error:", err);
+      if (!user) {
+        setShowAuthModal(true);
+        return;
+      }
       navigate("/checkout");
     }
   };
@@ -91,11 +101,12 @@ const CombinedProductCardComponent: React.FC<CombinedProductCardProps> = ({ prod
   };
 
   return (
-    <Link 
-      to={productLink} 
-      state={{ preloadedProduct: product }}
-      className="group block"
-    >
+    <>
+      <Link 
+        to={productLink} 
+        state={{ preloadedProduct: product }}
+        className="group block"
+      >
       <div className="bg-card border rounded-xl overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-primary/20">
         {/* Image Container */}
         <div className="relative aspect-square overflow-hidden bg-white dark:bg-slate-900/60 flex items-center justify-center p-1.5">
@@ -190,7 +201,13 @@ const CombinedProductCardComponent: React.FC<CombinedProductCardProps> = ({ prod
           </div>
         </div>
       </div>
-    </Link>
+      </Link>
+      <CustomerAuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={() => navigate("/checkout")}
+      />
+    </>
   );
 };
 

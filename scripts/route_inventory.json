@@ -1,0 +1,838 @@
+{
+  "customerRoutes": [
+    {
+      "path": "/",
+      "component": "Index"
+    },
+    {
+      "path": "/login",
+      "component": "Login"
+    },
+    {
+      "path": "/register",
+      "component": "Register"
+    },
+    {
+      "path": "/forgot-password",
+      "component": "ForgotPassword"
+    },
+    {
+      "path": "/reset-password",
+      "component": "ResetPassword"
+    },
+    {
+      "path": "/products",
+      "component": "Products"
+    },
+    {
+      "path": "/flash-sale",
+      "component": "Products"
+    },
+    {
+      "path": "/new-arrivals",
+      "component": "Products"
+    },
+    {
+      "path": "/free-shipping",
+      "component": "Products"
+    },
+    {
+      "path": "/search",
+      "component": "SearchPage"
+    },
+    {
+      "path": "/product/:slug",
+      "component": "ProductDetail"
+    },
+    {
+      "path": "/product/:slug/*",
+      "component": "ProductDetail"
+    },
+    {
+      "path": "/products/:slug",
+      "component": "ProductDetail"
+    },
+    {
+      "path": "/products/:slug/*",
+      "component": "ProductDetail"
+    },
+    {
+      "path": "/p/:slug",
+      "component": "ProductDetail"
+    },
+    {
+      "path": "/p/:slug/*",
+      "component": "ProductDetail"
+    },
+    {
+      "path": "/item/:slug",
+      "component": "ProductDetail"
+    },
+    {
+      "path": "/item/:slug/*",
+      "component": "ProductDetail"
+    },
+    {
+      "path": "/product/cj/:id",
+      "component": "CJProductDetail"
+    },
+    {
+      "path": "/product/cj/:id/*",
+      "component": "CJProductDetail"
+    },
+    {
+      "path": "/cj-product/:id",
+      "component": "CJProductDetail"
+    },
+    {
+      "path": "/products/cj",
+      "component": "CJProducts"
+    },
+    {
+      "path": "/category/:slug",
+      "component": "CategoryPage"
+    },
+    {
+      "path": "/categories",
+      "component": "Categories"
+    },
+    {
+      "path": "/cart",
+      "component": "Cart"
+    },
+    {
+      "path": "/checkout",
+      "component": "Checkout"
+    },
+    {
+      "path": "/payment/callback",
+      "component": "PaymentCallback"
+    },
+    {
+      "path": "/account",
+      "component": "Account"
+    },
+    {
+      "path": "/profile",
+      "component": "Account"
+    },
+    {
+      "path": "/recently-viewed",
+      "component": "Navigate"
+    },
+    {
+      "path": "/orders",
+      "component": "Orders"
+    },
+    {
+      "path": "/orders/:id",
+      "component": "OrderDetail"
+    },
+    {
+      "path": "/wishlist",
+      "component": "Wishlist"
+    },
+    {
+      "path": "/compare",
+      "component": "Navigate"
+    },
+    {
+      "path": "/product-compare",
+      "component": "Navigate"
+    },
+    {
+      "path": "/wallet",
+      "component": "Wallet"
+    },
+    {
+      "path": "/referrals",
+      "component": "Referrals"
+    },
+    {
+      "path": "/refer",
+      "component": "Referrals"
+    },
+    {
+      "path": "/vouchers",
+      "component": "MyVouchers"
+    },
+    {
+      "path": "/notifications",
+      "component": "Notifications"
+    },
+    {
+      "path": "/help",
+      "component": "HelpCenter"
+    },
+    {
+      "path": "/returns",
+      "component": "Returns"
+    },
+    {
+      "path": "/shipping",
+      "component": "Shipping"
+    },
+    {
+      "path": "/track",
+      "component": "TrackOrder"
+    },
+    {
+      "path": "/track-order",
+      "component": "Navigate"
+    },
+    {
+      "path": "/trackorder",
+      "component": "Navigate"
+    },
+    {
+      "path": "/contact",
+      "component": "Contact"
+    },
+    {
+      "path": "/about",
+      "component": "About"
+    },
+    {
+      "path": "/careers",
+      "component": "Careers"
+    },
+    {
+      "path": "/press",
+      "component": "Press"
+    },
+    {
+      "path": "/affiliate",
+      "component": "Affiliate"
+    },
+    {
+      "path": "/messages",
+      "component": "BuyerMessages"
+    },
+    {
+      "path": "/messages/:conversationId",
+      "component": "BuyerMessages"
+    },
+    {
+      "path": "/privacy",
+      "component": "Privacy"
+    },
+    {
+      "path": "/terms",
+      "component": "Terms"
+    },
+    {
+      "path": "/cookies",
+      "component": "Cookies"
+    },
+    {
+      "path": "/ip",
+      "component": "IntellectualProperty"
+    },
+    {
+      "path": "/guides",
+      "component": "Guides"
+    },
+    {
+      "path": "/guides/:slug",
+      "component": "GuideDetail"
+    },
+    {
+      "path": "/blog",
+      "component": "Guides"
+    },
+    {
+      "path": "/blog/:slug",
+      "component": "GuideDetail"
+    },
+    {
+      "path": "/deals",
+      "component": "Products"
+    },
+    {
+      "path": "/new-arrivals",
+      "component": "Products"
+    },
+    {
+      "path": "/flash-sale",
+      "component": "Products"
+    },
+    {
+      "path": "/free-shipping",
+      "component": "Products"
+    },
+    {
+      "path": "*",
+      "component": "NotFound"
+    }
+  ],
+  "sellerResellerRoutes": [
+    {
+      "path": "/reseller",
+      "component": "ResellerLanding"
+    },
+    {
+      "path": "/reseller/register",
+      "component": "ResellerLanding"
+    },
+    {
+      "path": "/reseller/dashboard",
+      "component": "ResellerDashboard"
+    },
+    {
+      "path": "/reseller/products",
+      "component": "ResellerProducts"
+    },
+    {
+      "path": "/reseller/orders",
+      "component": "ResellerOrders"
+    },
+    {
+      "path": "/reseller/orders/new",
+      "component": "ResellerNewOrder"
+    },
+    {
+      "path": "/reseller/wallet",
+      "component": "ResellerWallet"
+    },
+    {
+      "path": "/reseller/marketing",
+      "component": "ResellerMarketing"
+    },
+    {
+      "path": "/reseller/settings",
+      "component": "ResellerSettings"
+    },
+    {
+      "path": "/reseller/api",
+      "component": "ResellerApi"
+    },
+    {
+      "path": "/reseller/integration",
+      "component": "ResellerApi"
+    },
+    {
+      "path": "/seller",
+      "component": "Navigate"
+    },
+    {
+      "path": "/seller/:id",
+      "component": "Navigate"
+    },
+    {
+      "path": "/seller/register",
+      "component": "SellerRegister"
+    },
+    {
+      "path": "/seller/dashboard",
+      "component": "SellerDashboard"
+    },
+    {
+      "path": "/seller/pending",
+      "component": "SellerPending"
+    },
+    {
+      "path": "/seller/products",
+      "component": "SellerProducts"
+    },
+    {
+      "path": "/seller/products/new",
+      "component": "SellerProductForm"
+    },
+    {
+      "path": "/seller/products/:id",
+      "component": "SellerProductForm"
+    },
+    {
+      "path": "/seller/consignments",
+      "component": "SellerConsignments"
+    },
+    {
+      "path": "/seller/consignments/new",
+      "component": "SellerNewConsignment"
+    },
+    {
+      "path": "/seller/orders",
+      "component": "SellerOrders"
+    },
+    {
+      "path": "/seller/orders/:id",
+      "component": "SellerOrders"
+    },
+    {
+      "path": "/seller/earnings",
+      "component": "SellerEarnings"
+    },
+    {
+      "path": "/seller/analytics",
+      "component": "SellerAnalytics"
+    },
+    {
+      "path": "/seller/settings",
+      "component": "SellerSettings"
+    },
+    {
+      "path": "/seller/messages",
+      "component": "SellerMessages"
+    },
+    {
+      "path": "/seller/support",
+      "component": "SellerSupport"
+    }
+  ],
+  "adminStaffRoutes": [
+    {
+      "path": "/staff/login",
+      "component": "StaffLogin"
+    },
+    {
+      "path": "/staff/activate",
+      "component": "StaffActivate"
+    },
+    {
+      "path": "/staff",
+      "component": "StaffProtectedRoute"
+    },
+    {
+      "path": "/staff/dashboard",
+      "component": "StaffProtectedRoute"
+    },
+    {
+      "path": "/staff/tasks",
+      "component": "StaffProtectedRoute"
+    },
+    {
+      "path": "/staff/messages",
+      "component": "StaffProtectedRoute"
+    },
+    {
+      "path": "/staff/profile",
+      "component": "StaffProtectedRoute"
+    },
+    {
+      "path": "/staff/notifications",
+      "component": "StaffProtectedRoute"
+    },
+    {
+      "path": "/staff/products",
+      "component": "StaffProtectedRoute"
+    },
+    {
+      "path": "/staff/sellers",
+      "component": "StaffProtectedRoute"
+    },
+    {
+      "path": "/admin/login",
+      "component": "AdminLogin"
+    },
+    {
+      "path": "/admin",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/dashboard",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/products",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/products/new",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/products/:id",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/categories",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/brands",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/orders",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/returns",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/inventory",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/consignments",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/warehouses",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/shipping",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/free-delivery",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/payments",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/finance",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/wallet",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/referrals",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/users",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/customers",
+      "component": "Navigate"
+    },
+    {
+      "path": "/admin/sellers",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/staff",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/commissions",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/marketing",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/coupons",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/loyalty",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/cashback",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/abandoned-carts",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/recommendations",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/flash-sale",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/back-in-stock",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/price-alerts",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/reports",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/security",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/visual-editor",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/cms",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/faq",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/knowledge-base",
+      "component": "Navigate"
+    },
+    {
+      "path": "/admin/home-bento",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/home-promos",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/reviews",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/product-qa",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/qa",
+      "component": "Navigate"
+    },
+    {
+      "path": "/admin/seller-support",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/push-notifications",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/search-management",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/cj-settings",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/supplier-integrations",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/suppliers",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/supplier-import",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/pricing",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/ads",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/ai-search",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/seo",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/ai-admin",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/audit-logs",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/notifications",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/settings",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/enterprise/suppliers",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/enterprise/cms",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/enterprise/ai",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/enterprise/campaigns",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/enterprise/shipping",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/enterprise/inventory",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/enterprise/security",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/enterprise/users",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/enterprise/website",
+      "component": "AdminProtectedRoute"
+    },
+    {
+      "path": "/admin/enterprise/themes",
+      "component": "AdminProtectedRoute"
+    }
+  ],
+  "allPages": [
+    "About",
+    "Account",
+    "admin/AdminAbandonedCarts",
+    "admin/AdminAds",
+    "admin/AdminAIAssistant",
+    "admin/AdminAISearch",
+    "admin/AdminAuditLogs",
+    "admin/AdminBackInStock",
+    "admin/AdminBrands",
+    "admin/AdminCashback",
+    "admin/AdminCategories",
+    "admin/AdminCJSettings",
+    "admin/AdminCMS",
+    "admin/AdminCommissions",
+    "admin/AdminConsignments",
+    "admin/AdminCoupons",
+    "admin/AdminDashboard",
+    "admin/AdminFAQ",
+    "admin/AdminFinance",
+    "admin/AdminFlashSale",
+    "admin/AdminFreeDelivery",
+    "admin/AdminHomeBento",
+    "admin/AdminHomePromos",
+    "admin/AdminInventory",
+    "admin/AdminLogin",
+    "admin/AdminLoyalty",
+    "admin/AdminMarketing",
+    "admin/AdminOrders",
+    "admin/AdminPayments",
+    "admin/AdminPriceAlerts",
+    "admin/AdminPricing",
+    "admin/AdminProductQA",
+    "admin/AdminProducts",
+    "admin/AdminPushNotifications",
+    "admin/AdminRecommendations",
+    "admin/AdminReferrals",
+    "admin/AdminReports",
+    "admin/AdminReturns",
+    "admin/AdminReviews",
+    "admin/AdminSearchManagement",
+    "admin/AdminSecurity",
+    "admin/AdminSellers",
+    "admin/AdminSellerSupport",
+    "admin/AdminSEO",
+    "admin/AdminSettings",
+    "admin/AdminShipping",
+    "admin/AdminStaff",
+    "admin/AdminSupplierImport",
+    "admin/AdminSupplierIntegrations",
+    "admin/AdminUsers",
+    "admin/AdminVisualEditor",
+    "admin/AdminWallet",
+    "admin/AdminWarehouses",
+    "admin/enterprise/EnterpriseAIStudio",
+    "admin/enterprise/EnterpriseCampaigns",
+    "admin/enterprise/EnterpriseCMSBuilder",
+    "admin/enterprise/EnterpriseInventory",
+    "admin/enterprise/EnterpriseSecurity",
+    "admin/enterprise/EnterpriseShipping",
+    "admin/enterprise/EnterpriseSupplierCenter",
+    "admin/enterprise/EnterpriseThemeBuilder",
+    "admin/enterprise/EnterpriseUserControl",
+    "admin/enterprise/EnterpriseWebsiteControl",
+    "admin/ProductForm",
+    "Affiliate",
+    "Careers",
+    "Cart",
+    "Categories",
+    "CategoryPage",
+    "Checkout",
+    "CJProductDetail",
+    "CJProducts",
+    "Compare",
+    "Contact",
+    "Cookies",
+    "ForgotPassword",
+    "GuideDetail",
+    "Guides",
+    "HelpCenter",
+    "Index",
+    "IntellectualProperty",
+    "Login",
+    "Messages",
+    "MyVouchers",
+    "NotFound",
+    "Notifications",
+    "OrderDetail",
+    "Orders",
+    "PaymentCallback",
+    "Press",
+    "Privacy",
+    "ProductDetail",
+    "Products",
+    "Referrals",
+    "Register",
+    "reseller/ResellerApi",
+    "reseller/ResellerDashboard",
+    "reseller/ResellerMarketing",
+    "reseller/ResellerNewOrder",
+    "reseller/ResellerOrders",
+    "reseller/ResellerProducts",
+    "reseller/ResellerSettings",
+    "reseller/ResellerWallet",
+    "Reseller",
+    "ResetPassword",
+    "Returns",
+    "Search",
+    "seller/SellerAnalytics",
+    "seller/SellerConsignments",
+    "seller/SellerDashboard",
+    "seller/SellerEarnings",
+    "seller/SellerMessages",
+    "seller/SellerNewConsignment",
+    "seller/SellerOrders",
+    "seller/SellerPending",
+    "seller/SellerProductForm",
+    "seller/SellerProducts",
+    "seller/SellerRegister",
+    "seller/SellerSettings",
+    "seller/SellerSupport",
+    "Seller",
+    "Shipping",
+    "staff/StaffActivate",
+    "staff/StaffDashboard",
+    "staff/StaffIndex",
+    "staff/StaffLogin",
+    "staff/StaffMessages",
+    "staff/StaffNotifications",
+    "staff/StaffProducts",
+    "staff/StaffProfile",
+    "staff/StaffSellers",
+    "staff/StaffTasks",
+    "Terms",
+    "TrackOrder",
+    "Wallet",
+    "Wishlist"
+  ]
+}

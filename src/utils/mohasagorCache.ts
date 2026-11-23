@@ -1,6 +1,6 @@
 import type { Product } from "@/components/products/ProductCard";
 import { calculateProductPrice } from "@/utils/pricingMargin";
-import { getSmartProductImage, KNOWN_DEAD_ORIGIN_URLS, globalFailedImageUrls } from "@/utils/productImageHelper";
+import { getSmartProductImage, KNOWN_DEAD_ORIGIN_URLS, globalFailedImageUrls, isDeadSupplierOrigin } from "@/utils/productImageHelper";
 import { extractProductVariants } from "@/utils/productVariantHelper";
 import { FAST_SEED_PRODUCTS } from "@/data/fastSeedCatalog";
 export { FAST_SEED_PRODUCTS };
@@ -9,19 +9,19 @@ import { productMatchesCategory } from "@/utils/categoryHelper";
 import { EcomsellerEngine } from "@/services/suppliers/ecomsellerEngine";
 import { getFastProduct, saveFastProduct } from "@/utils/fastProductStorage";
 
-const MOHASAGOR_CACHE_KEY = "mohasagor_products_master_cache_v22";
+const MOHASAGOR_CACHE_KEY = "mohasagor_products_master_cache_v23";
 const AUTO_SYNC_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
 // IndexedDB configuration for unlimited, fast persistent storage
 const IDB_NAME = "durtup_catalog_db";
 const IDB_STORE = "products_store";
-const IDB_KEY = "mohasagor_catalog_master_v22";
-const IDB_VERSION = 7;
+const IDB_KEY = "mohasagor_catalog_master_v23";
+const IDB_VERSION = 8;
 
 // Clean up old legacy caches on startup
 if (typeof window !== "undefined") {
   try {
-    ["v11", "v12", "v13", "v14", "v15", "v16", "v17", "v18", "v19", "v20", "v21"].forEach(ver => {
+    ["v11", "v12", "v13", "v14", "v15", "v16", "v17", "v18", "v19", "v20", "v21", "v22"].forEach(ver => {
       localStorage.removeItem(`mohasagor_products_master_cache_${ver}`);
       sessionStorage.removeItem(`mohasagor_products_master_cache_${ver}`);
     });
@@ -565,26 +565,11 @@ export async function getRawSlimCatalog(): Promise<any[]> {
 
   ongoingRawSlimPromise = (async () => {
     try {
-      // Node.js SSR / Test / Sitemap fallback: read local file directly
-      if (typeof window === "undefined") {
-        try {
-          const fs = await import("fs/promises");
-          const path = await import("path");
-          const localPath = path.resolve(process.cwd(), "public", "mohasagor_catalog_slim.json");
-          const fileData = await fs.readFile(localPath, "utf-8");
-          const parsed = JSON.parse(fileData);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            cachedRawSlimProducts = parsed;
-            return parsed;
-          }
-        } catch {}
-      }
-
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 12000);
       const url = typeof window !== "undefined"
-        ? "/mohasagor_catalog_slim.json?v=20261013_cat_v2"
-        : "http://localhost:8080/mohasagor_catalog_slim.json?v=20261013_cat_v2";
+        ? "/mohasagor_catalog_slim.json?v=20261121_authentic_v1"
+        : "http://localhost:8080/mohasagor_catalog_slim.json?v=20261121_authentic_v1";
       const res = await fetch(url, { signal: controller.signal });
       clearTimeout(timeout);
       if (res.ok) {
@@ -773,10 +758,15 @@ export async function getCachedMohasagorProducts(): Promise<Product[]> {
 export function mapSingleRawProduct(p: any, base: string = "https://mohasagor.com.bd", index: number = 0): Product & { [key: string]: any } {
   const resolveUrl = (url: any): string => {
     if (!url || typeof url !== "string") return "";
-    const trimmed = url.trim();
-    if (!trimmed) return "";
+    let trimmed = url.trim();
+    if (!trimmed || isDeadSupplierOrigin(trimmed)) return "";
+
+    if (trimmed.includes("mohasagor.com/") && !trimmed.includes("mohasagor.com.bd/")) {
+      trimmed = trimmed.replace("mohasagor.com/", "mohasagor.com.bd/");
+    }
+
     if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("data:") || trimmed.startsWith("blob:")) {
-      return trimmed;
+      return isDeadSupplierOrigin(trimmed) ? "" : trimmed;
     }
     if (trimmed.startsWith("//")) return `https:${trimmed}`;
     if (trimmed.startsWith("/uploads/") || trimmed.startsWith("uploads/")) {
@@ -785,9 +775,11 @@ export function mapSingleRawProduct(p: any, base: string = "https://mohasagor.co
     }
     if (trimmed.startsWith("/public/storage/") || trimmed.startsWith("public/storage/") || trimmed.startsWith("/storage/") || trimmed.startsWith("storage/")) {
       const path = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
-      return `https://mohasagor.com.bd${path}`;
+      const full = `https://mohasagor.com.bd${path}`;
+      return isDeadSupplierOrigin(full) ? "" : full;
     }
-    return trimmed.startsWith("/") ? `${base}${trimmed}` : `${base}/${trimmed}`;
+    const full = trimmed.startsWith("/") ? `${base}${trimmed}` : `${base}/${trimmed}`;
+    return isDeadSupplierOrigin(full) ? "" : full;
   };
 
   const extractAnyImg = (item: any): string => {
@@ -824,7 +816,9 @@ export function mapSingleRawProduct(p: any, base: string = "https://mohasagor.co
   };
 
   const rawImage = extractAnyImg(p);
-  const firstImage = rawImage || getSmartProductImage(p.name, "", p.category || "", index);
+  const firstImage = (rawImage && !isDeadSupplierOrigin(rawImage))
+    ? rawImage
+    : getSmartProductImage(p.name, "", p.category || "", index);
 
   // Base supplier price from API (p.price or p.sale_price)
   const exactRetailPrice = parseFloat(p.price) || parseFloat(p.sale_price) || 0;
@@ -839,7 +833,7 @@ export function mapSingleRawProduct(p: any, base: string = "https://mohasagor.co
   const addImageToAll = (img: any) => {
     if (!img) return;
     const u = typeof img === "string" ? resolveUrl(img) : resolveUrl(img?.product_image || img?.image_url || img?.image || img?.url || img?.path || img?.src);
-    if (u && typeof u === "string" && u.trim() && !allImages.includes(u.trim())) {
+    if (u && typeof u === "string" && u.trim() && !isDeadSupplierOrigin(u) && !allImages.includes(u.trim())) {
       allImages.push(u.trim());
     }
   };
@@ -1368,10 +1362,12 @@ export function inferCategory(name: string, currentCategory?: string): string {
     return "kids-zone";
   }
 
-  // 5. WINTER (Hoodies, jackets, sweaters)
+  // 5. WINTER (Hoodies, jackets, sweaters, scarfs, masks)
   if (
     n.includes("hoodie") ||
     n.includes("hoodies") ||
+    n.includes("hooded") ||
+    n.includes("scarf") ||
     n.includes("jacket") ||
     n.includes("jackets") ||
     n.includes("windbreaker") ||
@@ -1384,7 +1380,20 @@ export function inferCategory(name: string, currentCategory?: string): string {
   }
 
   // 6. WOMEN'S FASHION
-  if (
+  const isExplicitWomenCat = c === "womens-fashion" || c.includes("women");
+  const hasWomenWordStrict = /\b(women|womens|women's|ladies|lady|মহিলা|মেয়ে)\b/i.test(n);
+  const isOtherMajorSupplierCat =
+    c.includes("gadget") ||
+    c.includes("electronic") ||
+    c.includes("mobile") ||
+    c.includes("food") ||
+    (c.includes("men") && !c.includes("women"));
+
+  if (isExplicitWomenCat || (!isOtherMajorSupplierCat && hasWomenWordStrict)) {
+    return "womens-fashion";
+  }
+
+  const isWomenApparelOrJewelry =
     n.includes("saree") ||
     n.includes("sari") ||
     n.includes("sharee") ||
@@ -1405,22 +1414,24 @@ export function inferCategory(name: string, currentCategory?: string): string {
     n.includes("niqab") ||
     n.includes("jewelry") ||
     n.includes("jewellery") ||
-    n.includes("ring") ||
     n.includes("necklace") ||
     n.includes("earring") ||
     n.includes("bracelet") ||
     n.includes("bangle") ||
-    n.includes("bra") ||
     n.includes("lingerie") ||
     n.includes("nighty") ||
     n.includes("মহিলা") ||
     n.includes("লেহেঙ্গা") ||
     n.includes("বোরকা") ||
     n.includes("হিজাব") ||
-    c === "womens-fashion" ||
-    c.includes("women")
-  ) {
-    return "womens-fashion";
+    n.includes("শাড়ি") ||
+    (/\b(bra|bras|brassiere)\b/i.test(n) && !/\b(braided|bracket|brake|brand)\b/i.test(n)) ||
+    (/\b(ring|rings)\b/i.test(n) && !/\b(spring|string|bearing|hearing|steering)\b/i.test(n));
+
+  if (isWomenApparelOrJewelry && !isOtherMajorSupplierCat) {
+    if (!/\b(panjabi|punjabi|boxer|boxers|lungi|gents|men|mens)\b/i.test(n)) {
+      return "womens-fashion";
+    }
   }
 
   // 7. MEN'S FASHION (Strictly apparel, clothing, and attire)
@@ -1665,6 +1676,20 @@ export function filterProductsByCategory(
     const targetSlug = info.category.slug.toLowerCase();
     const filtered = products.filter((p) => {
       const detectedSlug = (p as any).category_slug || inferCategory(p.name, p.category);
+
+      // Gender cross-pollution guards: Never let men's items bleed into women's or vice-versa
+      if (targetSlug === "womens-fashion") {
+        if (detectedSlug === "mens-fashion") return false;
+        const pCat = (p.category || "").toLowerCase();
+        if (pCat.includes("men") && !pCat.includes("women")) {
+          const hasExplicitWomenKeyword = /\b(women|womens|women's|ladies|lady|মহিলা|মেয়ে)\b/i.test(p.name);
+          if (!hasExplicitWomenKeyword) return false;
+        }
+      }
+      if (targetSlug === "mens-fashion") {
+        if (detectedSlug === "womens-fashion") return false;
+      }
+
       if (detectedSlug === targetSlug) return true;
 
       // Allow men's winter hoodies/jackets in Men's Fashion

@@ -269,6 +269,7 @@ export class EcomsellerEngine {
         brand: "Generic",
         description: p.short || p.description || "",
         image: primaryImg,
+        image_url: primaryImg,
         images: rawImgs,
         product_images: rawImgs.map((imgUrl: string, idx: number) => ({
           id: `ecom-img-${idx}`,
@@ -453,10 +454,16 @@ export class EcomsellerEngine {
     }
 
     if (catalogData.products && catalogData.products.length > 0 && typeof window !== "undefined") {
-      try {
-        localStorage.setItem(CACHE_KEY_CATALOG, JSON.stringify(catalogData));
-      } catch (e) {
-        console.warn("Catalog storage quota exceeded:", e);
+      const scheduleWrite = () => {
+        try {
+          // Store asynchronously during idle time only if quota permits
+          sessionStorage.setItem("ecomseller_catalog_cached_ready", "true");
+        } catch {}
+      };
+      if ("requestIdleCallback" in window) {
+        (window as any).requestIdleCallback(scheduleWrite, { timeout: 3000 });
+      } else {
+        setTimeout(scheduleWrite, 1000);
       }
     }
 
@@ -498,7 +505,7 @@ export class EcomsellerEngine {
               const unified = this.convertCatalogToUnified(seed);
               this.inMemoryProductsCache = unified;
               try {
-                localStorage.setItem(CACHE_KEY_CATALOG, JSON.stringify(seed));
+                sessionStorage.setItem("ecomseller_catalog_cached_ready", "true");
               } catch {}
               return unified;
             }
@@ -551,6 +558,23 @@ export class EcomsellerEngine {
         .replace(/\\x0D/gi, "\r")
         .replace(/\\"/g, '"');
 
+      const sanitizeDetailImg = (u: any): string => {
+        if (!u || typeof u !== "string") return "";
+        const t = u.trim();
+        if (!t) return "";
+        if (t.startsWith("//")) return `https:${t}`;
+        if (t.startsWith("http://") || t.startsWith("https://") || t.startsWith("data:")) return t;
+        if (t.startsWith("/uploads/") || t.startsWith("uploads/")) {
+          const p = t.startsWith("/") ? t : `/${t}`;
+          return `https://ecomsellerbd.com${p}`;
+        }
+        return `https://ecomsellerbd.com/${t.replace(/^\/+/, "")}`;
+      };
+
+      const rawImgs = Array.isArray(item.images) && item.images.length > 0
+        ? item.images.map(sanitizeDetailImg).filter(Boolean)
+        : (item.image ? [sanitizeDetailImg(item.image)].filter(Boolean) : []);
+
       return {
         id: item.id || slug,
         name: item.name || "",
@@ -571,7 +595,7 @@ export class EcomsellerEngine {
         category: item.category || "",
         categorySlug: item.categorySlug || "",
         brand: item.brand || "",
-        images: Array.isArray(item.images) && item.images.length > 0 ? item.images : (item.image ? [item.image] : [])
+        images: rawImgs
       };
     } catch (err) {
       console.warn(`[Ecomseller] Failed to fetch product detail for slug ${slug}:`, err);

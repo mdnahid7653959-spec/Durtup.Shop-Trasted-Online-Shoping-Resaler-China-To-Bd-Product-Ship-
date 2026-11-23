@@ -35,11 +35,11 @@ interface Order {
 }
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
-  pending: { label: "Pending", color: "bg-yellow-100 text-yellow-800", icon: Clock },
-  processing: { label: "Processing", color: "bg-blue-100 text-blue-800", icon: Package },
-  shipped: { label: "Shipped", color: "bg-purple-100 text-purple-800", icon: Truck },
-  delivered: { label: "Delivered", color: "bg-green-100 text-green-800", icon: CheckCircle },
-  cancelled: { label: "Cancelled", color: "bg-red-100 text-red-800", icon: XCircle },
+  pending: { label: "Pending", color: "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900/60", icon: Clock },
+  processing: { label: "Processing", color: "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900/60", icon: Package },
+  shipped: { label: "Shipped", color: "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-900/60", icon: Truck },
+  delivered: { label: "Delivered", color: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/60", icon: CheckCircle },
+  cancelled: { label: "Cancelled", color: "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60", icon: XCircle },
 };
 
 export default function Orders() {

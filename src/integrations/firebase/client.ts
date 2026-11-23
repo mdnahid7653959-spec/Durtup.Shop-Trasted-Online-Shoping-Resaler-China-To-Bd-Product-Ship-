@@ -2,8 +2,9 @@ import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
+import { getMessaging, isSupported, type Messaging } from "firebase/messaging";
 
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: (typeof import.meta !== "undefined" && import.meta?.env?.VITE_FIREBASE_API_KEY) || "AIzaSyCIcvphAtwx7rup-aV3MZPDK0w-xCN1Xoc",
   authDomain: (typeof import.meta !== "undefined" && import.meta?.env?.VITE_FIREBASE_AUTH_DOMAIN) || "eshop-app-6119d.firebaseapp.com",
   projectId: (typeof import.meta !== "undefined" && import.meta?.env?.VITE_FIREBASE_PROJECT_ID) || "eshop-app-6119d",
@@ -92,3 +93,30 @@ export const signInWithGoogle = async () => {
   }
   return result;
 };
+
+// Lazy Firebase Cloud Messaging Initializer with environment check
+let messagingInstancePromise: Promise<Messaging | null> | null = null;
+
+export const getFirebaseMessaging = async (): Promise<Messaging | null> => {
+  if (typeof window === "undefined") return null;
+  if (!messagingInstancePromise) {
+    messagingInstancePromise = isSupported()
+      .then((supported) => {
+        if (supported) {
+          try {
+            return getMessaging(app);
+          } catch (e) {
+            console.warn("[FCM] getMessaging init warning:", e);
+            return null;
+          }
+        }
+        return null;
+      })
+      .catch((err) => {
+        console.warn("[FCM] isSupported check failed:", err);
+        return null;
+      });
+  }
+  return messagingInstancePromise;
+};
+

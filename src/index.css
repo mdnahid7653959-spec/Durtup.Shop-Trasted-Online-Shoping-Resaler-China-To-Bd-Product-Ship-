@@ -491,7 +491,7 @@
   html, body {
     overflow-y: auto !important;
     overflow-x: hidden !important;
-    max-width: 100vw !important;
+    max-width: 100% !important;
     width: 100% !important;
     height: auto !important;
     position: relative !important;
@@ -499,7 +499,7 @@
   
   #root {
     overflow-x: hidden !important;
-    max-width: 100vw !important;
+    max-width: 100% !important;
     width: 100% !important;
     height: auto !important;
     position: relative !important;

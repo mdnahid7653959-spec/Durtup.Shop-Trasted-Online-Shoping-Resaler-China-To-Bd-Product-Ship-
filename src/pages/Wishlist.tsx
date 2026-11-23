@@ -11,6 +11,7 @@ import { useWishlist } from "@/contexts/WishlistContext";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
 import { getDirectImageUrl } from "@/utils/productImageHelper";
+import { ModernRadialLoader } from "@/components/common/ModernRadialLoader";
 
 export default function Wishlist() {
   const navigate = useNavigate();
@@ -109,8 +110,7 @@ export default function Wishlist() {
           {/* Body */}
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent mb-3" />
-              <p className="text-sm">Loading your saved items...</p>
+              <ModernRadialLoader size="lg" label="Loading your saved items..." />
             </div>
           ) : items.length === 0 ? (
             <Card className="border-dashed bg-card/50">

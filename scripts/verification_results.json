@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-11-22T21:33:13.896Z",
+  "pageMetrics": {
+    "fcp": 588,
+    "productCards": 0,
+    "skeletons": 0,
+    "brokenImages": 0,
+    "totalImages": 10,
+    "renderedImages": 10
+  },
+  "totalNetworkRequests": 57,
+  "totalImageRequests": 11,
+  "failedImageCount": 0,
+  "totalBytesTransferred": 9919
+}

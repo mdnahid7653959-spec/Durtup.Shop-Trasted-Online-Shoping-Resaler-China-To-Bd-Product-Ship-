@@ -44,18 +44,6 @@ export const CategoryPillsNav = memo(function CategoryPillsNav({
   const dragDistanceRef = useRef(0);
   const [isGrabbing, setIsGrabbing] = useState(false);
 
-  // Liquid Water Droplet Sliding State
-  const [dropletStyle, setDropletStyle] = useState<{ left: number; top: number; width: number; height: number; opacity: number }>({
-    left: 0,
-    top: 0,
-    width: 0,
-    height: 0,
-    opacity: 0,
-  });
-  const [isDropletSliding, setIsDropletSliding] = useState(false);
-  const [dropletSlideDir, setDropletSlideDir] = useState<"left" | "right" | "none">("none");
-  const prevPillLeftRef = useRef<number | null>(null);
-
   // Dropdown hover state for desktop pills
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -67,84 +55,18 @@ export const CategoryPillsNav = memo(function CategoryPillsNav({
     setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
   }, []);
 
-  // Precise Physical Water Droplet Calculation (Calculates exact position relative to UL)
-  const updateDroplet = useCallback((instant = false) => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-    const activeEl = container.querySelector<HTMLElement>("[data-active='true']");
-    if (!activeEl) {
-      setDropletStyle(prev => ({ ...prev, opacity: 0 }));
-      return;
-    }
-
-    const containerRect = container.getBoundingClientRect();
-    const activeRect = activeEl.getBoundingClientRect();
-
-    const elLeft = activeRect.left - containerRect.left + container.scrollLeft;
-    const elTop = activeRect.top - containerRect.top + container.scrollTop;
-    const elWidth = activeRect.width;
-    const elHeight = activeRect.height;
-
-    if (prevPillLeftRef.current !== null && Math.abs(prevPillLeftRef.current - elLeft) > 2 && !instant) {
-      const dir = elLeft > prevPillLeftRef.current ? "right" : "left";
-      setDropletSlideDir(dir);
-      setIsDropletSliding(true);
-      setTimeout(() => {
-        setIsDropletSliding(false);
-        setDropletSlideDir("none");
-      }, 200);
-    }
-    prevPillLeftRef.current = elLeft;
-
-    setDropletStyle({
-      left: elLeft,
-      top: elTop,
-      width: elWidth,
-      height: elHeight,
-      opacity: 1,
-    });
-  }, []);
-
-  useLayoutEffect(() => {
-    updateDroplet(true);
-    const frame = requestAnimationFrame(() => {
-      updateDroplet(true);
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [location.pathname, currentCategory, activeMainCategory, updateDroplet]);
-
-  useEffect(() => {
-    if (isVisible) {
-      const timer1 = setTimeout(() => {
-        updateDroplet(true);
-        checkScrollability();
-      }, 30);
-      const timer2 = setTimeout(() => {
-        updateDroplet(true);
-      }, 200);
-      return () => {
-        clearTimeout(timer1);
-        clearTimeout(timer2);
-      };
-    }
-  }, [isVisible, updateDroplet, checkScrollability]);
-
   useEffect(() => {
     const el = scrollContainerRef.current;
     if (!el) return;
 
     checkScrollability();
-    updateDroplet(true);
 
     const onScroll = () => {
       checkScrollability();
     };
 
     el.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", () => {
-      checkScrollability();
-      updateDroplet(true);
-    });
+    window.addEventListener("resize", checkScrollability);
 
     const onWheel = (e: WheelEvent) => {
       if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && e.deltaY !== 0) {
@@ -158,8 +80,9 @@ export const CategoryPillsNav = memo(function CategoryPillsNav({
     return () => {
       el.removeEventListener("scroll", onScroll);
       el.removeEventListener("wheel", onWheel);
+      window.removeEventListener("resize", checkScrollability);
     };
-  }, [checkScrollability, updateDroplet]);
+  }, [checkScrollability]);
 
   // Robust drag gesture detection without false click blocking
   useEffect(() => {
@@ -235,34 +158,6 @@ export const CategoryPillsNav = memo(function CategoryPillsNav({
 
     e.preventDefault();
 
-    const clickedEl = e.currentTarget as HTMLElement;
-    const container = scrollContainerRef.current;
-    if (clickedEl && container) {
-      const containerRect = container.getBoundingClientRect();
-      const activeRect = clickedEl.getBoundingClientRect();
-      const elLeft = activeRect.left - containerRect.left + container.scrollLeft;
-      const elTop = activeRect.top - containerRect.top + container.scrollTop;
-
-      if (prevPillLeftRef.current !== null && Math.abs(prevPillLeftRef.current - elLeft) > 2) {
-        const dir = elLeft > prevPillLeftRef.current ? "right" : "left";
-        setDropletSlideDir(dir);
-        setIsDropletSliding(true);
-        setTimeout(() => {
-          setIsDropletSliding(false);
-          setDropletSlideDir("none");
-        }, 200);
-      }
-      prevPillLeftRef.current = elLeft;
-
-      setDropletStyle({
-        left: elLeft,
-        top: elTop,
-        width: activeRect.width,
-        height: activeRect.height,
-        opacity: 1,
-      });
-    }
-
     // Instant zero-lag navigation and auto-scroll to top
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, left: 0, behavior: "instant" });
@@ -284,26 +179,22 @@ export const CategoryPillsNav = memo(function CategoryPillsNav({
   return (
     <div className={cn("relative bg-transparent select-none", isCompact ? "py-0.5 px-1 sm:px-2" : "py-1 sm:py-1.5 px-2 sm:px-4")}>
       <div className="max-w-7xl mx-auto relative flex items-center">
-        {/* Dock Container with Crystal Styling */}
+        {/* Dock Container with Quiet, Clean Styling */}
         <div className={cn(
-          "w-full relative flex items-center rounded-[26px]",
+          "w-full relative flex items-center rounded-2xl",
           isCompact ? "p-0.5" : "p-1",
           "bg-white/95 dark:bg-slate-900/95",
-          "backdrop-blur-xl backdrop-saturate-150",
+          "backdrop-blur-md",
           "border border-slate-200/90 dark:border-slate-800",
-          "shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08),0_2px_6px_-2px_rgba(0,0,0,0.03)]",
-          "dark:shadow-[0_6px_24px_-4px_rgba(0,0,0,0.5)]"
+          "shadow-2xs"
         )}>
-          {/* Specular gloss top reflection beam on the dock */}
-          <div className="absolute inset-x-8 top-0 h-[1px] bg-gradient-to-r from-transparent via-white dark:via-white/30 to-transparent pointer-events-none opacity-90" />
-
           {/* Left Slide Arrow Button */}
           {canScrollLeft && (
             <div className="hidden md:flex absolute left-1 z-30 h-full items-center">
               <button
                 type="button"
                 onClick={() => scrollByAmount(-320)}
-                className="w-7 h-7 rounded-full bg-white/90 dark:bg-slate-800/90 shadow-md border border-white/80 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-orange-600 hover:text-white hover:border-orange-600 transition-all active:scale-95"
+                className="w-7 h-7 rounded-full bg-white dark:bg-slate-800 shadow-xs border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-orange-600 hover:text-white hover:border-orange-600 transition-colors active:scale-95 cursor-pointer"
                 aria-label="Scroll left"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -325,50 +216,6 @@ export const CategoryPillsNav = memo(function CategoryPillsNav({
                 userSelect: "none"
               }}
             >
-              {/* Single Hyper-Realistic 3D Sliding Water Droplet */}
-              {dropletStyle.opacity > 0 && (
-                <div
-                  className={cn(
-                    "absolute pointer-events-none z-0",
-                    "transition-all duration-200 ease-out"
-                  )}
-                  style={{
-                    left: `${dropletStyle.left}px`,
-                    top: `${dropletStyle.top}px`,
-                    width: `${dropletStyle.width}px`,
-                    height: `${dropletStyle.height}px`,
-                  }}
-                >
-                  <div 
-                    className={cn(
-                      "w-full h-full p-0.5 transition-transform duration-150",
-                      isDropletSliding && dropletSlideDir === "right" && "scale-x-[1.12] scale-y-[0.90] origin-left",
-                      isDropletSliding && dropletSlideDir === "left" && "scale-x-[1.12] scale-y-[0.90] origin-right",
-                      !isDropletSliding && "scale-100"
-                    )}
-                  >
-                    <div 
-                      className={cn(
-                        "w-full h-full rounded-full relative overflow-hidden",
-                        "bg-gradient-to-b from-white/95 via-white/45 to-white/75",
-                        "dark:from-white/35 dark:via-white/12 dark:to-white/30",
-                        "backdrop-blur-md",
-                        "border border-white/95 dark:border-white/60",
-                        "shadow-[0_6px_20px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.05),inset_0_3.5px_6px_rgba(255,255,255,1),inset_0_-2.5px_5px_rgba(0,0,0,0.06),inset_0_0_15px_rgba(255,255,255,0.9)]",
-                        "dark:shadow-[0_6px_22px_rgba(0,0,0,0.55),inset_0_3.5px_6px_rgba(255,255,255,0.5),inset_0_-2.5px_5px_rgba(0,0,0,0.3),inset_0_0_15px_rgba(255,255,255,0.25)]"
-                      )}
-                    >
-                      {/* Top Specular Glare */}
-                      <div className="absolute top-0.5 left-2.5 w-6 h-[2px] bg-gradient-to-r from-white via-white to-white/70 rounded-full blur-[0.15px] shadow-[0_0_4px_rgba(255,255,255,1)]" />
-                      {/* Sparkle Dot */}
-                      <div className="absolute top-1 right-2.5 w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_4px_#ffffff,0_0_2px_#ffffff]" />
-                      {/* Bottom Caustic Light Arc */}
-                      <div className="absolute bottom-0.5 inset-x-2 h-[1.5px] bg-gradient-to-r from-transparent via-white to-transparent rounded-full blur-[0.3px] shadow-[0_0_4px_rgba(255,255,255,0.95)]" />
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* "All" Pill */}
               <li className="shrink-0 z-10">
                 <Link
@@ -380,10 +227,10 @@ export const CategoryPillsNav = memo(function CategoryPillsNav({
                   onClick={(e) => handlePillClick(e, "/")}
                   data-active={isHomeActive}
                   className={cn(
-                    "relative px-4 sm:px-5 py-1.5 text-xs sm:text-sm rounded-full transition-colors duration-150 flex items-center justify-center gap-1 whitespace-nowrap select-none",
+                    "relative px-3.5 sm:px-4 py-1.5 text-xs sm:text-sm rounded-xl transition-colors duration-150 flex items-center justify-center gap-1 whitespace-nowrap select-none",
                     isHomeActive
-                      ? "text-slate-950 dark:text-white font-extrabold"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium"
+                      ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-bold shadow-2xs"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 font-medium"
                   )}
                 >
                   <span>All</span>
@@ -413,10 +260,10 @@ export const CategoryPillsNav = memo(function CategoryPillsNav({
                       onClick={(e) => handlePillClick(e, `/category/${cat.slug}`)}
                       data-active={isActive}
                       className={cn(
-                        "relative px-3.5 sm:px-4 py-1.5 text-xs sm:text-sm rounded-full transition-colors duration-150 flex items-center justify-center gap-1.5 whitespace-nowrap select-none",
+                        "relative px-3 sm:px-3.5 py-1.5 text-xs sm:text-sm rounded-xl transition-colors duration-150 flex items-center justify-center gap-1.5 whitespace-nowrap select-none",
                         isActive
-                          ? "text-slate-950 dark:text-white font-extrabold"
-                          : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium"
+                          ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-bold shadow-2xs"
+                          : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 font-medium"
                       )}
                     >
                       <span>{cat.name}</span>

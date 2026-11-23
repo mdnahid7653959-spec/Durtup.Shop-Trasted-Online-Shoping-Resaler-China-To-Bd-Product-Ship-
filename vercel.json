@@ -4,6 +4,8 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
+    { "source": "/uploads/:path*", "destination": "https://ecomsellerbd.com/uploads/:path*" },
+    { "source": "/public/storage/:path*", "destination": "https://mohasagor.com.bd/public/storage/:path*" },
     { "source": "/api/mohasagor/:path*", "destination": "https://mohasagor.com.bd/:path*" },
     { "source": "/api/ecomseller/:path*", "destination": "https://ecomsellerbd.com/:path*" },
     { "source": "/api/ai/visual-search", "destination": "/api/ai/visual-search" },

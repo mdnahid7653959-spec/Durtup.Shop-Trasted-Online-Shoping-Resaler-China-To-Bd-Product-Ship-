@@ -16,22 +16,30 @@ export interface ReferralSettings {
   enabled: boolean;
   referrerReward: number;
   newCustomerDiscount: number;
+  newCustomerWalletBonus?: number;
   minimumOrderAmount: number;
   rewardTrigger: string;
   maxDailyRewards: number;
   withdrawEnabled: boolean;
   minimumWithdrawAmount: number;
+  fraudProtectionEnabled?: boolean;
+  preventSamePhone?: boolean;
+  preventSameDevice?: boolean;
 }
 
 export const DEFAULT_REFERRAL_SETTINGS: ReferralSettings = {
   enabled: true,
   referrerReward: 50,
   newCustomerDiscount: 30,
+  newCustomerWalletBonus: 20,
   minimumOrderAmount: 500,
   rewardTrigger: "delivered",
   maxDailyRewards: 10,
   withdrawEnabled: true,
   minimumWithdrawAmount: 500,
+  fraudProtectionEnabled: true,
+  preventSamePhone: true,
+  preventSameDevice: true,
 };
 
 const SETTINGS_STORAGE_KEY = "durtup_referral_settings";
@@ -76,11 +84,15 @@ export async function getReferralSettings(forceRefresh = false): Promise<Referra
         enabled: d.enabled !== false,
         referrerReward: Number(d.referrerReward) || 50,
         newCustomerDiscount: Number(d.newCustomerDiscount) || 30,
+        newCustomerWalletBonus: Number(d.newCustomerWalletBonus || 0),
         minimumOrderAmount: Number(d.minimumOrderAmount) || 500,
         rewardTrigger: d.rewardTrigger || "delivered",
         maxDailyRewards: Number(d.maxDailyRewards) || 10,
         withdrawEnabled: d.withdrawEnabled !== false,
         minimumWithdrawAmount: Number(d.minimumWithdrawAmount) || 500,
+        fraudProtectionEnabled: d.fraudProtectionEnabled !== false,
+        preventSamePhone: d.preventSamePhone !== false,
+        preventSameDevice: d.preventSameDevice !== false,
       };
       lastSettingsFetch = now;
       if (typeof window !== "undefined") {
@@ -146,6 +158,23 @@ export async function generateUniqueReferralCode(customPrefix?: string): Promise
     }
   }
   return `DUR${Date.now().toString(36).toUpperCase().slice(-6)}`;
+}
+
+// -------------------------------------------------------------
+// Device Fingerprint Helper (Anti-Fraud & Attribution Protection)
+// -------------------------------------------------------------
+export function getOrCreateDeviceId(): string {
+  if (typeof window === "undefined") return "";
+  try {
+    let fp = localStorage.getItem("durtup_device_fp");
+    if (!fp) {
+      fp = "dev_" + Math.random().toString(36).slice(2, 10) + "_" + Date.now().toString(36);
+      localStorage.setItem("durtup_device_fp", fp);
+    }
+    return fp;
+  } catch {
+    return "";
+  }
 }
 
 // -------------------------------------------------------------

@@ -1,4 +1,4 @@
-import { memo, useState, useEffect, useRef, useCallback } from "react";
+import { memo, useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { ChevronRight, LucideIcon, Loader2 } from "lucide-react";
 import { ProductCard, type Product } from "@/components/products/ProductCard";
@@ -13,8 +13,8 @@ interface ProductSectionProps {
   iconColor: string;
 }
 
-const INITIAL_COUNT = 12;
-const LOAD_MORE_COUNT = 6;
+const INITIAL_COUNT = 18;
+const LOAD_MORE_COUNT = 12;
 
 function ProductSectionComponent({
   title,
@@ -29,17 +29,31 @@ function ProductSectionComponent({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  const hasMore = visibleCount < products.length;
+  // Strict deduplication to avoid duplicate product cards and React key collision
+  const cleanProducts = useMemo(() => {
+    const seen = new Set<string>();
+    const res: Product[] = [];
+    for (const p of products || []) {
+      if (!p) continue;
+      const key = String(p.id || p.slug || p.name || "").trim().toLowerCase();
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      res.push(p);
+    }
+    return res;
+  }, [products]);
+
+  const hasMore = visibleCount < cleanProducts.length;
 
   const loadMore = useCallback(() => {
     if (!hasMore || isLoadingMore) return;
     setIsLoadingMore(true);
     // Small delay for smooth UX
     setTimeout(() => {
-      setVisibleCount((prev) => Math.min(prev + LOAD_MORE_COUNT, products.length));
+      setVisibleCount((prev) => Math.min(prev + LOAD_MORE_COUNT, cleanProducts.length));
       setIsLoadingMore(false);
     }, 300);
-  }, [hasMore, isLoadingMore, products.length]);
+  }, [hasMore, isLoadingMore, cleanProducts.length]);
 
   // Intersection observer for auto-load
   useEffect(() => {
@@ -83,8 +97,8 @@ function ProductSectionComponent({
         {/* Products grid */}
         <div className="p-2 sm:p-3">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-2.5">
-            {products.slice(0, visibleCount).map((product, idx) => (
-              <ProductCard key={product.id} product={product} index={idx} priority={idx < 6} />
+            {cleanProducts.slice(0, visibleCount).map((product, idx) => (
+              <ProductCard key={`${product.id}-${idx}`} product={product} index={idx} priority={idx < 6} />
             ))}
           </div>
         </div>

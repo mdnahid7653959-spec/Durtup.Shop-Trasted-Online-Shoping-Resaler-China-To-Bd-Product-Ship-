@@ -95,6 +95,26 @@ export function Header() {
   const [reportDetails, setReportDetails] = useState("");
   const [reportSubmitting, setReportSubmitting] = useState(false);
 
+  // Smooth Sticky Taskbar on Scroll (specifically on Home, Product and all shopping pages)
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    let ticking = false;
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setIsScrolled(window.scrollY > 120);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   useEffect(() => {
     if (reportModalOpen) {
       const savedPhone = (profile as any)?.phone || localStorage.getItem("customer_phone") || "";
@@ -258,6 +278,111 @@ export function Header() {
 
   return (
     <>
+      {/* ========================================================================= */}
+      {/* 0. Smooth Sticky Animated Taskbar on Scroll (Home, Product & Category pages) */}
+      {/* ========================================================================= */}
+      {!isCheckoutPage && (
+        <aside
+          aria-label="Sticky Top Taskbar"
+          className={cn(
+            "fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-out will-change-transform will-change-opacity",
+            isScrolled
+              ? "translate-y-0 opacity-100 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1),0_8px_10px_-6px_rgba(0,0,0,0.06)] dark:shadow-[0_10px_25px_-5px_rgba(0,0,0,0.4)] pointer-events-auto"
+              : "-translate-y-full opacity-0 pointer-events-none"
+          )}
+        >
+          <div className="w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/90 dark:border-slate-800">
+            <div className="px-3 sm:px-4 py-2 max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4 h-14 sm:h-16">
+              
+              {/* Left: Back / Drawer + Durtup Logo */}
+              <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+                {!isHomePage ? (
+                  <button 
+                    onClick={handleSmartBack}
+                    className="p-1 sm:p-2 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 rounded-xl transition-all flex items-center justify-center text-slate-800 dark:text-slate-100 hover:text-orange-600 group"
+                    aria-label="Back"
+                    title="Go Back"
+                  >
+                    <ArrowLeft className="h-5 w-5 sm:h-6 sm:w-6 group-hover:-translate-x-0.5 transition-transform" />
+                  </button>
+                ) : (
+                  <button 
+                    type="button"
+                    onClick={() => setMenuDrawerOpen(true)}
+                    className="p-1.5 sm:p-2 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 rounded-xl transition-all flex items-center justify-center text-slate-800 dark:text-slate-100 hover:text-orange-600 cursor-pointer"
+                    aria-label="Navigation Menu"
+                    title="Main Menu"
+                  >
+                    <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
+                  </button>
+                )}
+
+                <Link to="/" className="flex flex-col items-start justify-center group select-none py-0.5">
+                  <div className="flex items-baseline tracking-tight font-black leading-none">
+                    <span className="text-lg sm:text-xl md:text-2xl text-orange-600 font-extrabold tracking-tight">Durtup</span>
+                    <span className="text-[11px] sm:text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200">.shop</span>
+                  </div>
+                  <svg viewBox="0 0 100 20" className="w-12 sm:w-16 md:w-20 h-1.5 -mt-0.5 text-orange-600 fill-none stroke-current stroke-[3]">
+                    <path d="M 5,5 Q 50,18 95,5" strokeLinecap="round" />
+                    <path d="M 85,2 L 95,5 L 90,11" strokeLinecap="round" strokeLinejoin="round" fill="currentColor" />
+                  </svg>
+                </Link>
+              </div>
+
+              {/* Center: Search Bar */}
+              <div className="flex-1 max-w-xl lg:max-w-2xl mx-1 sm:mx-4">
+                <SmartSearchBar variant="desktop" />
+              </div>
+
+              {/* Right: Quick Action Buttons */}
+              <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                {/* Messages */}
+                <Link to="/messages" className="flex flex-col items-center justify-center p-1 sm:px-2 rounded-xl text-slate-700 dark:text-slate-300 hover:text-orange-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all relative group" title="Sigma AI Assistant">
+                  <div className="relative">
+                    <MessageCircle className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                    {hasUnreadMessages && (
+                      <span className="absolute -top-1.5 -right-2 min-w-[14px] h-3.5 rounded-full bg-orange-600 text-white text-[8px] font-bold flex items-center justify-center px-0.5 shadow-xs">
+                        1
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[9px] font-medium leading-none mt-0.5 hidden sm:inline">Messages</span>
+                </Link>
+
+                {/* Wishlist */}
+                <Link to="/wishlist" className="hidden sm:flex flex-col items-center justify-center p-1 sm:px-2 rounded-xl text-slate-700 dark:text-slate-300 hover:text-orange-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all relative group" title="Wishlist">
+                  <div className="relative">
+                    <Heart className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                    {wishlistCount > 0 && (
+                      <span className="absolute -top-1.5 -right-2 min-w-[14px] h-3.5 rounded-full bg-orange-600 text-white text-[8px] font-bold flex items-center justify-center px-0.5 shadow-xs">
+                        {wishlistCount > 99 ? "99+" : wishlistCount}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[9px] font-medium leading-none mt-0.5">Wishlist</span>
+                </Link>
+
+                {/* Cart Quick Button */}
+                <Link 
+                  to="/cart" 
+                  className="flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-full bg-orange-600 hover:bg-orange-700 active:scale-95 text-white text-xs font-bold transition-all shadow-sm group"
+                  title="Shopping Cart"
+                >
+                  <ShoppingCart className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                  <span className="hidden sm:inline">Cart</span>
+                  {cartCount > 0 && (
+                    <span className="min-w-[16px] h-4 rounded-full bg-white text-orange-600 text-[10px] font-black flex items-center justify-center px-1 ml-0.5 shadow-xs">
+                      {cartCount > 99 ? "99+" : cartCount}
+                    </span>
+                  )}
+                </Link>
+              </div>
+
+            </div>
+          </div>
+        </aside>
+      )}
+
       {/* Main Header (Scrolls naturally with page content) */}
       <header className="relative w-full max-w-full bg-white dark:bg-slate-900 shadow-xs border-b border-slate-100 dark:border-slate-800">
 

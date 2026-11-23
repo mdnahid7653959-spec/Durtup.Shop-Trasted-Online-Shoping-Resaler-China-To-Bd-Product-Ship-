@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { getProductImageCandidates, getSmartProductImage, getResponsiveImageSrcSet, PRODUCT_CARD_SIZES } from "@/utils/productImageHelper";
 import { saveFastProduct } from "@/utils/fastProductStorage";
+import { CustomerAuthModal } from "@/components/auth/CustomerAuthModal";
 
 export interface Product {
   id: string;
@@ -73,36 +74,8 @@ function extractVariantBadge(name: string): { baseName: string; variantTag: stri
 function ProductCardComponent({ product, priority = false, index = 0 }: ProductCardProps) {
   const navigate = useNavigate();
   const cardRef = useRef<HTMLDivElement>(null);
-  const isNearFold = priority || index < 18;
-  const [isVisible, setIsVisible] = useState(() => isNearFold);
-
-  // Progressive scroll-triggered entrance animation for cards below fold
-  useEffect(() => {
-    if (isVisible) return;
-    const el = cardRef.current;
-    if (!el) return;
-
-    if (!("IntersectionObserver" in window)) {
-      setIsVisible(true);
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-          observer.disconnect();
-        }
-      },
-      {
-        threshold: 0.02,
-        rootMargin: "450px 0px 100px 0px",
-      }
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [isVisible]);
+  const isNearFold = priority || (index ?? 0) < 18;
+  const [isVisible, setIsVisible] = useState(true);
 
   // Serial stagger delay: 0ms for initial fold products, gentle stagger for scroll batches
   const staggerDelay = isNearFold ? 0 : Math.min((index % 6) * 35, 140);
@@ -118,6 +91,7 @@ function ProductCardComponent({ product, priority = false, index = 0 }: ProductC
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { user } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const inWishlist = isInWishlist(product.id);
 
   const handleAddToCart = async (e: React.MouseEvent) => {
@@ -147,6 +121,10 @@ function ProductCardComponent({ product, priority = false, index = 0 }: ProductC
     } catch (err) {
       console.error("ProductCard handleBuyNow error:", err);
     }
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
     navigate("/checkout");
   };
 
@@ -167,7 +145,7 @@ function ProductCardComponent({ product, priority = false, index = 0 }: ProductC
         sessionStorage.setItem("durtup_last_clicked_product", String(product.slug || product.id));
         sessionStorage.setItem("durtup_feed_scroll_y", String(window.scrollY));
       }
-    } catch {}
+    } catch { }
   };
 
   return (
@@ -180,17 +158,14 @@ function ProductCardComponent({ product, priority = false, index = 0 }: ProductC
         transitionDelay: isVisible ? `${staggerDelay}ms` : "0ms",
       }}
       className={cn(
-        "group relative bg-card rounded-xl overflow-hidden hover:shadow-[0_12px_28px_-6px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_12px_28px_-6px_rgba(0,0,0,0.4)] hover:-translate-y-1.5 transition-all duration-300 ease-out will-change-[transform,opacity] w-full border border-border flex flex-col justify-between",
-        isVisible
-          ? "opacity-100 translate-y-0 scale-100"
-          : "opacity-0 translate-y-6 scale-[0.97]"
+        "group relative bg-card rounded-xl overflow-hidden hover:shadow-md dark:hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] hover:-translate-y-0.5 transition-all duration-200 will-change-[transform,opacity] w-full border border-border/80 flex flex-col justify-between opacity-100 translate-y-0 scale-100"
       )}
     >
       <div>
         {/* Badges */}
         <div className="absolute top-1.5 left-1.5 z-10 flex flex-col gap-1 max-w-[calc(100%-48px)] pointer-events-none">
           {discount > 0 && (
-            <Badge className="bg-orange-600 text-white font-bold text-[10px] px-1.5 py-0.5 rounded-md w-fit">
+            <Badge className="bg-orange-600 text-white font-bold text-[10px] px-1.5 py-0.5 rounded-md w-fit shadow-2xs">
               -{discount}%
             </Badge>
           )}
@@ -210,17 +185,18 @@ function ProductCardComponent({ product, priority = false, index = 0 }: ProductC
         <button
           onClick={handleWishlistToggle}
           className={cn(
-            "absolute top-1.5 right-1.5 z-10 w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-all duration-150 active:scale-90",
-            inWishlist ? "bg-orange-600 text-white" : "bg-white/90 text-muted-foreground hover:text-orange-600"
+            "absolute top-1.5 right-1.5 z-10 w-7 h-7 rounded-full shadow-2xs flex items-center justify-center transition-colors duration-150 active:scale-95",
+            inWishlist ? "bg-orange-600 text-white" : "bg-white/90 dark:bg-slate-800/90 text-muted-foreground hover:text-orange-600 border border-slate-200/60 dark:border-slate-700/60"
           )}
           aria-label={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
+          title={inWishlist ? "উইশলিস্ট থেকে সরান" : "উইশলিস্টে যোগ করুন"}
         >
-          <Heart className={cn("h-4 w-4", inWishlist && "fill-current")} />
+          <Heart className={cn("h-3.5 w-3.5", inWishlist && "fill-current")} />
         </button>
 
         {/* Product Image with smooth skeleton backdrop and zero CLS layout container */}
-        <Link 
-          to={`/product/${product.slug || product.id}`} 
+        <Link
+          to={`/product/${product.slug || product.id}`}
           state={{ preloadedProduct: product }}
           onMouseEnter={handlePreload}
           onTouchStart={handlePreload}
@@ -235,14 +211,14 @@ function ProductCardComponent({ product, priority = false, index = 0 }: ProductC
               sizes={PRODUCT_CARD_SIZES}
               priority={priority || index < 12}
               fit="contain"
-              className="w-full h-full object-contain group-hover:scale-106 transition-transform duration-500 ease-out"
+              className="w-full h-full object-contain group-hover:scale-104 transition-transform duration-300 ease-out"
             />
           </div>
         </Link>
 
         {/* Product Info */}
         <div className="p-2.5 pb-0">
-          <Link 
+          <Link
             to={`/product/${product.slug || product.id}`}
             state={{ preloadedProduct: product }}
             onMouseEnter={handlePreload}
@@ -254,7 +230,7 @@ function ProductCardComponent({ product, priority = false, index = 0 }: ProductC
                 {variantTag}
               </span>
             )}
-            <h3 
+            <h3
               title={product.name}
               className="font-medium text-[12px] sm:text-[13px] leading-tight text-foreground line-clamp-2 mb-1.5 min-h-[2rem] hover:text-orange-600 transition-colors break-words"
             >
@@ -277,7 +253,7 @@ function ProductCardComponent({ product, priority = false, index = 0 }: ProductC
 
           {/* Price Section */}
           <div className="flex items-baseline gap-1.5 mb-2 flex-wrap">
-            <span className="text-sm sm:text-base font-black text-orange-600">
+            <span className="text-sm sm:text-base font-bold text-orange-600">
               ৳{finalPrice.toLocaleString("en-BD")}
             </span>
             {rawOriginal > finalPrice && (
@@ -293,11 +269,17 @@ function ProductCardComponent({ product, priority = false, index = 0 }: ProductC
       <div className="p-2.5 pt-0 mt-1">
         <button
           onClick={handleBuyNow}
-          className="w-full water-droplet-btn water-droplet-crystal font-bold text-xs sm:text-sm py-2 px-3 flex items-center justify-center cursor-pointer active:scale-[0.96] transition-all"
+          className="w-full bg-orange-600 hover:bg-orange-700 active:bg-orange-800 text-white font-bold text-xs sm:text-sm py-2 px-3 rounded-lg shadow-2xs hover:shadow-xs active:scale-[0.98] transition-all flex items-center justify-center cursor-pointer"
         >
           Order Now
         </button>
       </div>
+
+      <CustomerAuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={() => navigate("/checkout")}
+      />
     </div>
   );
 }

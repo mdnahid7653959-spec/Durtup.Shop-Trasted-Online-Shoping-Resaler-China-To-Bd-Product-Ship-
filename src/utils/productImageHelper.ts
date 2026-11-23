@@ -2,13 +2,61 @@
 // Ensures every product displays a real, relevant image matching its name & category with ultra-fast Edge WebP CDN caching.
 
 export const CATEGORY_IMAGES = {
-  jewelry: [
+  globe_showpiece: [
+    "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?w=600&h=600&fit=crop", // 3D Rotating World Map Globe
+    "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=600&h=600&fit=crop", // Eiffel Tower Metal Showpiece
+    "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=600&h=600&fit=crop", // Metal Art Showpiece
+  ],
+  water_bottle: [
+    "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=600&h=600&fit=crop", // Fitness Gym Dumbbell Bottle
+    "https://images.unsplash.com/photo-1523362628745-0c100150b504?w=600&h=600&fit=crop", // Large Capacity Sports Jug
+    "https://images.unsplash.com/photo-1544816155-12df9643f363?w=600&h=600&fit=crop", // Water Bottle
+  ],
+  shoe_rack: [
+    "https://images.unsplash.com/photo-1595425970377-c9703cf48b6d?w=600&h=600&fit=crop", // Multi-tier Shoe Rack
+    "https://images.unsplash.com/photo-1558997519-83ea9252def8?w=600&h=600&fit=crop", // Shoe Cabinet
+  ],
+  desk_lamp: [
+    "https://images.unsplash.com/photo-1534073828943-f801091bb18c?w=600&h=600&fit=crop", // Desk Reading Lamp with Organizer
+    "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=600&h=600&fit=crop", // Modern Table Lamp
+  ],
+  laptop_stand: [
+    "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=600&h=600&fit=crop", // Aluminum Adjustable Laptop Stand
+    "https://images.unsplash.com/photo-1616469829941-c7200edec809?w=600&h=600&fit=crop", // Foldable Notebook Riser
+  ],
+  electric_cooker: [
+    "https://images.unsplash.com/photo-1585515320310-259814833e62?w=600&h=600&fit=crop", // Mini Multi-Cooker Hot Pot
+    "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=600&h=600&fit=crop", // Non-stick Electric Cooker
+  ],
+  mobile_phone: [
+    "https://images.unsplash.com/photo-1580910051074-3eb694886505?w=600&h=600&fit=crop", // Feature Phone
+    "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600&h=600&fit=crop", // Classic Mobile Keypad Phone
+  ],
+  necklace_pendant: [
+    "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=600&h=600&fit=crop", // Gold Plated Pearl Necklace & Shita Haar
+    "https://images.unsplash.com/photo-1598560917505-59a3ad559071?w=600&h=600&fit=crop", // Diamond Pendant Necklace
+    "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=600&h=600&fit=crop", // Royal Bridal Gold Necklace
+  ],
+  earrings: [
+    "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=600&h=600&fit=crop", // Butterfly / Drop Earrings
+    "https://images.unsplash.com/photo-1630019852942-f89202989a59?w=600&h=600&fit=crop", // Crystal Stud Earrings
+  ],
+  ring: [
     "https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=600&h=600&fit=crop", // Crystal / Diamond Ring
-    "https://images.unsplash.com/photo-1603561591411-07134e71a2a9?w=600&h=600&fit=crop", // Emerald / Gemstone Ring
-    "https://images.unsplash.com/photo-1598560917505-59a3ad559071?w=600&h=600&fit=crop", // Gold / Silver Ring
-    "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=600&h=600&fit=crop", // Luxury Jewelry
+    "https://images.unsplash.com/photo-1603561591411-07134e71a2a9?w=600&h=600&fit=crop", // Gemstone Ring
+  ],
+  hair_straightener: [
+    "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&h=600&fit=crop", // Hair Straightener Comb & Brush
+  ],
+  screen_magnifier: [
+    "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&h=600&fit=crop", // 3D Screen Magnifier
+  ],
+  jewelry: [
     "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=600&h=600&fit=crop", // Necklace & Pendant
     "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=600&h=600&fit=crop", // Earrings
+    "https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=600&h=600&fit=crop", // Crystal / Diamond Ring
+    "https://images.unsplash.com/photo-1603561591411-07134e71a2a9?w=600&h=600&fit=crop", // Emerald / Gemstone Ring
+    "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=600&h=600&fit=crop", // Luxury Jewelry
   ],
   powerbank: [
     "https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=600&h=600&fit=crop", // Power Bank
@@ -66,8 +114,8 @@ export const CATEGORY_IMAGES = {
     "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600&h=600&fit=crop", // Men's T-Shirt Ash/Grey
     "https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=600&h=600&fit=crop", // Polo T-Shirt
     "https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=600&h=600&fit=crop", // Casual Shirt
-    "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=600&h=600&fit=crop",
-    "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=600&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=600&h=600&fit=crop", // Casual Black Crewneck Tee
+    "https://images.unsplash.com/photo-1562157873-818bc0726f68?w=600&h=600&fit=crop", // Cotton Everyday T-Shirt
   ],
   women_fashion: [
     "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=600&h=600&fit=crop",
@@ -91,10 +139,18 @@ export const CATEGORY_IMAGES = {
     "https://images.unsplash.com/photo-1621607512214-68297480165e?w=600&h=600&fit=crop",
     "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=600&h=600&fit=crop",
   ],
+  headphones: [
+    "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&h=600&fit=crop", // Classic Over-Ear Studio Headphones
+    "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=600&h=600&fit=crop", // Wireless Over-Ear Headphone Silver
+    "https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=600&h=600&fit=crop", // Premium Bluetooth Headphone
+    "https://images.unsplash.com/photo-1484704849700-f032a568e944?w=600&h=600&fit=crop", // Audio Headphone
+  ],
   earbuds: [
-    "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&h=600&fit=crop",
-    "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&h=600&fit=crop",
-    "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=600&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&h=600&fit=crop", // TWS Wireless Earbuds Black
+    "https://images.unsplash.com/photo-1606220588913-b3aacb4d2f46?w=600&h=600&fit=crop", // White Bluetooth Earbuds
+    "https://images.unsplash.com/photo-1572536147248-ac59a8abfa4b?w=600&h=600&fit=crop", // Sports Wireless Earbuds
+    "https://images.unsplash.com/photo-1590658006821-04f4008d5717?w=600&h=600&fit=crop", // LED Touch Screen Earbuds
+    "https://images.unsplash.com/photo-1629367494173-c78a56567877?w=600&h=600&fit=crop", // Gaming ANC Earbuds
   ],
   keyboard: [
     "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=600&h=600&fit=crop",
@@ -120,9 +176,24 @@ export const CATEGORY_IMAGES = {
     "https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=600&h=600&fit=crop", // Cosmetics
     "https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?w=600&h=600&fit=crop", // Hair care
   ],
+  cleaning_tools: [
+    "https://ecomsellerbd.com/uploads/product-images/master/7f1bd7da-39a3-49b3-b6c8-e19bb2398518.webp", // Spring Claw Grabber & Drain Cleaner
+    "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?w=600&h=600&fit=crop",
+    "https://ecomsellerbd.com/uploads/product-images/master/1af8aa2e-7f87-4456-9409-39801758b5e6.webp", // Drain Cleaner Spring Claw
+    "https://ecomsellerbd.com/uploads/product-images/master/bc64cb23-4f6a-41dc-af13-0fd3acd128ed.webp", // Basin Unclogger Tool
+    "https://ecomsellerbd.com/uploads/product-images/master/2f5971f9-6bf0-491b-a69c-d9bfa96648c1.webp", // Flexible Pipe Dredger
+  ],
+  hair_care: [
+    "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1608248597359-009d1dfcb2d4?w=600&h=600&fit=crop",
+    "https://ecomsellerbd.com/uploads/product-images/master/fd5eb9f3-907e-4e27-9fbe-36e657daa20c.webp", // EELHOE Germinal Hair Growth Oil
+    "https://ecomsellerbd.com/uploads/product-images/master/a7e0dde9-2cfa-4a33-b597-7008523cd527.webp", // Herbchic Hair Essence
+  ],
   pure_foods: [
-    "https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=600&h=600&fit=crop", // Honey
-    "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=600&h=600&fit=crop", // Organic Food
+    "https://images.unsplash.com/photo-1587049352851-8d4e89133924?w=600&h=600&fit=crop", // Pure Natural Honey Jar
+    "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=600&h=600&fit=crop", // Organic Food Spices & Nuts
+    "https://images.unsplash.com/photo-1471943311424-646960669fbc?w=600&h=600&fit=crop", // Raw Honeycomb & Organic Honey
   ],
   kids: [
     "https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=600&h=600&fit=crop", // Kids Toys
@@ -138,11 +209,10 @@ export const CATEGORY_IMAGES = {
     "https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=600&h=600&fit=crop",
   ],
   cctv: [
+    "https://images.unsplash.com/photo-1557597774-9d273605dfa9?w=600&h=600&fit=crop", // Smart Security Camera
+    "https://images.unsplash.com/photo-1549109926-58f039549485?w=600&h=600&fit=crop", // Wireless CCTV
     "https://img.drz.lazcdn.com/static/bd/p/70d7c24ecfcbd4c8615cb5c952bc426a.jpg_720x720q80.jpg",
     "https://img.drz.lazcdn.com/g/kf/Sec2b1daa39534496942b05d978d99040g.jpg_720x720q80.jpg",
-    "https://img.drz.lazcdn.com/static/bd/p/4154d27d204df90add314e4f05b378ac.jpg_720x720q80.jpg",
-    "https://img.drz.lazcdn.com/static/bd/p/022277b51ad6d2516a503a08ca032d5c.jpg_720x720q80.jpg",
-    "https://img.drz.lazcdn.com/static/bd/p/56b97b289e2d1eca33cab53fd40582db.png_720x720q80.png",
   ],
   electronics: [
     "https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=600&h=600&fit=crop",
@@ -157,51 +227,76 @@ export const CATEGORY_IMAGES = {
     "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?w=600&h=600&fit=crop",
   ],
   siphon_pump: [
-    "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/29b8c55c-2cf2-48aa-8082-be778be87584.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvMjliOGM1NWMtMmNmMi00OGFhLTgwODItYmU3NzhiZTg3NTg0LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg4NTE1MDI1LCJleHAiOjE5NDYxOTUwMjV9.1l_RorkgwmZ7Nl8dF1W51M-nksUmtAJEa1orsvfZ8Mw",
+    "https://ecomsellerbd.com/uploads/product-images/master/3d682161-b529-4e11-8bcc-482a8a780e02.webp",
+    "https://ecomsellerbd.com/uploads/product-images/master/29b8c55c-2cf2-48aa-8082-be778be87584.webp",
+    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=600&h=600&fit=crop",
   ],
   massager: [
-    "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/22ee3ac7-b571-4252-9999-f55ff3493f87.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvMjJlZTNhYzctYjU3MS00MjUyLTk5OTktZjU1ZmYzNDkzZjg3LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3NzQ4NTU0LCJleHAiOjE5NDU0Mjg1NTR9.Pr4xJzAFa98obBVOrcU9F4XZfhLnhqPL8z2nQSNoZ_0",
+    "https://ecomsellerbd.com/uploads/product-images/master/22ee3ac7-b571-4252-9999-f55ff3493f87.webp",
     "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=600&h=600&fit=crop",
     "https://images.unsplash.com/photo-1519823551278-64ac92734fb1?w=600&h=600&fit=crop",
   ],
   laser_pointer: [
-    "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/531d0175-d3fe-4bfa-99ef-0d7cb3b36cc5.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvNTMxZDAxNzUtZDNmZS00YmZhLTk5ZWYtMGQ3Y2IzYjM2Y2M1LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3NzQ4MDkxLCJleHAiOjE5NDU0MjgwOTF9.O0nDyMPrvNMsd0r2n7pcnjsZ9_IETy4c23bcSsrnaIA",
-    "https://mohasagor.com.bd/public/storage/images/products/wd2mkRKXo1pnLV76eJ5c20354PBGU93UDlCt2sgJ.png",
+    "https://images.unsplash.com/photo-1507646227500-4d389b0012be?w=600&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600&h=600&fit=crop",
+    "https://ecomsellerbd.com/uploads/product-images/master/531d0175-d3fe-4bfa-99ef-0d7cb3b36cc5.webp",
   ],
   iron_steamer: [
-    "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/18386270-f405-4a15-9e06-5706d56c30c9.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvMTgzODYyNzAtZjQwNS00YTE1LTllMDYtNTcwNmQ1NmMzMGM5LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3NzQxOTExLCJleHAiOjE5NDU0MjE5MTF9.df7l6EF1bhg6bC56Ckbzj9lv8Gj9jIJhuAI2b4MzXco",
     "https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=600&h=600&fit=crop",
+    "https://ecomsellerbd.com/uploads/product-images/master/18386270-f405-4a15-9e06-5706d56c30c9.webp",
   ],
   knife_sharpener: [
     "https://images.unsplash.com/photo-1593618998160-e34014e67546?w=600&h=600&fit=crop",
     "https://images.unsplash.com/photo-1589365278144-c9e705f843ba?w=600&h=600&fit=crop",
   ],
   neckband: [
-    "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/9ee3d720-1058-4339-a311-3bc39d62bae9.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvOWVlM2Q3MjAtMTA1OC00MzM5LWEzMTEtM2JjMzlkNjJiYWU5LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg4NDM3NzIxLCJleHAiOjE5NDYxMTc3MjF9.rX09PGh1xKG_uTGHw_Tllk7Rff9-atYZ3nJVKWLsmlY",
-    "https://mohasagor.com.bd/public/storage/images/products/8LA7UVvvkdFdePE1KA8oQE11ae86IgS8OO4M5owT.png",
+    "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&h=600&fit=crop",
+    "https://ecomsellerbd.com/uploads/product-images/master/9ee3d720-1058-4339-a311-3bc39d62bae9.webp",
   ],
   phone_holder: [
-    "https://images.unsplash.com/photo-1586105251261-72a756497a11?w=600&h=600&fit=crop",
-    "https://images.unsplash.com/photo-1580910051074-3eb694886505?w=600&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=600&h=600&fit=crop", // Modern gadget desk phone stand
+    "https://images.unsplash.com/photo-1580910051074-3eb694886505?w=600&h=600&fit=crop", // Clean mobile dock stand
+  ],
+  tripod: [
+    "https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?w=600&h=600&fit=crop", // Camera & Phone Tripod Stand
+    "https://images.unsplash.com/photo-1581591524425-c7e0978865fc?w=600&h=600&fit=crop", // Professional Vlogging Tripod
+    "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=600&h=600&fit=crop", // Extendable Selfie Stick Tripod
+  ],
+  hoodie: [
+    "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=600&h=600&fit=crop", // Cozy Winter Hoodie
+    "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&h=600&fit=crop", // Winter Pullover Hoodie
+  ],
+  kids_fashion: [
+    "https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?w=600&h=600&fit=crop", // Kids Colorful T-Shirt
+    "https://images.unsplash.com/photo-1622290291468-a28f7a7dc6a8?w=600&h=600&fit=crop", // Kids Fun Graphic Tee
+    "https://images.unsplash.com/photo-1503919545889-aef636e10ad4?w=600&h=600&fit=crop", // Children's Casual Wear
+    "https://images.unsplash.com/photo-1519457431-44ccd64a579b?w=600&h=600&fit=crop", // Kids Summer Wear
   ],
   stove_cooking: [
-    "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/15c6612f-54b6-493f-86f3-f4cc07264465.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvMTVjNjYxMmYtNTRiNi00OTNmLTg2ZjMtZjRjYzA3MjY0NDY1LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3NzM4Mzk5LCJleHAiOjE5NDU0MTgzOTl9.dG6HuGbkmTx0nN_Rzfhev03130vUDmdz2tqaji-KD7o",
-    "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/603c8f5a-02df-4c95-bd65-411cdaeeba07.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvNjAzYzhmNWEtMDJkZi00Yzk1LWJkNjUtNDExY2RhZWViYTA3LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3OTE1ODYwLCJleHAiOjE5NDU1OTU4NjB9.KagkKRKkszLLEbP_HM7AAhnykJWsTBFLDM2mKdTrPmQ",
+    "https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=600&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=600&h=600&fit=crop",
+    "https://ecomsellerbd.com/uploads/product-images/master/15c6612f-54b6-493f-86f3-f4cc07264465.webp",
   ],
   juicer_blender: [
-    "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/ed722608-e540-49cd-8071-910cbb038655.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvZWQ3MjI2MDgtZTU0MC00OWNkLTgwNzEtOTEwY2JiMDM4NjU1LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3NzI3NjQ0LCJleHAiOjE5NDU0MDc2NDR9.sfDBqbhe81iJ7t4GZ4GhdCqWwa87Km06TUHlNbS7WGg",
     "https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=600&h=600&fit=crop",
+    "https://ecomsellerbd.com/uploads/product-images/master/ed722608-e540-49cd-8071-910cbb038655.webp",
   ],
   lantern_torch: [
-    "https://mohasagor.com.bd/public/storage/images/products/YoNfaL13gQwsmcg2aZLsxUzxtqIiKYm1JbDHPP24.png",
-    "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/03e4c2c0-f1b8-4b73-b898-00052116e016.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvMDNlNGMyYzAtZjFiOC00YjczLWI4OTgtMDAwNTIxMTZlMDE2LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3ODI5NzMxLCJleHAiOjE5NDU1MDk3MzF9.GC4kv0AqExhAmE6AxU90gbzyi_foKI7_YTeg2U3SxPE",
+    "https://images.unsplash.com/photo-1508873696983-2df57046475a?w=600&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1517646287270-a5a9ca602e5c?w=600&h=600&fit=crop",
+    "https://ecomsellerbd.com/uploads/product-images/master/03e4c2c0-f1b8-4b73-b898-00052116e016.webp",
   ],
   skincare_health: [
-    "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/92deb09f-3474-4017-8bcf-9a2625c2e05f.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvOTJkZWIwOWYtMzQ3NC00MDE3LThiY2YtOWEyNjI1YzJlMDVmLndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3NzQxMzExLCJleHAiOjE5NDU0MjEzMTF9.o2w_qUSqHD77Mm0eIt3Cg4z028ZIO4-gDeHUFqHfGjA",
-    "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/0ee23ea1-5a53-4d5d-928b-ef31df6b76c4.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvMGVlMjNlYTEtNWE1My00ZDVkLTkyOGItZWYzMWRmNmI3NmM0LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3NjUxOTU4LCJleHAiOjE5NDUzMzE5NTh9.atIYCymvsFmlB-n4ZCFL6h2GYx-u7pRF1BY-s57-ALQ",
+    "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1608248597359-009d1dfcb2d4?w=600&h=600&fit=crop",
+    "https://ecomsellerbd.com/uploads/product-images/master/92deb09f-3474-4017-8bcf-9a2625c2e05f.webp",
   ],
   shake_nutrition: [
-    "https://ghelicfxwzbysfzbpxrk.supabase.co/storage/v1/object/sign/product-images/master/ea41f5c1-f818-44ff-9409-d15aad335d84.webp?token=eyJraWQiOiIwNGI5YjA2MC0yMTliLTQyZDktYjI2NC1hYjUzM2ZlNWNhYzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0LWltYWdlcy9tYXN0ZXIvZWE0MWY1YzEtZjgxOC00NGZmLTk0MDktZDE1YWFkMzM1ZDg0LndlYnAiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3NjU0NzgyLCJleHAiOjE5NDUzMzQ3ODJ9.pyCAEC5cHdzG_g7CasEbrFNK-UhNoN_qzEkpqKWEy-k",
+    "https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?w=600&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=600&h=600&fit=crop",
+    "https://ecomsellerbd.com/uploads/product-images/master/ea41f5c1-f818-44ff-9409-d15aad335d84.webp",
   ],
   stationery: [
     "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=600&h=600&fit=crop",
@@ -230,6 +325,8 @@ export const CATEGORY_IMAGES = {
 
 // Known Unsplash generic fallback patterns that were previously assigned in random places
 const GENERIC_GADGET_FALLBACKS = [
+  "photo-1509967419530", // Woman portrait mistakenly in hoodie
+  "photo-1512436991641", // Peach / generic placeholder
   "photo-1590658268037",
   "photo-1546868871",
   "photo-1609091839311",
@@ -240,6 +337,20 @@ const GENERIC_GADGET_FALLBACKS = [
   "photo-1507582020474",
   "photo-1596755094514",
 ];
+
+export function isDeadSupplierOrigin(url?: string): boolean {
+  if (!url || typeof url !== "string") return false;
+  let decoded = url;
+  try {
+    decoded = decodeURIComponent(url);
+  } catch {}
+  return (
+    KNOWN_DEAD_ORIGIN_URLS.has(url) ||
+    KNOWN_DEAD_ORIGIN_URLS.has(decoded) ||
+    globalFailedImageUrls.has(url) ||
+    globalFailedImageUrls.has(decoded)
+  );
+}
 
 /**
  * Converts heavy raw supplier images to ultra-fast, edge-cached WebP CDN images via Cloudflare/wsrv.nl
@@ -253,7 +364,12 @@ export function optimizeImageUrl(
 ): string {
   if (!url || typeof url !== "string") return "";
   let trimmed = url.trim();
-  if (!trimmed) return "";
+  if (!trimmed || isDeadSupplierOrigin(trimmed)) return "";
+
+  // Normalize mohasagor domain
+  if (trimmed.includes("mohasagor.com/") && !trimmed.includes("mohasagor.com.bd/")) {
+    trimmed = trimmed.replace("mohasagor.com/", "mohasagor.com.bd/");
+  }
 
   if (trimmed.startsWith("data:") || trimmed.startsWith("blob:") || trimmed.includes(".svg")) {
     return trimmed;
@@ -297,7 +413,17 @@ export function optimizeImageUrl(
     full = `https://mohasagor.com.bd${p}`;
   }
 
-  // Convert raw supplier images to ultra-lightweight WebP via Cloudflare Edge Cache (wsrv.nl)
+  // Mohasagor images - serve direct origin (wsrv.nl encounters ORB block on mohasagor origins)
+  if (full.includes("mohasagor.com.bd")) {
+    return full;
+  }
+
+  // Ecomseller images are already optimized WebP - serve direct with zero proxy latency
+  if (full.includes("ecomsellerbd.com")) {
+    return full;
+  }
+
+  // Convert other raw supplier images to ultra-lightweight WebP via Cloudflare Edge Cache (wsrv.nl)
   if (full.startsWith("http://") || full.startsWith("https://")) {
     const cleanSource = full.split("#")[0];
     return `https://wsrv.nl/?url=${encodeURIComponent(cleanSource)}&w=${width}&output=${format}&q=${quality}&we=0&fit=cover`;
@@ -312,6 +438,7 @@ export function optimizeImageUrl(
 export function getDirectImageUrl(url?: string): string {
   if (!url || typeof url !== "string") return "";
   let trimmed = url.trim();
+  if (isDeadSupplierOrigin(trimmed)) return "";
   if (trimmed.includes("wsrv.nl/?url=") || trimmed.includes("wsrv.nl?url=")) {
     try {
       const parsed = new URL(trimmed);
@@ -327,6 +454,17 @@ export function getDirectImageUrl(url?: string): string {
     } catch { }
   }
 
+  if (isDeadSupplierOrigin(trimmed)) return "";
+
+  // Automatically heal legacy or dead Supabase storage URLs to live high-speed master WebP
+  if (trimmed.includes("supabase.co") && trimmed.includes("product-images/master/")) {
+    const match = trimmed.match(/product-images\/master\/([a-zA-Z0-9\-\_]+(?:\.webp|\.jpg|\.png|\.jpeg|\.gif)?)/);
+    if (match && match[1]) {
+      const fn = match[1].endsWith(".webp") ? match[1] : `${match[1]}.webp`;
+      trimmed = `https://ecomsellerbd.com/uploads/product-images/master/${fn}`;
+    }
+  }
+
   if (trimmed.startsWith("//")) {
     trimmed = `https:${trimmed}`;
   } else if (trimmed.startsWith("http://")) {
@@ -337,6 +475,10 @@ export function getDirectImageUrl(url?: string): string {
   } else if (trimmed.startsWith("/public/storage/") || trimmed.startsWith("public/storage/") || trimmed.startsWith("/storage/") || trimmed.startsWith("storage/")) {
     const p = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
     trimmed = `https://mohasagor.com.bd${p}`;
+  }
+
+  if (trimmed.includes("mohasagor.com/") && !trimmed.includes("mohasagor.com.bd/")) {
+    trimmed = trimmed.replace("mohasagor.com/", "mohasagor.com.bd/");
   }
 
   return trimmed;
@@ -377,15 +519,77 @@ export const PRODUCT_CARD_SIZES = "(max-width: 640px) 48vw, (max-width: 1024px) 
 export const MINI_CARD_SIZES = "(max-width: 640px) 140px, (max-width: 1024px) 160px, 185px";
 export const PRODUCT_DETAIL_SIZES = "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 600px";
 
-export function detectCategoryKey(name: string = "", category: string = ""): keyof typeof CATEGORY_IMAGES | null {
+export function detectCategoryKey(name: any = "", category: any = ""): keyof typeof CATEGORY_IMAGES | null {
   // Normalize mathematical alphanumeric symbols, accented glyphs & unicode fonts to plain ASCII
-  const normName = (name || "").normalize("NFKD");
-  const normCat = (category || "").normalize("NFKD");
+  const strName = typeof name === "string" ? name : String(name || "");
+  const strCat = typeof category === "string" ? category : String(category || "");
+  const normName = (strName || "").normalize ? strName.normalize("NFKD") : strName;
+  const normCat = (strCat || "").normalize ? strCat.normalize("NFKD") : strCat;
   const nameText = normName.toLowerCase();
   const catText = normCat.toLowerCase();
   // Strip noisy multi-word categories like "mouse & cameras" so they don't corrupt product matching
   const safeCat = catText.replace(/mouse\s*(&|and)?\s*cameras?/gi, "gadgets");
   const combined = `${nameText} ${safeCat}`;
+
+  // 0.1 Feature Phone / Mobile Phone with Loudspeaker or Multi-SIM (MUST check before generic speaker!)
+  if (combined.match(/four.*sim|mobile.*four|dual.*antina|feature.*phone|button.*phone|mb3031|মোবাইল.*ফোন|বাটন.*ফোন/i)) {
+    return "mobile_phone";
+  }
+
+  // 0.2 3D Screen Magnifier / Mobile Video Amplifier
+  if (combined.match(/screen.*amplifier|video.*amplifier|magnifier|amplif.*3d|স্ক্রিন.*ম্যাগনিফায়ার/i)) {
+    return "screen_magnifier";
+  }
+
+  // 0.3 World Map 3D Globe & Eiffel Tower Metal Showpiece
+  if (combined.match(/globe|world.*map|eiffel.*tower|showpiece|show.*piece|metal.*showpiece|decoration.*gift|rotating.*glove/i)) {
+    return "globe_showpiece";
+  }
+
+  // 0.4 Dumbbell & Gym Sports Water Bottles
+  if (combined.match(/water.*bottle|dumbbell.*bottle|bottle.*2\.8l|dumbbell.*shape|sport.*bottle|water.*jug|পানির.*বোতল|বোতল/i)) {
+    return "water_bottle";
+  }
+
+  // 0.5 Detachable Shoe Racks & Shoe Cabinets
+  if (combined.match(/shoe.*rack|shoe.*cabinet|shoe.*shelf|জুতার.*রেক|সু.*রেক/i)) {
+    return "shoe_rack";
+  }
+
+  // 0.6 Desk Lamps & Pen Holder Study Lights
+  if (combined.match(/pen.*holder|desk.*lamp|table.*lamp|reading.*lamp|study.*lamp|yg-8044f|টেবিল.*ল্যাম্প/i)) {
+    return "desk_lamp";
+  }
+
+  // 0.7 Laptop Stands & Foldable Notebook Risers
+  if (combined.match(/laptop.*stand|notebook.*stand|folding.*notebook|aluminum.*alloy.*adjustable/i)) {
+    return "laptop_stand";
+  }
+
+  // 0.8 Electric Cooking Pots, Non-Stick Hot Pot & Mini Multi-Cooker Panci
+  if (combined.match(/electric.*pot|cooking.*pot|panci|mini.*pot|non-stick.*pot|hot.*pot|ইলেকট্রিক.*পট/i)) {
+    return "electric_cooker";
+  }
+
+  // 0.9 Hair Straighteners & Styling Combs
+  if (combined.match(/straightener|styling.*comb|hair.*straight|হেয়ার.*স্ট্রেইট/i)) {
+    return "hair_straightener";
+  }
+
+  // 0.10 Necklaces, Pendants, Chains, Shita Haar (must check before generic jewelry/ring!)
+  if (combined.match(/necklace|pendant|shita.*haar| haar|chain|লকেট|নেকলেস|সীতাহার|হার/i)) {
+    return "necklace_pendant";
+  }
+
+  // 0.11 Earrings & Jhumka (must check before ring!)
+  if (combined.match(/earring|ear.*ring|jhumka|nose.*pin|দুল|ঝুমকা|নাকফুল/i)) {
+    return "earrings";
+  }
+
+  // 0.12 Rings (must exclude earrings/nose pins/key rings)
+  if (combined.match(/ring|আংটি/i) && !combined.match(/ear.*ring|key.*ring|nose.*pin|earring/i)) {
+    return "ring";
+  }
 
   // 1. Siphon fuel & liquid transfer pumps (Must check before fan!)
   if (combined.match(/siphon|fuel.*pump|oil.*pump|liquid.*pump|transfer.*pump|pipe.*set|লিকুইড.*পাম্প|ফুয়েল.*পাম্প/i)) {
@@ -412,8 +616,18 @@ export function detectCategoryKey(name: string = "", category: string = ""): key
     return "knife_sharpener";
   }
 
+  // 5.5 Tripods, Selfie Sticks & Monopods (Must check before generic phone holder!)
+  if (combined.match(/tripod|selfie.*stick|handheld.*stick|monopod|vlogging.*stick|ট্রাইপড|সেলফি/i)) {
+    return "tripod";
+  }
+
+  // 5.8 Drain Cleaners, Spring Claw Grabbers, Basin Uncloggers (Check before generic home/tools)
+  if (combined.match(/drain.*clean|basin.*clean|spring.*claw|grabber|pipe.*dredg|clog.*clean|sink.*clean|ড্রেন.*ক্লিনার|বেসিন.*ক্লিনার/i)) {
+    return "cleaning_tools";
+  }
+
   // 6. Phone Holders, Stands, Lazy Neck & Tripods (Must check before earbuds/electronics!)
-  if (combined.match(/phone.*holder|mobile.*holder|lazy.*neck|neck.*holder|table.*stand|phone.*stand|desk.*stand|tripod|mobile.*mount|car.*mount|স্ট্যান্ড/i)) {
+  if (combined.match(/phone.*holder|mobile.*holder|lazy.*neck|neck.*holder|table.*stand|phone.*stand|desk.*stand|mobile.*mount|car.*mount|স্ট্যান্ড/i)) {
     return "phone_holder";
   }
 
@@ -463,6 +677,12 @@ export function detectCategoryKey(name: string = "", category: string = ""): key
   if (combined.match(/cctv|ip\s*camera|security\s*camera|bulb\s*camera|night\s*vision.*camera|v380|a9\s*wi-?fi|ptz|surveillance|nanny\s*cam|spy\s*cam|spy.*camera|ডোম\s*ক্যামেরা|সিসিটিভি|সিকিউরিটি\s*ক্যামেরা/i) ||
     (nameText.match(/camera|cam\b|ক্যামেরা/i) && !nameText.match(/stand|holder|tripod|mount|strap|bag|case/i))) {
     return "cctv";
+  }
+
+  // 15.5 Over-ear and on-ear headphones
+  if (!nameText.match(/cctv|camera|cam\b|speaker|mic/i) &&
+    combined.match(/over-ear|on-ear|studio.*headphone|headset|at8|at7|h200|gaming.*headset|rapoo.*headphone/i)) {
+    return "headphones";
   }
 
   // 16. Earbuds, headphones, airpods, headsets, wireless audio (must exclude cameras, speakers & mic)
@@ -546,19 +766,45 @@ export function detectCategoryKey(name: string = "", category: string = ""): key
     return "kurti";
   }
 
-  // 32. Shirts, t-shirts, polo, jackets, hoodies
-  if (combined.match(/shirt|t-shirt|tshirt|polo|jacket|suit|cloth|men's|mens|wear|sleeve|combo.*shirt|denim|jeans|hoodie|টি-শার্ট|টি\s*শার্ট|শার্ট|পোলো|পোশাক/i)) {
+  // 31.4 Hair Care, Hair Oil, Hair Fall Control, Hair Serum, Scalp Treatment (Must check before clothing & food!)
+  if (
+    combined.match(/hair.*oil|hair.*serum|hair.*tonic|hair.*growth|hair.*fall|hair.*care|hair.*treatment|scalp|হেয়ার.*অয়েল|চুলের.*তেল|আমলা|কালোকেশী|nanotech/i) ||
+    (nameText.match(/\bhair\b/i) && !nameText.match(/trimmer|clipper|shaver|dryer|comb|straightener|remover|curler|drain|iron|towel|flower|gajra/i))
+  ) {
+    return "hair_care";
+  }
+
+  // 31.5 Kids Clothing & Kids T-Shirts (Must check before adult shirts!)
+  if (combined.match(/kid|baby|child|বাচ্চা|bambi|hulk|spiderman/i) && combined.match(/shirt|t-shirt|tshirt|tee|cloth|dress|wear|frock|টি-শার্ট|পোশাক/i)) {
+    return "kids_fashion";
+  }
+
+  // 31.6 Hoodies & Winter Pullovers
+  if (combined.match(/hoodie|sweatshirt|sweater|হুডি/i)) {
+    return "hoodie";
+  }
+
+  // 32. Shirts, t-shirts, polo, jackets (strictly non-kids, strictly non-cosmetic, exclude women's!)
+  if (
+    !combined.match(/kid|baby|child|বাচ্চা|bambi|hair|oil|perfume|serum|cream|shampoo/i) &&
+    (combined.match(/\bshirt\b|\bt-shirt\b|\btshirt\b|\bpolo\b|\bjacket\b|\bsuit\b|\bcombo.*shirt\b|\bdenim\b|\bjeans\b|টি-শার্ট|টি\s*শার্ট|শার্ট|পোলো|পোশাক/i) ||
+     (combined.match(/\bmen's\b|\bmens\b|\bmenswear\b|\bmen's\s*wear\b/i) && !combined.match(/\bwomen/i) && combined.match(/cloth|wear|sleeve|fashion/i)))
+  ) {
     return "shirt";
   }
 
   // 33. Beauty, hair straightener, hair comb, hair dryer, curler, hair brush, perfume, cosmetics, skincare
   if (nameText.match(/comb\b|straightener|straight.*hair|hair.*straight|hair.*comb|hair.*brush|curler|hair.*dryer|hair.*iron|hair.*styler|চিরুনি|স্ট্রেইটনার/i) ||
-    combined.match(/perfume|attar|body.*spray|fragrance|lotion|cream|serum|shampoo|face.*wash|skin.*care|lipstick|makeup|shaper|belt.*body|corset|আতর|পারফিউম|লোশন|ক্রিম|লিপস্টিক|মেকআপ|তেল/i)) {
+    combined.match(/perfume|attar|body.*spray|fragrance|lotion|cream|serum|shampoo|face.*wash|skin.*care|lipstick|makeup|shaper|belt.*body|corset|আতর|পারফিউম|লোশন|ক্রিম|লিপস্টিক|মেকআপ/i)) {
     return "beauty";
   }
 
-  // 34. Pure foods, organic, honey, ghee, tea
-  if (combined.match(/honey|ghee|oil|tea|chia|organic|mustard|pure.*food|food|মধু|ঘি|তেল|চা|খাবার/i)) {
+  // 34. Pure foods, organic, honey, ghee, edible cooking oil, tea
+  if (
+    (combined.match(/honey|ghee|mustard\s*oil|cooking\s*oil|olive\s*oil|edible\s*oil|chia|organic\s*food|\btea\b|khejur|dates|বাদাম|মধু|ঘি|সরিষার\s*তেল|খাবার\b|কালোজিরা/i) ||
+     (combined.match(/\bfoods?\b/i) && !combined.match(/processor|chopper|cutter|scale|grater|cover|storage|container|masher|maker|box|cleaner/i))) &&
+    !combined.match(/hair|beard|massage|skin|face|body|strainer|dispenser|pot|fryer|cleaner|paronychia|pastel/i)
+  ) {
     return "pure_foods";
   }
 
@@ -659,15 +905,27 @@ export function generateProductSvgPlaceholder(name: string = "Product", category
   }
 }
 
+function computeNameHash(str: string): number {
+  if (!str) return 0;
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
 export function getCategoryFallbackImage(
   name: string = "",
   category: string = "",
   index: number = 0
 ): string {
   const key = detectCategoryKey(name, category);
+  const nameHash = computeNameHash(name);
   if (key && CATEGORY_IMAGES[key]) {
     const images = CATEGORY_IMAGES[key];
-    return images[Math.abs(index) % images.length];
+    const pick = (Math.abs(index) + nameHash) % images.length;
+    return images[pick];
   }
 
   const defaultImages = [
@@ -677,7 +935,7 @@ export function getCategoryFallbackImage(
     "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=600&h=600&fit=crop", // Fast charger
     "https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=600&h=600&fit=crop", // Jewelry / accessories
   ];
-  return defaultImages[Math.abs(index) % defaultImages.length];
+  return defaultImages[(Math.abs(index) + nameHash) % defaultImages.length];
 }
 
 export function getCategoryFallbackImages(
@@ -702,12 +960,14 @@ export function getSmartProductImage(
   // If currentImageUrl is a genuine uploaded/supplier image URL, return the direct clean URL
   if (currentImageUrl && typeof currentImageUrl === "string" && currentImageUrl.trim() !== "") {
     const trimmed = currentImageUrl.trim();
-    const isUnsplashGeneric = GENERIC_GADGET_FALLBACKS.some(pattern => trimmed.includes(pattern));
+    if (!isDeadSupplierOrigin(trimmed)) {
+      const isUnsplashGeneric = GENERIC_GADGET_FALLBACKS.some(pattern => trimmed.includes(pattern));
 
-    if (!isUnsplashGeneric) {
-      if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("//") || trimmed.startsWith("data:")) {
-        const direct = getDirectImageUrl(trimmed);
-        return direct || trimmed;
+      if (!isUnsplashGeneric) {
+        if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("//") || trimmed.startsWith("data:")) {
+          const direct = getDirectImageUrl(trimmed);
+          if (direct && !isDeadSupplierOrigin(direct)) return direct;
+        }
       }
     }
   }
@@ -722,6 +982,7 @@ export const KNOWN_DEAD_ORIGIN_URLS = new Set<string>([
   "https://mohasagor.com.bd/public/storage/images/products/06B4jK73bvMIABaFuuXtW2NirWrSpYRM1yLaMumJ.jpg",
   "https://mohasagor.com.bd/public/storage/images/products/RxTAhyYXd0VI6a7YnCRY0f1KNnUUIdj0XoYJypNL.jpg",
   "https://mohasagor.com.bd/public/storage/images/products/VKgvrT4uYKkDwOuJGZmKu3f4yiB7rsInfgYvnXFo.jpg",
+  "https://mohasagor.com.bd/public/storage/images/products/PngofgCFibVX15hx4DouG9NOtDu1mfnf9GfFmOA4.jpg",
 ]);
 
 // Global in-memory cache of failed image URLs so broken supplier links fail in 0ms without re-trying
@@ -754,7 +1015,19 @@ export function getProductImageCandidates(product: any, width: number = 400): st
       clean = `https://mohasagor.com.bd${p}`;
     }
 
-    if (globalFailedImageUrls.has(clean) || KNOWN_DEAD_ORIGIN_URLS.has(clean)) return;
+    if (clean.includes("mohasagor.com/") && !clean.includes("mohasagor.com.bd/")) {
+      clean = clean.replace("mohasagor.com/", "mohasagor.com.bd/");
+    }
+
+    if (clean.includes("supabase.co") && clean.includes("product-images/master/")) {
+      const match = clean.match(/product-images\/master\/([a-zA-Z0-9\-\_]+(?:\.webp|\.jpg|\.png|\.jpeg|\.gif)?)/);
+      if (match && match[1]) {
+        const fn = match[1].endsWith(".webp") ? match[1] : `${match[1]}.webp`;
+        clean = `https://ecomsellerbd.com/uploads/product-images/master/${fn}`;
+      }
+    }
+
+    if (isDeadSupplierOrigin(clean)) return;
 
     if (!candidates.includes(clean)) {
       candidates.push(clean);
@@ -780,7 +1053,21 @@ export function getProductImageCandidates(product: any, width: number = 400): st
       str = `https://mohasagor.com.bd${p}`;
     }
 
-    if (str && !KNOWN_DEAD_ORIGIN_URLS.has(str) && !globalFailedImageUrls.has(str) && !allRawImages.includes(str)) {
+    if (str.includes("mohasagor.com/") && !str.includes("mohasagor.com.bd/")) {
+      str = str.replace("mohasagor.com/", "mohasagor.com.bd/");
+    }
+
+    if (str.includes("supabase.co") && str.includes("product-images/master/")) {
+      const match = str.match(/product-images\/master\/([a-zA-Z0-9\-\_]+(?:\.webp|\.jpg|\.png|\.jpeg|\.gif)?)/);
+      if (match && match[1]) {
+        const fn = match[1].endsWith(".webp") ? match[1] : `${match[1]}.webp`;
+        str = `https://ecomsellerbd.com/uploads/product-images/master/${fn}`;
+      }
+    }
+
+    if (isDeadSupplierOrigin(str)) return;
+
+    if (!allRawImages.includes(str)) {
       allRawImages.push(str);
     }
   };
@@ -801,30 +1088,44 @@ export function getProductImageCandidates(product: any, width: number = 400): st
     product.variants.forEach((v: any) => v && (collect(v.image) || collect(v.image_url) || collect(v.variant_image) || collect(v.photo)));
   }
 
-  // Prioritize lightweight JPG/JPEG over heavy 7MB uncompressed PNGs for lightning-fast loads
-  allRawImages.sort((a, b) => {
-    const aIsJpg = a.endsWith(".jpg") || a.endsWith(".jpeg");
-    const bIsJpg = b.endsWith(".jpg") || b.endsWith(".jpeg");
-    if (aIsJpg && !bIsJpg) return -1;
-    if (!aIsJpg && bIsJpg) return 1;
-    return 0;
-  });
+  // 1. Direct High-Speed Supplier & CDN Candidates FIRST!
+  // Filter out any stale generic fallbacks if authentic supplier images exist
+  const hasRealSupplier = allRawImages.some(u => u.includes("mohasagor.com.bd") || u.includes("ecomsellerbd.com"));
+  const validRawImages = hasRealSupplier
+    ? allRawImages.filter(u => !GENERIC_GADGET_FALLBACKS.some(g => u.includes(g)))
+    : allRawImages;
 
-  // 1. Edge CDN Optimized WebP Candidates FIRST!
-  for (const raw of allRawImages) {
-    const cdnUrl = optimizeImageUrl(raw, width);
-    if (cdnUrl) addCandidate(cdnUrl);
-  }
-
-  // 2. Direct Supplier Authentic Image as secondary fallback
-  for (const raw of allRawImages) {
-    const directUrl = getDirectImageUrl(raw);
-    if (directUrl && !directUrl.includes("wsrv.nl")) {
-      addCandidate(directUrl);
+  // Primary product image always retains priority #1, followed by secondary gallery images
+  for (const raw of validRawImages) {
+    if (raw.includes("ecomsellerbd.com")) {
+      // Ecomseller images are already lightweight WebP - serve directly with 0 proxy latency!
+      addCandidate(raw);
+      const cdnUrl = optimizeImageUrl(raw, width);
+      if (cdnUrl && cdnUrl !== raw) addCandidate(cdnUrl);
+    } else if (raw.includes("images.unsplash.com") || raw.includes("img.drz.lazcdn.com") || raw.includes("res.cloudinary.com")) {
+      // Native CDN URLs
+      const opt = optimizeImageUrl(raw, width);
+      if (opt) addCandidate(opt);
+      addCandidate(raw);
+    } else if (raw.includes("mohasagor.com.bd")) {
+      // High-speed edge CDN proxy + direct origin fallback for non-dead origins
+      const cdnUrl = optimizeImageUrl(raw, width);
+      if (cdnUrl) addCandidate(cdnUrl);
+      const directUrl = getDirectImageUrl(raw) || raw;
+      if (directUrl && !isDeadSupplierOrigin(directUrl)) {
+        addCandidate(directUrl);
+      }
+    } else {
+      const cdnUrl = optimizeImageUrl(raw, width);
+      if (cdnUrl) addCandidate(cdnUrl);
+      const directUrl = getDirectImageUrl(raw);
+      if (directUrl && !directUrl.includes("wsrv.nl") && !directUrl.includes("mohasagor.com.bd")) {
+        addCandidate(directUrl);
+      }
     }
   }
 
-  // 3. Fallback to category image: ALWAYS provide curated real product photos
+  // 2. Fallback to authentic keyword/category matched product photo (100% genuine photos, NEVER blank)
   const categoryFallback = getCategoryFallbackImage(
     product.name || "",
     product.category || product.category_name || (product as any).category_id || (product as any).categorySlug || "",
@@ -834,15 +1135,19 @@ export function getProductImageCandidates(product: any, width: number = 400): st
     addCandidate(categoryFallback);
   }
 
-  // Also add secondary fallbacks for maximum reliability
+  // Also add secondary authentic fallbacks for maximum reliability
   const extraFallbacks = getCategoryFallbackImages(
     product.name || "",
     product.category || product.category_name || "",
-    2
+    3
   );
-  extraFallbacks.forEach(addCandidate);
+  extraFallbacks.forEach((fb) => {
+    if (fb && !fb.startsWith("data:")) {
+      addCandidate(fb);
+    }
+  });
 
-  // 4. Clean branded SVG placeholder with actual product name (absolute last resort)
+  // 3. Clean branded SVG placeholder with actual product name (absolute last resort only if network completely down)
   const svgPlaceholder = generateProductSvgPlaceholder(
     product.name || "Product",
     product.category || product.category_name || ""
@@ -891,4 +1196,35 @@ export function prefetchProductImages(
   } else {
     setTimeout(runWarm, 300);
   }
+}
+
+/**
+ * Automatically creates multi-angle and zoomed perspectives of an exact single product image
+ * so products with only 1 photo still have 4 rich, interactive views in the detail gallery.
+ */
+export function generateExactProductViews(url: string, count: number = 4): string[] {
+  if (!url || typeof url !== "string") return [];
+  const cleanUrl = url.trim();
+  if (cleanUrl.startsWith("data:") || cleanUrl.startsWith("blob:")) {
+    return [cleanUrl];
+  }
+
+  const baseView = optimizeImageUrl(cleanUrl, 800, 85, "webp") || cleanUrl;
+  const views: string[] = [baseView];
+  if (count <= 1) return views;
+
+  // View 2, 3, 4: High-Def Detail Focus & Multi-Angle Crops
+  const isUnsplash = cleanUrl.includes("images.unsplash.com");
+  if (isUnsplash) {
+    views.push(cleanUrl.replace(/([?&])fit=[^&]*/, "$1fit=crop").concat("&crop=center&q=85"));
+    views.push(cleanUrl.replace(/([?&])fit=[^&]*/, "$1fit=crop").concat("&crop=top&q=85"));
+    views.push(cleanUrl.replace(/([?&])fit=[^&]*/, "$1fit=crop").concat("&crop=entropy&q=85"));
+  } else {
+    const direct = getDirectImageUrl(cleanUrl) || cleanUrl;
+    views.push(`https://wsrv.nl/?url=${encodeURIComponent(direct)}&w=800&h=800&fit=cover&a=center&q=85&output=webp`);
+    views.push(`https://wsrv.nl/?url=${encodeURIComponent(direct)}&w=800&h=800&fit=cover&a=top&q=85&output=webp`);
+    views.push(`https://wsrv.nl/?url=${encodeURIComponent(direct)}&w=800&h=800&fit=cover&a=bottom&q=85&output=webp`);
+  }
+
+  return views.slice(0, count);
 }

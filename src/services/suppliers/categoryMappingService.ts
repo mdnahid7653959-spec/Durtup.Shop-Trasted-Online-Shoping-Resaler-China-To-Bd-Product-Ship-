@@ -310,6 +310,39 @@ export class CategoryMappingService {
       if (found) return found;
     }
 
+    // 5. WINTER & APPAREL MASKS (e.g. Hooded Scarf Mask, Winter Hoodies, etc.)
+    if (
+      pName.includes("hooded") ||
+      pName.includes("scarf") ||
+      pName.includes("winter") ||
+      pName.includes("hoodie") ||
+      pName.includes("jacket")
+    ) {
+      const found = DURTUP_MASTER_CATEGORIES.find(c => c.slug === "winter");
+      if (found) return found;
+    }
+
+    // 6. WOMEN'S FASHION (Sarees, kurtis, lehenga, hijab, jewelry)
+    if (
+      pName.includes("saree") ||
+      pName.includes("kurti") ||
+      pName.includes("lehenga") ||
+      pName.includes("hijab") ||
+      pName.includes("borkha") ||
+      pName.includes("abaya") ||
+      pName.includes("jewelry") ||
+      pName.includes("jewellery") ||
+      pName.includes("necklace") ||
+      pName.includes("earring") ||
+      pName.includes("ring")
+    ) {
+      const isFalsePositive = /\b(braided|bracket|spring|bearing|cable)\b/i.test(pName);
+      if (!isFalsePositive) {
+        const found = DURTUP_MASTER_CATEGORIES.find(c => c.slug === "womens-fashion");
+        if (found) return found;
+      }
+    }
+
     // Fall back to category-based resolution
     return this.resolveCategory(supplierCatSlug, supplierCatName, customMappings);
   }

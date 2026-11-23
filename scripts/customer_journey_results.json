@@ -1,0 +1,72 @@
+[
+  {
+    "route": "Homepage",
+    "url": "http://localhost:8080/",
+    "loadTimeMs": 2598,
+    "metrics": {
+      "fcp": 340,
+      "brokenImages": 0,
+      "renderedImages": 10,
+      "totalImages": 10,
+      "cards": 0,
+      "hasErrorText": false,
+      "pageTitle": "Durtup.shop - পছন্দের পণ্য খুঁজে নিন | অনলাইন শপিং বাংলাদেশ"
+    }
+  },
+  {
+    "route": "Category - Gadgets",
+    "url": "http://localhost:8080/category/gadgets",
+    "loadTimeMs": 2972,
+    "metrics": {
+      "fcp": 416,
+      "brokenImages": 0,
+      "renderedImages": 1,
+      "totalImages": 17,
+      "cards": 35,
+      "hasErrorText": false,
+      "pageTitle": "Gadgets & Electronics Price in Bangladesh | Durtup.shop"
+    }
+  },
+  {
+    "route": "Product Detail",
+    "url": "http://localhost:8080/product/x5-full-hd-mini-wifi-ip-camera-ac0a83b2",
+    "loadTimeMs": 4186,
+    "metrics": {
+      "fcp": 996,
+      "brokenImages": 0,
+      "renderedImages": 2,
+      "totalImages": 7,
+      "cards": 7,
+      "hasErrorText": false,
+      "pageTitle": "X5 Full HD Mini WiFi IP Camera – Wireless Security CCTV with Night Vision, Motion Detection & Audio Price in Bangladesh | Durtup.shop"
+    }
+  },
+  {
+    "route": "Cart",
+    "url": "http://localhost:8080/cart",
+    "loadTimeMs": 3570,
+    "metrics": {
+      "fcp": 1068,
+      "brokenImages": 0,
+      "renderedImages": 1,
+      "totalImages": 1,
+      "cards": 3,
+      "hasErrorText": false,
+      "pageTitle": "Shopping Cart | Durtup.shop"
+    }
+  },
+  {
+    "route": "Checkout",
+    "url": "http://localhost:8080/checkout",
+    "loadTimeMs": 2733,
+    "metrics": {
+      "fcp": 320,
+      "brokenImages": 0,
+      "renderedImages": 0,
+      "totalImages": 0,
+      "cards": 0,
+      "hasErrorText": false,
+      "pageTitle": "Durtup.shop - পছন্দের পণ্য খুঁজে নিন | অনলাইন শপিং বাংলাদেশ"
+    }
+  }
+]

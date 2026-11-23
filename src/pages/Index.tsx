@@ -11,8 +11,11 @@ import { ProductSection } from "@/components/home/ProductSection";
 import { Clock } from "lucide-react";
 import { InfiniteProductFeed } from "@/components/home/InfiniteProductFeed";
 import { HomeMidBanner } from "@/components/home/HomeMidBanner";
+import { RecommendedForYouSection } from "@/components/home/RecommendedForYouSection";
+import { RecentlyViewedSection } from "@/components/home/RecentlyViewedSection";
 import { SEOHead } from "@/components/SEOHead";
 import { FAST_SEED_PRODUCTS } from "@/data/fastSeedCatalog";
+import { SectionErrorBoundary } from "@/components/ErrorBoundary";
 
 const SectionSkeleton = () => (
   <div className="py-3 sm:py-5">
@@ -42,21 +45,26 @@ const Index = () => {
 
   // Combine products for Deal of the Day across full multi-supplier catalog (2,000+ items streaming)
   const dealProducts = useMemo(() => {
-    if (data?.dealProducts && data.dealProducts.length > 0) {
-      return data.dealProducts;
+    try {
+      if (Array.isArray(data?.dealProducts) && data.dealProducts.length > 0) {
+        return data.dealProducts;
+      }
+      if (Array.isArray(data?.allProducts) && data.allProducts.length > 0) {
+        return data.allProducts;
+      }
+      const combined = [
+        ...(Array.isArray(data?.trending) ? data.trending : []),
+        ...(Array.isArray(data?.featured) ? data.featured : []),
+        ...(Array.isArray(data?.flashSale) ? data.flashSale : []),
+        ...(Array.isArray(data?.latestProducts) ? data.latestProducts : []),
+        ...(Array.isArray(data?.recommended) ? data.recommended : []),
+      ];
+      if (combined.length > 0) return combined;
+      return FAST_SEED_PRODUCTS;
+    } catch (e) {
+      console.warn("Index: Error processing deal products", e);
+      return FAST_SEED_PRODUCTS;
     }
-    if (data?.allProducts && data.allProducts.length > 0) {
-      return data.allProducts;
-    }
-    const combined = [
-      ...(data?.trending || []),
-      ...(data?.featured || []),
-      ...(data?.flashSale || []),
-      ...(data?.latestProducts || []),
-      ...(data?.recommended || []),
-    ];
-    if (combined.length > 0) return combined;
-    return FAST_SEED_PRODUCTS;
   }, [data]);
 
   return (
@@ -67,9 +75,11 @@ const Index = () => {
         url="https://durtup.shop"
         type="website"
       />
-      
+
       {/* 1. Header with Top Notice, Logo, Search & Category Pills */}
-      <Header />
+      <SectionErrorBoundary>
+        <Header />
+      </SectionErrorBoundary>
 
       <main className="flex-1 pb-20 md:pb-8 space-y-2 sm:space-y-4">
         {isError && (
@@ -83,54 +93,82 @@ const Index = () => {
         )}
 
         {/* 2. Hero Banner (Sunset Gadget Showcase + Featured Side Products) */}
-        <HeroBanner />
+        <SectionErrorBoundary>
+          <HeroBanner />
+        </SectionErrorBoundary>
 
         {/* 3. Deal of the Day Product Carousel - Products immediately visible upon entering the site! */}
-        {isLoading && (!dealProducts || dealProducts.length === 0) ? (
-          <SectionSkeleton />
-        ) : (
-          <DealOfTheDaySection products={dealProducts} />
-        )}
+        <SectionErrorBoundary>
+          {isLoading && (!dealProducts || dealProducts.length === 0) ? (
+            <SectionSkeleton />
+          ) : (
+            <DealOfTheDaySection products={dealProducts} />
+          )}
+        </SectionErrorBoundary>
 
         {/* 4. Quick Category Shortcut Cards */}
-        <FlashSaleSection />
+        <SectionErrorBoundary>
+          <FlashSaleSection />
+        </SectionErrorBoundary>
 
         {/* 5. Trust & Service Feature Strip */}
-        <TrustBadges />
+        <SectionErrorBoundary>
+          <TrustBadges />
+        </SectionErrorBoundary>
 
         {/* 6. Popular Categories Showcase (4 Pastel Banners) */}
-        <PopularCategoriesSection />
+        <SectionErrorBoundary>
+          <PopularCategoriesSection />
+        </SectionErrorBoundary>
 
         {/* 7. Just Added / Fresh Products Section */}
         {data?.latestProducts && data.latestProducts.length > 0 && (
-          <section className="w-full px-3 sm:px-4">
-            <div className="max-w-7xl mx-auto">
-              <ProductSection
-                title="Just Added"
-                subtitle="Fresh products"
-                products={data.latestProducts}
-                viewAllLink="/products?sort=newest"
-                icon={Clock}
-                iconBgColor="bg-gradient-to-br from-blue-500 to-cyan-500"
-                iconColor="text-white"
-              />
-            </div>
-          </section>
+          <SectionErrorBoundary>
+            <section className="w-full px-3 sm:px-4">
+              <div className="max-w-7xl mx-auto">
+                <ProductSection
+                  title="Just Added"
+                  subtitle="Fresh products"
+                  products={data.latestProducts}
+                  viewAllLink="/products?sort=newest"
+                  icon={Clock}
+                  iconBgColor="bg-gradient-to-br from-blue-500 to-cyan-500"
+                  iconColor="text-white"
+                />
+              </div>
+            </section>
+          </SectionErrorBoundary>
         )}
 
         {/* Brand Promotional Banner */}
-        <HomeMidBanner />
+        <SectionErrorBoundary>
+          <HomeMidBanner />
+        </SectionErrorBoundary>
 
-        {/* 8. Endless Automatic Product Feed */}
-        <section className="w-full px-3 sm:px-4 pt-2">
-          <div className="max-w-7xl mx-auto">
-            <InfiniteProductFeed />
-          </div>
-        </section>
+        {/* 8. Smart Personalized Product Recommendations */}
+        <SectionErrorBoundary>
+          <RecommendedForYouSection />
+        </SectionErrorBoundary>
+
+        {/* 9. Recently Viewed Products (appears dynamically when customer views products) */}
+        <SectionErrorBoundary>
+          <RecentlyViewedSection />
+        </SectionErrorBoundary>
+
+        {/* 10. Endless Automatic Product Feed */}
+        <SectionErrorBoundary>
+          <section className="w-full px-3 sm:px-4 pt-2">
+            <div className="max-w-7xl mx-auto">
+              <InfiniteProductFeed />
+            </div>
+          </section>
+        </SectionErrorBoundary>
 
       </main>
 
-      <Footer />
+      <SectionErrorBoundary>
+        <Footer />
+      </SectionErrorBoundary>
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
-import { CreditCard, Truck, Shield, ArrowLeft, Loader2, ChevronDown, ChevronUp, CheckCircle, Globe, Tag, X, MapPin, Phone, User as UserIcon, Plus, Edit3, CheckCircle2, Home, Banknote, Smartphone, ArrowRight, Copy, PackageCheck, ShoppingBag, Sparkles, Send, AlertCircle, Check } from "lucide-react";
+import { CreditCard, Truck, Shield, ArrowLeft, Loader2, ChevronDown, ChevronUp, CheckCircle, Globe, Tag, X, MapPin, Phone, User as UserIcon, Plus, Edit3, CheckCircle2, Home, Banknote, Smartphone, ArrowRight, Copy, PackageCheck, ShoppingBag, Sparkles, Send, AlertCircle, Check, Coins, Wallet as WalletIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,14 +15,23 @@ import { useCart } from "@/contexts/CartContext";
 import { useCJCart } from "@/hooks/useCJCart";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/firebaseAdapter";
-import { db } from "@/integrations/firebase/client";
+import { auth, db } from "@/integrations/firebase/client";
 import { doc, setDoc, getDoc, collection, getDocs } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { sendTelegramOrderNotification } from "@/utils/telegramNotifier";
 import { trackPurchase } from "@/components/FacebookPixel";
 import { checkFirstOrderDiscountEligibility, DiscountEligibilityResult } from "@/services/referralService";
 import { triggerCustomerOrderPhoneNotification } from "@/services/customerNotificationService";
+import { markCartAsRecovered, recordOrUpdateCartState } from "@/services/abandonedCartService";
 import { getCategoryFallbackImage, getDirectImageUrl } from "@/utils/productImageHelper";
+import {
+  getUserLoyaltyAccount,
+  getLoyaltySettings,
+  redeemPointsAtCheckout,
+  LoyaltyAccount,
+  LoyaltySettings
+} from "@/services/loyaltyService";
+import { CustomerAuthModal } from "@/components/auth/CustomerAuthModal";
 
 
 interface AppliedCoupon {
@@ -40,6 +49,7 @@ export default function Checkout() {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [confirmedOrderData, setConfirmedOrderData] = useState<{
     orderNumber: string;
@@ -93,17 +103,17 @@ export default function Checkout() {
       if (!user) {
         if (localAddr?.address && localAddr?.city && localAddr?.phone) {
           const [first = "", ...rest] = (localAddr.fullName || "").split(" ");
-          setShippingInfo({
-            firstName: first,
-            lastName: rest.join(" "),
-            email: localAddr.email || "",
-            phone: localAddr.phone || "",
-            address: localAddr.address || "",
-            city: localAddr.city || "",
-            state: localAddr.state || "",
-            zipCode: localAddr.zipCode || "",
-            country: localAddr.country || "Bangladesh"
-          });
+          setShippingInfo(prev => ({
+            firstName: prev.firstName.trim() || first,
+            lastName: prev.lastName.trim() || rest.join(" "),
+            email: prev.email.trim() || localAddr.email || "",
+            phone: prev.phone.trim() || localAddr.phone || "",
+            address: prev.address.trim() || localAddr.address || "",
+            city: prev.city.trim() || localAddr.city || "",
+            state: prev.state.trim() || localAddr.state || "",
+            zipCode: prev.zipCode.trim() || localAddr.zipCode || "",
+            country: prev.country.trim() || localAddr.country || "Bangladesh"
+          }));
           setHasSavedAddress(true);
           setIsEditingAddress(false);
         } else {
@@ -132,17 +142,17 @@ export default function Checkout() {
         const effectiveCountry = address?.country || localAddr?.country || "Bangladesh";
         const effectiveEmail = profile?.email || user.email || localAddr?.email || "";
 
-        setShippingInfo({
-          firstName: first,
-          lastName: rest.join(" "),
-          email: effectiveEmail,
-          phone: effectivePhone,
-          address: effectiveStreet,
-          city: effectiveCity,
-          state: effectiveState,
-          zipCode: effectiveZip,
-          country: effectiveCountry,
-        });
+        setShippingInfo(prev => ({
+          firstName: prev.firstName.trim() || first,
+          lastName: prev.lastName.trim() || rest.join(" "),
+          email: prev.email.trim() || effectiveEmail,
+          phone: prev.phone.trim() || effectivePhone,
+          address: prev.address.trim() || effectiveStreet,
+          city: prev.city.trim() || effectiveCity,
+          state: prev.state.trim() || effectiveState,
+          zipCode: prev.zipCode.trim() || effectiveZip,
+          country: prev.country.trim() || effectiveCountry || "Bangladesh",
+        }));
 
         if (address?.id) setSavedAddressId(address.id);
 
@@ -200,7 +210,61 @@ export default function Checkout() {
   }, [user?.id, subtotal]);
 
   const referralDiscount = referralEligibility?.eligible ? referralEligibility.discountAmount : 0;
-  const total = Math.max(0, subtotal + shipping + tax - couponDiscount - referralDiscount);
+
+  // Loyalty Points State & Calculations
+  const [loyaltyAccount, setLoyaltyAccount] = useState<LoyaltyAccount | null>(null);
+  const [loyaltySettings, setLoyaltySettings] = useState<LoyaltySettings | null>(null);
+  const [useLoyaltyPoints, setUseLoyaltyPoints] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    Promise.all([
+      getLoyaltySettings(),
+      user?.id ? getUserLoyaltyAccount(user.id) : Promise.resolve(null)
+    ]).then(([settings, account]) => {
+      if (isMounted) {
+        setLoyaltySettings(settings);
+        setLoyaltyAccount(account);
+      }
+    }).catch((e) => console.warn("Loyalty data fetch in Checkout:", e));
+    return () => { isMounted = false; };
+  }, [user?.id]);
+
+  const maxRedeemablePoints = useMemo(() => {
+    if (!loyaltyAccount || !loyaltySettings || !loyaltySettings.enabled) return 0;
+    const currentPts = loyaltyAccount.points || 0;
+    if (currentPts < (loyaltySettings.minPointsToRedeem || 50)) return 0;
+
+    const maxDiscountAllowed = Math.floor(subtotal * ((loyaltySettings.maxPointsRedemptionPercent || 50) / 100));
+    const pointsNeededForMaxDiscount = Math.floor(maxDiscountAllowed / (loyaltySettings.pointValueInTaka || 0.5));
+
+    return Math.min(currentPts, pointsNeededForMaxDiscount);
+  }, [loyaltyAccount, loyaltySettings, subtotal]);
+
+  const pointsToRedeem = useLoyaltyPoints ? maxRedeemablePoints : 0;
+  const loyaltyDiscount = useLoyaltyPoints
+    ? Math.round(pointsToRedeem * (loyaltySettings?.pointValueInTaka || 0.5))
+    : 0;
+
+  // Wallet & Cashback Balance State
+  const [userWalletBalance, setUserWalletBalance] = useState<number>(0);
+  const [useWalletBalance, setUseWalletBalance] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let isMounted = true;
+    getDoc(doc(db, "profiles", user.id)).then((snap) => {
+      if (isMounted && snap.exists()) {
+        const d = snap.data();
+        setUserWalletBalance(Number(d.wallet_balance || d.walletBalance || 0));
+      }
+    }).catch(() => {});
+    return () => { isMounted = false; };
+  }, [user?.id]);
+
+  const netBeforeWallet = Math.max(0, subtotal + shipping + tax - couponDiscount - referralDiscount - loyaltyDiscount);
+  const walletDiscount = useWalletBalance ? Math.min(userWalletBalance, netBeforeWallet) : 0;
+  const total = Math.max(0, netBeforeWallet - walletDiscount);
 
   // bKash copy states and handlers
   const [copiedBkashNumber, setCopiedBkashNumber] = useState(false);
@@ -384,7 +448,27 @@ export default function Checkout() {
           email: shippingInfo.email
         }));
         setHasSavedAddress(true);
+
+        // Attach contact info to Abandoned Cart so it can be recovered if user drops off at payment!
+        const effectiveTrackId = user?.id || (shippingInfo.phone ? `guest_${shippingInfo.phone.replace(/\D/g, "")}` : null);
+        if (effectiveTrackId && regularItems.length > 0) {
+          recordOrUpdateCartState(effectiveTrackId, regularItems, {
+            name: fullNameCombined,
+            phone: shippingInfo.phone,
+            email: shippingInfo.email,
+          }).catch(() => {});
+        }
       } catch { }
+
+      // Mandatory Customer Authentication Gate
+      if (!user) {
+        setShowAuthModal(true);
+        toast({
+          title: "সাইন ইন আবশ্যক (Sign In Required)",
+          description: "অর্ডার সম্পন্ন করতে দয়া করে গুগল দিয়ে সাইন ইন করুন।",
+        });
+        return;
+      }
 
       // Move to Payment Step
       setCheckoutStep("payment");
@@ -393,6 +477,17 @@ export default function Checkout() {
     }
 
     // Step 2: Finalize Payment & Place Order
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      setShowAuthModal(true);
+      toast({
+        variant: "destructive",
+        title: "সাইন ইন আবশ্যক (Sign In Required)",
+        description: "অর্ডার সম্পন্ন করতে দয়া করে গুগল দিয়ে সাইন ইন করুন।",
+      });
+      return;
+    }
+
     if (paymentMethod === "bkash") {
       if (!bkashNumber.trim()) {
         toast({
@@ -415,8 +510,17 @@ export default function Checkout() {
     setLoading(true);
 
     try {
-      const orderNumber = `ORD-${Date.now().toString().slice(-6)}-${Math.floor(1000 + Math.random() * 9000)}`;
-      const effectiveUserId = user?.id || `guest_${shippingInfo.phone ? shippingInfo.phone.replace(/\D/g, '') : Date.now()}`;
+      const idToken = await currentUser.getIdToken(true);
+      if (!idToken) {
+        setShowAuthModal(true);
+        toast({
+          variant: "destructive",
+          title: "অথেন্টিকেশন প্রয়োজন",
+          description: "আপনার লগইন সেশনটি যাচাই করা যায়নি। অনুগ্রহ করে পুনরায় লগইন করুন।"
+        });
+        setLoading(false);
+        return;
+      }
 
       const notesCombined = [
         appliedCoupon ? `Coupon: ${appliedCoupon.code}` : null,
@@ -424,126 +528,128 @@ export default function Checkout() {
       ].filter(Boolean).join(" | ") || null;
 
       const orderPayload = {
-        user_id: effectiveUserId,
-        order_number: orderNumber,
-        subtotal,
-        shipping_cost: shipping,
-        tax_amount: tax,
-        discount_amount: couponDiscount + referralDiscount,
-        referral_code: referralEligibility?.referralCode || null,
-        referrer_id: referralEligibility?.referrerId || null,
-        referral_discount: referralDiscount,
-        total,
-        status: "pending",
-        payment_status: paymentMethod === "cod" ? "pending" : "pending",
-        payment_method: paymentMethod,
+        items: [
+          ...regularItems.map(item => ({
+            product_id: item.product_id || item.id,
+            quantity: item.quantity || 1,
+            selected_variants: item.selected_variants || (item.variant_name ? { variant: item.variant_name } : undefined),
+            source: "regular" as const
+          })),
+          ...cjItems.map(item => ({
+            product_id: item.id,
+            quantity: item.quantity || 1,
+            selected_variants: item.variant ? { variant: item.variant } : undefined,
+            source: "cj" as const
+          }))
+        ],
         shipping_address: {
-          firstName: shippingInfo.firstName,
-          lastName: shippingInfo.lastName,
-          address: shippingInfo.address,
-          city: shippingInfo.city,
-          state: shippingInfo.state,
-          zipCode: shippingInfo.zipCode,
-          country: shippingInfo.country,
-          phone: shippingInfo.phone
+          first_name: shippingInfo.firstName.trim(),
+          last_name: shippingInfo.lastName.trim(),
+          phone: shippingInfo.phone.trim(),
+          address: shippingInfo.address.trim(),
+          city: shippingInfo.city.trim(),
+          state: shippingInfo.state?.trim() || "",
+          zip_code: shippingInfo.zipCode?.trim() || "",
+          country: shippingInfo.country || "Bangladesh"
         },
-        notes: notesCombined
+        payment_method: paymentMethod as "cod" | "bkash",
+        bkash_details: paymentMethod === "bkash" ? {
+          sender_number: bkashNumber.trim(),
+          trx_id: bkashTrxId.trim()
+        } : undefined,
+        coupon_code: appliedCoupon ? appliedCoupon.code : null,
+        notes: notesCombined || ""
       };
 
-      let orderRecord: any = null;
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`
+        },
+        body: JSON.stringify(orderPayload)
+      });
 
-      try {
-        const { data: order, error: orderError } = await supabase
-          .from("orders")
-          .insert(orderPayload)
-          .select()
-          .single();
+      const resData = await response.json().catch(() => ({}));
 
-        if (order && !orderError) {
-          orderRecord = order;
+      if (!response.ok) {
+        if (response.status === 401) {
+          setShowAuthModal(true);
+          toast({
+            variant: "destructive",
+            title: "অথেন্টিকেশন প্রয়োজন (401)",
+            description: resData.error || "আপনার লগইন সেশন শেষ হয়ে গেছে। অনুগ্রহ করে আবার সাইন ইন করুন।"
+          });
+        } else if (response.status === 403) {
+          toast({
+            variant: "destructive",
+            title: "অননুমোদিত অনুরোধ (403)",
+            description: resData.error || "ইউজার আইডি যাচাইকরণ ব্যর্থ হয়েছে।"
+          });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "অর্ডার সম্পন্ন হতে সমস্যা হয়েছে (400)",
+            description: resData.error || "অনুরোধে ত্রুটি রয়েছে। অনুগ্রহ করে তথ্য যাচাই করুন।"
+          });
         }
-      } catch (err) {
-        console.warn("Supabase orders insert warning:", err);
+        setLoading(false);
+        return;
       }
 
-      const orderId = orderRecord?.id || `ord-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+      const orderId = resData.order_id;
+      const orderNumber = resData.order_number;
+      const confirmedTotal = Number(resData.total ?? total);
+      const effectiveUserId = currentUser.uid;
 
-      // Sync order to Firestore and Local Storage so Admin Panel instantly sees the order
       try {
-        const allCartItems = [...regularItems, ...cjItems];
-        const firstCartItem = allCartItems[0];
-        const primaryProductImage = (firstCartItem as any)?.image || (firstCartItem as any)?.product_image || (firstCartItem as any)?.productImage || (firstCartItem as any)?.product?.image_url || (firstCartItem as any)?.product?.images?.[0] || "/durtup-logo.png";
-        const primaryProductName = (firstCartItem as any)?.product?.name || (firstCartItem as any)?.product_name || (firstCartItem as any)?.title || (firstCartItem as any)?.name || "Product";
-        const firstVariantStr = (firstCartItem as any)?.variant_name ||
-          ((firstCartItem as any)?.selected_variants ? Object.entries((firstCartItem as any).selected_variants).map(([k, v]) => `${k}: ${v}`).join(", ") : "") || (firstCartItem as any)?.variant || "";
-        const variantSuffix = firstVariantStr ? ` [${firstVariantStr}]` : "";
-        const totalItemsCount = allCartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
 
-        const firestoreOrderDoc = {
-          id: orderId,
-          order_id: orderId,
-          order_number: orderNumber,
-          orderNumber,
-          user_id: effectiveUserId,
-          subtotal,
-          shipping_cost: shipping,
-          tax_amount: tax,
-          discount_amount: couponDiscount + referralDiscount,
-          coupon_discount: couponDiscount,
-          referral_discount: referralDiscount,
-          referral_code: referralEligibility?.referralCode || null,
-          referralCode: referralEligibility?.referralCode || null,
-          referrer_id: referralEligibility?.referrerId || null,
-          referrerId: referralEligibility?.referrerId || null,
-          referral_id: (referralEligibility?.referrerId || referralEligibility?.referralCode) ? `ref-${orderId}` : null,
-          referralId: (referralEligibility?.referrerId || referralEligibility?.referralCode) ? `ref-${orderId}` : null,
-          total,
-          status: "pending",
-          payment_status: paymentMethod === "cod" ? "pending" : "pending",
-          payment_method: paymentMethod,
-          product_image: primaryProductImage,
-          product_name: `${primaryProductName}${variantSuffix}`,
-          variant_name: firstVariantStr || null,
-          total_items: totalItemsCount,
-          items: allCartItems.map(item => {
-            const vStr = (item as any)?.variant_name ||
-              ((item as any)?.selected_variants ? Object.entries((item as any).selected_variants).map(([k, v]) => `${k}: ${v}`).join(", ") : null) ||
-              (item as any)?.variant ||
-              null;
-            const baseName = (item as any)?.product?.name || (item as any)?.product_name || (item as any)?.name || (item as any)?.title || "Item";
-            const itemPrice = (item as any)?.product?.discount_price || (item as any)?.product?.regular_price || (item as any)?.price || 0;
-            return {
-              id: item.id,
-              product_id: (item as any)?.product_id || item.id,
-              title: vStr ? `${baseName} (${vStr})` : baseName,
-              name: vStr ? `${baseName} (${vStr})` : baseName,
-              product_name: vStr ? `${baseName} (${vStr})` : baseName,
-              variant_name: vStr,
-              variant: vStr,
-              selected_variants: (item as any)?.selected_variants || null,
-              size: (item as any)?.size || (item as any)?.selected_variants?.Size || (item as any)?.selected_variants?.size || null,
-              color: (item as any)?.color || (item as any)?.selected_variants?.Color || (item as any)?.selected_variants?.color || null,
-              price: itemPrice,
-              quantity: item.quantity || 1,
-              image: (item as any)?.image || (item as any)?.product_image || (item as any)?.product?.image_url || "/durtup-logo.png",
-            };
-          }),
-          shipping_address: {
-            firstName: shippingInfo.firstName,
-            lastName: shippingInfo.lastName,
-            address: shippingInfo.address,
-            city: shippingInfo.city,
-            state: shippingInfo.state,
-            zipCode: shippingInfo.zipCode,
-            country: shippingInfo.country,
-            phone: shippingInfo.phone
-          },
-          notes: notesCombined,
-          bkash_details: paymentMethod === "bkash" ? { sender_number: bkashNumber, trx_id: bkashTrxId } : null,
-          created_at: new Date().toISOString()
-        };
+        // Record loyalty points redemption if used
+        if (useLoyaltyPoints && pointsToRedeem > 0 && effectiveUserId && effectiveUserId !== "guest") {
+          await redeemPointsAtCheckout(
+            effectiveUserId,
+            orderId,
+            orderNumber,
+            pointsToRedeem,
+            loyaltyDiscount
+          ).catch((loyErr) => console.warn("Loyalty redemption recording warning:", loyErr));
+        }
 
-        await setDoc(doc(db, "orders", orderId), firestoreOrderDoc, { merge: true }).catch(() => { });
+        // Deduct wallet balance if customer used wallet/cashback to pay
+        if (useWalletBalance && walletDiscount > 0 && effectiveUserId && effectiveUserId !== "guest") {
+          try {
+            const pRef = doc(db, "profiles", effectiveUserId);
+            const pSnap = await getDoc(pRef);
+            const curBal = Number(pSnap.data()?.wallet_balance || 0);
+            const newBal = Math.max(0, curBal - walletDiscount);
+            await setDoc(pRef, {
+              wallet_balance: newBal,
+              walletBalance: newBal,
+              updated_at: new Date().toISOString()
+            }, { merge: true });
+
+            const wTxId = `tx-wallet-pay-${Date.now()}`;
+            await setDoc(doc(db, "wallet_transactions", wTxId), {
+              id: wTxId,
+              userId: effectiveUserId,
+              user_id: effectiveUserId,
+              amount: walletDiscount,
+              type: "debit",
+              direction: "debit",
+              category: "wallet_payment",
+              status: "completed",
+              order_id: orderId,
+              order_number: orderNumber,
+              orderId,
+              orderNumber,
+              description: `অর্ডার #${orderNumber} চেকআউটে ওয়ালেট/ক্যাশব্যাক থেকে পরিশোধ`,
+              balance_after: newBal,
+              created_at: new Date().toISOString()
+            }, { merge: true });
+          } catch (wErr) {
+            console.warn("Wallet payment deduction warning:", wErr);
+          }
+        }
 
         // If referral attribution exists, create/record in referrals collection
         if (referralEligibility?.referrerId || referralEligibility?.referralCode) {
@@ -567,41 +673,8 @@ export default function Checkout() {
           setDoc(doc(db, "referrals", refId), refDoc, { merge: true }).catch((e) => console.warn("Referral doc sync notice:", e));
         }
 
-        // Emit real-time Admin Notification with Product Photo for instant push alerts & sound
-        const adminNotificationDoc = {
-          type: "new_order",
-          title: `🛍️ New Order #${orderNumber}!`,
-          message: `${shippingInfo.firstName} ordered "${primaryProductName}${variantSuffix}"${totalItemsCount > 1 ? ` (+${totalItemsCount - 1} more items)` : ""} (৳${total.toLocaleString()})`,
-          product_name: `${primaryProductName}${variantSuffix}`,
-          variant_name: firstVariantStr || null,
-          product_image: primaryProductImage,
-          image_url: primaryProductImage,
-          total_items: totalItemsCount,
-          order_id: orderId,
-          order_number: orderNumber,
-          customer_name: `${shippingInfo.firstName} ${shippingInfo.lastName}`.trim(),
-          customer_phone: shippingInfo.phone,
-          customer_email: shippingInfo.email || "",
-          total_amount: total,
-          payment_method: paymentMethod,
-          read: false,
-          created_at: new Date().toISOString()
-        };
-
-        await setDoc(doc(db, "admin_notifications", orderId), adminNotificationDoc, { merge: true }).catch((e) => {
-          console.warn("admin_notification sync warning:", e);
-        });
-
-        // Sync order to local storage for instant state reflection
-        try {
-          const rawLocal = localStorage.getItem("enterprise_admin_orders") || localStorage.getItem("local_orders") || "[]";
-          const localList = JSON.parse(rawLocal);
-          localList.unshift(firestoreOrderDoc);
-          localStorage.setItem("enterprise_admin_orders", JSON.stringify(localList));
-          localStorage.setItem("local_orders", JSON.stringify(localList));
-        } catch { }
-      } catch (fsErr) {
-        console.warn("Firestore order sync warning:", fsErr);
+      } catch (accountingErr) {
+        console.warn("Post-order accounting sync warning:", accountingErr);
       }
 
       // Persist phone + full name to profile if logged in
@@ -665,67 +738,7 @@ export default function Checkout() {
         } catch { }
       }
 
-      // Add regular order items
-      const regularOrderItems = regularItems.map(item => {
-        let variantStr = item.variant_name || "";
-        if (!variantStr && item.selected_variants) {
-          variantStr = Object.entries(item.selected_variants).map(([k, v]) => `${k}: ${v}`).join(", ");
-        } else if (!variantStr && item.variant_id) {
-          try {
-            const parsed = JSON.parse(item.variant_id);
-            if (typeof parsed === "object") {
-              variantStr = Object.entries(parsed).map(([k, v]) => `${k}: ${v}`).join(", ");
-            }
-          } catch {
-            variantStr = item.variant_id;
-          }
-        }
 
-        const prod = item.product || (item as any);
-        const prodName = prod?.name || (item as any)?.title || "Product";
-        const itemPrice = prod?.discount_price || prod?.regular_price || (item as any)?.price || 0;
-        const itemSku = prod?.sku || (item as any)?.sku || null;
-        const supplierId = prod?.supplier_id || (itemSku?.startsWith("ECOM-") ? "ecomseller_bd" : (itemSku?.startsWith("MOH-") ? "dropshipping_bd" : "durtup"));
-        const supplierName = prod?.supplier_name || (supplierId === "ecomseller_bd" ? "Ecomseller BD" : (supplierId === "dropshipping_bd" ? "Dropshipping.com.bd" : "Durtup Direct"));
-        const wholesalePrice = prod?.wholesale_price || (item as any)?.wholesale_price || null;
-
-        return {
-          order_id: orderId,
-          product_id: item.product_id || item.id,
-          product_name: variantStr ? `${prodName} (${variantStr})` : prodName,
-          quantity: item.quantity || 1,
-          price: itemPrice,
-          total: itemPrice * (item.quantity || 1),
-          variant_id: variantStr || item.variant_id || null,
-          product_image: item.image || prod?.image || null,
-          sku: itemSku,
-          supplier_id: supplierId,
-          supplier_name: supplierName,
-          supplier_sku: prod?.supplier_sku || (itemSku?.startsWith("ECOM-") ? itemSku.replace("ECOM-", "") : null),
-          wholesale_price: wholesalePrice
-        };
-      });
-
-      // Add CJ order items
-      const cjOrderItems = cjItems.map(item => ({
-        order_id: orderId,
-        product_id: item.id || null,
-        product_name: `[CJ] ${item.name}${item.variant ? ` - ${item.variant}` : ''}`,
-        quantity: item.quantity || 1,
-        price: item.price || 0,
-        total: (item.price || 0) * (item.quantity || 1),
-        product_image: item.image || null
-      }));
-
-      const allOrderItems = [...regularOrderItems, ...cjOrderItems];
-
-      if (allOrderItems.length > 0) {
-        try {
-          await supabase.from("order_items").insert(allOrderItems);
-        } catch (e) {
-          console.warn("order_items insert warning:", e);
-        }
-      }
 
       // Forward order to dropship suppliers automatically if applicable
       try {
@@ -795,7 +808,7 @@ export default function Checkout() {
           address: shippingInfo.address,
           city: shippingInfo.city,
           paymentMethod: paymentMethod,
-          total: total,
+          total: confirmedTotal,
           items: itemSummary
         }).catch(err => {
           console.warn("Telegram order notification failed:", err);
@@ -812,7 +825,7 @@ export default function Checkout() {
 
       setConfirmedOrderData({
         orderNumber: orderNumber,
-        total: total,
+        total: confirmedTotal,
         paymentMethod: paymentMethod,
         customerName: `${shippingInfo.firstName} ${shippingInfo.lastName}`.trim() || "Customer",
         phone: shippingInfo.phone,
@@ -824,6 +837,9 @@ export default function Checkout() {
       clearCart().catch(() => { });
       clearCJCart();
 
+      // Mark abandoned cart as recovered immediately
+      markCartAsRecovered(effectiveUserId, orderId, subtotal).catch(() => {});
+
       // 📱 Trigger Real Phone Push Notification on user device with product image & sound
       triggerCustomerOrderPhoneNotification({
         orderId,
@@ -831,7 +847,7 @@ export default function Checkout() {
         customerName: shippingInfo.firstName || "Customer",
         productName: primaryProductName,
         productImage: primaryProductImage,
-        totalAmount: total,
+        totalAmount: confirmedTotal,
         paymentMethod: paymentMethod,
       }).catch((err) => {
         console.warn("Customer push notification warning:", err);
@@ -844,7 +860,7 @@ export default function Checkout() {
 
       // 📊 Fire Meta Pixel Purchase Event
       try {
-        trackPurchase(orderId, total, allCartItems, "BDT");
+        trackPurchase(orderId, confirmedTotal, allCartItems, "BDT");
       } catch (pxErr) {
         console.warn("Meta Pixel purchase event warning:", pxErr);
       }
@@ -1123,6 +1139,24 @@ export default function Checkout() {
                       <span>-৳{referralDiscount.toLocaleString()}</span>
                     </div>
                   )}
+                  {loyaltyDiscount > 0 && (
+                    <div className="flex justify-between text-amber-600 font-semibold">
+                      <span className="flex items-center gap-1">
+                        <Sparkles className="h-3 w-3" />
+                        লয়্যালটি পয়েন্ট ছাড় ({pointsToRedeem}★):
+                      </span>
+                      <span>-৳{loyaltyDiscount.toLocaleString()}</span>
+                    </div>
+                  )}
+                  {walletDiscount > 0 && (
+                    <div className="flex justify-between text-emerald-600 font-semibold">
+                      <span className="flex items-center gap-1">
+                        <WalletIcon className="h-3 w-3" />
+                        ওয়ালেট/ক্যাশব্যাক পেমেন্ট:
+                      </span>
+                      <span>-৳{walletDiscount.toLocaleString()}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm font-black text-foreground pt-1.5 border-t border-border/60">
                     <span>সর্বমোট (Total):</span>
                     <span className="text-primary text-base">৳{total.toLocaleString()}</span>
@@ -1136,6 +1170,26 @@ export default function Checkout() {
             <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
               {/* Main Column */}
               <div className="lg:col-span-2 space-y-4 sm:space-y-5">
+
+                {/* Unauthenticated Customer Warning Banner */}
+                {!user && (
+                  <div className="p-3.5 sm:p-4 rounded-xl bg-orange-500/10 border border-orange-500/30 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 text-orange-950 dark:text-orange-200 text-xs sm:text-sm">
+                      <Shield className="h-5 w-5 text-orange-600 shrink-0" />
+                      <span>
+                        <strong>অর্ডার সম্পন্ন করতে সাইন ইন আবশ্যক:</strong> আপনি ঠিকানা পূরণ করতে পারেন, তবে অর্ডার চূড়ান্ত করার আগে গুগল দিয়ে সাইন ইন করতে হবে।
+                      </span>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => setShowAuthModal(true)}
+                      className="bg-orange-600 hover:bg-orange-700 text-white font-bold h-9 px-4 rounded-lg shrink-0 w-full sm:w-auto"
+                    >
+                      গুগল দিয়ে সাইন ইন
+                    </Button>
+                  </div>
+                )}
 
                 {/* STEP 1: SHIPPING & COUPON (Initial View) */}
                 {checkoutStep === "shipping" && (
@@ -1378,6 +1432,115 @@ export default function Checkout() {
                         )}
                       </CardContent>
                     </Card>
+
+                    {/* Loyalty Points Redemption Card */}
+                    {loyaltySettings?.enabled && (
+                      <Card className="border border-amber-500/30 bg-gradient-to-br from-amber-500/5 via-orange-500/5 to-transparent shadow-xs overflow-hidden">
+                        <CardHeader className="p-3.5 sm:p-4 pb-2 border-b border-amber-500/10">
+                          <CardTitle className="text-xs sm:text-sm font-bold flex items-center justify-between">
+                            <span className="flex items-center gap-1.5 text-amber-700 dark:text-amber-400">
+                              <Sparkles className="h-4 w-4" />
+                              লয়্যালটি পয়েন্টস রিওয়ার্ড (Loyalty Points)
+                            </span>
+                            {user && loyaltyAccount && (
+                              <Badge variant="outline" className="text-[10px] font-bold border-amber-500/40 text-amber-600 bg-amber-50 dark:bg-amber-950/40">
+                                ব্যালেন্স: {loyaltyAccount.points} ★
+                              </Badge>
+                            )}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-3.5 sm:p-4">
+                          {!user ? (
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                              <span>অর্ডারের সাথে পয়েন্ট আয় করতে এবং ছাড় পেতে লগইন করুন।</span>
+                              <Link to="/auth?redirect=/checkout" className="text-primary font-bold hover:underline shrink-0 ml-2">
+                                লগইন করুন
+                              </Link>
+                            </div>
+                          ) : !loyaltyAccount || loyaltyAccount.points < (loyaltySettings.minPointsToRedeem || 50) ? (
+                            <p className="text-xs text-muted-foreground">
+                              আপনার বর্তমান ব্যালেন্স {loyaltyAccount?.points || 0} পয়েন্ট। পয়েন্ট দিয়ে ছাড় পেতে ন্যূনতম {loyaltySettings.minPointsToRedeem || 50} পয়েন্ট প্রয়োজন।
+                            </p>
+                          ) : (
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-amber-500/20 shadow-2xs">
+                                <div className="space-y-0.5">
+                                  <p className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-1">
+                                    <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
+                                    {pointsToRedeem || maxRedeemablePoints} পয়েন্ট রিডিম করুন
+                                  </p>
+                                  <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                                    ≈ ৳{Math.round((pointsToRedeem || maxRedeemablePoints) * (loyaltySettings.pointValueInTaka || 0.5))} তাৎক্ষণিক ছাড়
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={useLoyaltyPoints}
+                                      onChange={(e) => setUseLoyaltyPoints(e.target.checked)}
+                                      className="sr-only peer"
+                                    />
+                                    <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                                  </label>
+                                </div>
+                              </div>
+                              {useLoyaltyPoints && (
+                                <p className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
+                                  <CheckCircle className="h-3.5 w-3.5" /> সর্বমোট বিল থেকে ৳{loyaltyDiscount} ছাড় সক্রিয় করা হয়েছে!
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Wallet & Cashback Balance Payment Card */}
+                    {user && userWalletBalance > 0 && (
+                      <Card className="border border-emerald-500/30 bg-gradient-to-br from-emerald-500/5 via-teal-500/5 to-transparent shadow-xs overflow-hidden">
+                        <CardHeader className="p-3.5 sm:p-4 pb-2 border-b border-emerald-500/10">
+                          <CardTitle className="text-xs sm:text-sm font-bold flex items-center justify-between">
+                            <span className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
+                              <Coins className="h-4 w-4" />
+                              ওয়ালেট ও ক্যাশব্যাক ব্যালেন্স ব্যবহার করুন
+                            </span>
+                            <Badge variant="outline" className="text-[10px] font-bold border-emerald-500/40 text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40">
+                              ব্যালেন্স: ৳{userWalletBalance.toLocaleString()}
+                            </Badge>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-3.5 sm:p-4">
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-emerald-500/20 shadow-2xs">
+                              <div className="space-y-0.5">
+                                <p className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-1">
+                                  <WalletIcon className="h-3.5 w-3.5 text-emerald-600" />
+                                  ৳{walletDiscount || Math.min(userWalletBalance, netBeforeWallet)} ওয়ালেট থেকে পরিশোধ করুন
+                                </p>
+                                <p className="text-[11px] text-muted-foreground">
+                                  ক্যাশব্যাক ও ডিপোজিট ব্যালেন্স সরাসরি অর্ডারের বিল থেকে কাটা হবে
+                                </p>
+                              </div>
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={useWalletBalance}
+                                  onChange={(e) => setUseWalletBalance(e.target.checked)}
+                                  className="sr-only peer"
+                                />
+                                <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                              </label>
+                            </div>
+                            {useWalletBalance && (
+                              <p className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
+                                <CheckCircle className="h-3.5 w-3.5" /> ওয়ালেট থেকে ৳{walletDiscount} পরিশোধ সক্রিয় করা হয়েছে!
+                              </p>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
                   </>
                 )}
 
@@ -1699,6 +1862,24 @@ export default function Checkout() {
                           <span>-৳{referralDiscount.toLocaleString()}</span>
                         </div>
                       )}
+                      {loyaltyDiscount > 0 && (
+                        <div className="flex justify-between text-amber-600 font-semibold">
+                          <span className="flex items-center gap-1">
+                            <Sparkles className="h-3 w-3" />
+                            লয়্যালটি পয়েন্ট ছাড় ({pointsToRedeem}★):
+                          </span>
+                          <span>-৳{loyaltyDiscount.toLocaleString()}</span>
+                        </div>
+                      )}
+                      {walletDiscount > 0 && (
+                        <div className="flex justify-between text-emerald-600 font-semibold">
+                          <span className="flex items-center gap-1">
+                            <WalletIcon className="h-3 w-3" />
+                            ওয়ালেট/ক্যাশব্যাক পেমেন্ট:
+                          </span>
+                          <span>-৳{walletDiscount.toLocaleString()}</span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="border-t border-border/60 pt-3 flex justify-between items-baseline">
@@ -1775,6 +1956,11 @@ export default function Checkout() {
             </div>
           </form>
         </div>
+
+        <CustomerAuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+        />
       </main>
       <Footer />
     </div>

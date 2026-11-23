@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { getProductImageCandidates, getResponsiveImageSrcSet, generateProductSvgPlaceholder, globalFailedImageUrls, KNOWN_DEAD_ORIGIN_URLS, getDirectImageUrl } from "@/utils/productImageHelper";
 import { cn } from "@/lib/utils";
 
@@ -59,7 +59,42 @@ export const SafeProductImage: React.FC<SafeProductImageProps> = ({
     return globalLoadedImageUrls.has(currentSrc);
   });
 
-  const imgRef = useRef<HTMLImageElement>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+
+  // Advance candidate cleanly through React state skipping known dead URLs
+  const advanceCandidate = useCallback(() => {
+    let nextIdx = candidateIdx + 1;
+    while (
+      nextIdx < candidates.length &&
+      (globalFailedImageUrls.has(candidates[nextIdx]) || KNOWN_DEAD_ORIGIN_URLS.has(candidates[nextIdx]))
+    ) {
+      nextIdx++;
+    }
+
+    if (nextIdx < candidates.length) {
+      setCandidateIdx(nextIdx);
+      const nextSrc = candidates[nextIdx];
+      if (nextSrc && (globalLoadedImageUrls.has(nextSrc) || nextSrc.startsWith("data:"))) {
+        setIsLoaded(true);
+      } else {
+        setIsLoaded(false);
+      }
+    } else {
+      // Final fallback reached, guarantee display of clean SVG placeholder
+      setCandidateIdx(candidates.length);
+      setIsLoaded(true);
+    }
+  }, [candidateIdx, candidates]);
+
+  // Callback ref to instantly detect cached / immediately decoded images
+  const setImgRef = useCallback((node: HTMLImageElement | null) => {
+    imgRef.current = node;
+    if (node && node.complete && node.naturalWidth > 1) {
+      setIsLoaded(true);
+      if (currentSrc) globalLoadedImageUrls.add(currentSrc);
+      onImageLoaded?.();
+    }
+  }, [currentSrc, onImageLoaded]);
 
   // Sync state ONLY when product actually changes (prevents re-render flashing loops)
   useEffect(() => {
@@ -75,30 +110,6 @@ export const SafeProductImage: React.FC<SafeProductImageProps> = ({
     }
   }, [prodKey, candidates]);
 
-  // Advance candidate cleanly through React state skipping known dead URLs
-  const advanceCandidate = () => {
-    setIsLoaded(false);
-    let nextIdx = candidateIdx + 1;
-    while (
-      nextIdx < candidates.length &&
-      (globalFailedImageUrls.has(candidates[nextIdx]) || KNOWN_DEAD_ORIGIN_URLS.has(candidates[nextIdx]))
-    ) {
-      nextIdx++;
-    }
-
-    if (nextIdx < candidates.length) {
-      setCandidateIdx(nextIdx);
-      const nextSrc = candidates[nextIdx];
-      if (nextSrc && (globalLoadedImageUrls.has(nextSrc) || nextSrc.startsWith("data:"))) {
-        setIsLoaded(true);
-      }
-    } else {
-      // Final fallback reached, guarantee display of clean SVG placeholder
-      setCandidateIdx(candidates.length);
-      setIsLoaded(true);
-    }
-  };
-
   // Immediate check if browser already finished loading image (cached in memory/disk)
   useEffect(() => {
     const img = imgRef.current;
@@ -109,23 +120,13 @@ export const SafeProductImage: React.FC<SafeProductImageProps> = ({
       return;
     }
 
-    if (img.complete && img.naturalWidth > 0) {
+    if (img.complete && img.naturalWidth > 1) {
       setIsLoaded(true);
       globalLoadedImageUrls.add(currentSrc);
       onImageLoaded?.();
     }
-  }, [currentSrc]);
+  }, [currentSrc, onImageLoaded]);
 
-  // Fast safety watchdog: if image doesn't complete within 1200ms, advance candidate immediately
-  useEffect(() => {
-    if (isLoaded) return;
-    const timer = setTimeout(() => {
-      if (!isLoaded) {
-        advanceCandidate();
-      }
-    }, 1200);
-    return () => clearTimeout(timer);
-  }, [currentSrc, isLoaded, candidateIdx]);
 
 
   // Responsive srcset for dynamic CDNs (Unsplash, wsrv.nl)
@@ -140,25 +141,30 @@ export const SafeProductImage: React.FC<SafeProductImageProps> = ({
       return set && set.trim().length > 0 ? set.trim() : undefined;
     }
     return undefined;
-  }, [candidateIdx, currentSrc]);
+  }, [currentSrc]);
 
   const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    if (e.currentTarget) {
-      e.currentTarget.removeAttribute("srcset");
+    const imgEl = e.currentTarget;
+    if (imgEl) {
+      imgEl.removeAttribute("srcset");
     }
     if (currentSrc && !currentSrc.startsWith("data:")) {
       globalFailedImageUrls.add(currentSrc);
-      const direct = getDirectImageUrl(currentSrc);
-      if (direct) globalFailedImageUrls.add(direct);
     }
     if (currentSrc.startsWith("data:")) {
       setIsLoaded(true);
       return;
     }
+
     advanceCandidate();
   };
 
-  const handleLoad = () => {
+  const handleLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    if (img && (img.naturalWidth <= 1 || img.naturalHeight <= 1)) {
+      handleError(e);
+      return;
+    }
     setIsLoaded(true);
     if (currentSrc) globalLoadedImageUrls.add(currentSrc);
     onImageLoaded?.();
@@ -166,13 +172,13 @@ export const SafeProductImage: React.FC<SafeProductImageProps> = ({
 
   return (
     <div className={cn("relative w-full h-full overflow-hidden flex items-center justify-center bg-slate-50 dark:bg-slate-900/40", containerClassName)}>
-      {/* Clean high-end shimmering skeleton placeholder while loading */}
+      {/* High-end shimmering skeleton placeholder while loading */}
       {!isLoaded && (
         <div className="absolute inset-0 bg-slate-100 dark:bg-slate-800/60 skeleton-shimmer pointer-events-none z-0" />
       )}
       <img
-        ref={imgRef}
-        key={`${product?.id || ''}-${candidateIdx}-${currentSrc}`}
+        ref={setImgRef}
+        key={`${prodKey}-${candidateIdx}`}
         src={currentSrc}
         srcSet={imageSrcSet || undefined}
         sizes={sizes}
@@ -182,7 +188,7 @@ export const SafeProductImage: React.FC<SafeProductImageProps> = ({
         title={product?.name}
         draggable={draggable}
         loading={priority ? "eager" : "lazy"}
-        {...({ fetchpriority: priority ? "high" : "auto" } as any)}
+        referrerPolicy="no-referrer"
         decoding="async"
         onLoad={handleLoad}
         onError={handleError}

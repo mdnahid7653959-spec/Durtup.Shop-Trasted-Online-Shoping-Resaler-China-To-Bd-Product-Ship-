@@ -137,76 +137,8 @@ export default function CategoryPage() {
     };
   }, [loadNextBatch, visibleCount, products.length]);
 
-  // Subcategory Water Droplet Sliding State (সাব-ক্যাটাগরি পানির ফোঁটা মুভমেন্ট)
+  // Subcategory Navigation Container Ref
   const subScrollRef = useRef<HTMLDivElement | null>(null);
-  const [subDropletStyle, setSubDropletStyle] = useState<{ left: number; top: number; width: number; height: number; opacity: number }>({
-    left: 0,
-    top: 0,
-    width: 0,
-    height: 0,
-    opacity: 0,
-  });
-  const [isSubDropletSliding, setIsSubDropletSliding] = useState(false);
-  const [subDropletSlideDir, setSubDropletSlideDir] = useState<"left" | "right" | "none">("none");
-  const prevSubLeftRef = useRef<number | null>(null);
-
-  // Exact Subcategory Droplet Calculation
-  const updateSubDroplet = useCallback((instant = false) => {
-    const container = subScrollRef.current;
-    if (!container) return;
-    const activeBtn = container.querySelector<HTMLElement>("[data-subactive='true']");
-    if (!activeBtn) {
-      setSubDropletStyle(prev => ({ ...prev, opacity: 0 }));
-      return;
-    }
-
-    const containerRect = container.getBoundingClientRect();
-    const activeRect = activeBtn.getBoundingClientRect();
-
-    const elLeft = activeRect.left - containerRect.left + container.scrollLeft;
-    const elTop = activeRect.top - containerRect.top + container.scrollTop;
-    const elWidth = activeRect.width;
-    const elHeight = activeRect.height;
-
-    if (prevSubLeftRef.current !== null && Math.abs(prevSubLeftRef.current - elLeft) > 2 && !instant) {
-      const dir = elLeft > prevSubLeftRef.current ? "right" : "left";
-      setSubDropletSlideDir(dir);
-      setIsSubDropletSliding(true);
-      setTimeout(() => {
-        setIsSubDropletSliding(false);
-        setSubDropletSlideDir("none");
-      }, 200);
-    }
-    prevSubLeftRef.current = elLeft;
-
-    setSubDropletStyle({
-      left: elLeft,
-      top: elTop,
-      width: elWidth,
-      height: elHeight,
-      opacity: 1,
-    });
-  }, []);
-
-  useLayoutEffect(() => {
-    updateSubDroplet(true);
-    const frame = requestAnimationFrame(() => {
-      updateSubDroplet(true);
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [slug, subcategoryParam, updateSubDroplet]);
-
-  useEffect(() => {
-    const el = subScrollRef.current;
-    if (!el) return;
-
-    const handleResize = () => {
-      updateSubDroplet(true);
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [updateSubDroplet]);
 
   // Auto-scroll active subcategory into view
   useEffect(() => {
@@ -263,40 +195,12 @@ export default function CategoryPage() {
     };
   }, [filterKey, formattedName]);
 
-  // Instant subcategory switch with zero lag and instant water droplet glide
-  const handleSubcategorySelect = (subSlug: string, event?: React.MouseEvent) => {
+  // Instant subcategory switch with zero lag
+  const handleSubcategorySelect = (subSlug: string) => {
     const newFilterKey = subSlug || slug || "";
     const syncList = getSyncProducts();
     const instantList = filterProductsByCategory(syncList, newFilterKey, formattedName);
     setProducts(instantList);
-
-    // Instant droplet position calculation
-    if (event && subScrollRef.current) {
-      const clickedBtn = event.currentTarget as HTMLElement;
-      const containerRect = subScrollRef.current.getBoundingClientRect();
-      const activeRect = clickedBtn.getBoundingClientRect();
-      const elLeft = activeRect.left - containerRect.left + subScrollRef.current.scrollLeft;
-      const elTop = activeRect.top - containerRect.top + subScrollRef.current.scrollTop;
-
-      if (prevSubLeftRef.current !== null && Math.abs(prevSubLeftRef.current - elLeft) > 2) {
-        const dir = elLeft > prevSubLeftRef.current ? "right" : "left";
-        setSubDropletSlideDir(dir);
-        setIsSubDropletSliding(true);
-        setTimeout(() => {
-          setIsSubDropletSliding(false);
-          setSubDropletSlideDir("none");
-        }, 200);
-      }
-      prevSubLeftRef.current = elLeft;
-
-      setSubDropletStyle({
-        left: elLeft,
-        top: elTop,
-        width: activeRect.width,
-        height: activeRect.height,
-        opacity: 1,
-      });
-    }
 
     // Update URL search params
     if (!subSlug) {
@@ -334,77 +238,30 @@ export default function CategoryPage() {
 
       <main className="flex-1 pb-20 md:pb-0">
         <div className="px-3 sm:container py-2.5 sm:py-4">
-          {/* Subcategory Pills Row with Water Droplet Theme */}
+          {/* Subcategory Pills Navigation Track (Clean, Unslop UI) */}
           {mainCat && mainCat.subcategories.length > 0 && (
-            <div className="mb-3 sm:mb-4 select-none">
+            <div className="mb-4 select-none">
               <div
                 ref={subScrollRef}
                 className={cn(
-                  "relative flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none py-1 px-1.5 rounded-[24px]",
-                  "bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl backdrop-saturate-150",
-                  "border border-slate-200/90 dark:border-slate-800",
-                  "shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08),0_2px_6px_-2px_rgba(0,0,0,0.03)]",
-                  "dark:shadow-[0_6px_24px_-4px_rgba(0,0,0,0.5)]"
+                  "flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none py-1.5 px-2 rounded-2xl",
+                  "bg-white/95 dark:bg-slate-900/95 backdrop-blur-md",
+                  "border border-slate-200/90 dark:border-slate-800 shadow-2xs"
                 )}
                 style={{ WebkitOverflowScrolling: "touch" }}
               >
-                {/* Specular gloss top reflection beam */}
-                <div className="absolute inset-x-8 top-0 h-[1px] bg-gradient-to-r from-transparent via-white dark:via-white/30 to-transparent pointer-events-none opacity-90" />
-
-                {/* ── Single Hyper-Realistic 3D Sliding Water Droplet ── */}
-                {subDropletStyle.opacity > 0 && (
-                  <div
-                    className={cn(
-                      "absolute pointer-events-none z-0",
-                      "transition-all duration-200 ease-out"
-                    )}
-                    style={{
-                      left: `${subDropletStyle.left}px`,
-                      top: `${subDropletStyle.top}px`,
-                      width: `${subDropletStyle.width}px`,
-                      height: `${subDropletStyle.height}px`,
-                    }}
-                  >
-                    <div
-                      className={cn(
-                        "w-full h-full p-0.5 transition-transform duration-150",
-                        isSubDropletSliding && subDropletSlideDir === "right" && "scale-x-[1.12] scale-y-[0.90] origin-left",
-                        isSubDropletSliding && subDropletSlideDir === "left" && "scale-x-[1.12] scale-y-[0.90] origin-right",
-                        !isSubDropletSliding && "scale-100"
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          "w-full h-full rounded-full relative overflow-hidden",
-                          "bg-gradient-to-b from-white/95 via-white/45 to-white/75",
-                          "dark:from-white/35 dark:via-white/12 dark:to-white/30",
-                          "backdrop-blur-md",
-                          "border border-white/95 dark:border-white/60",
-                          "shadow-[0_6px_20px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.05),inset_0_3.5px_6px_rgba(255,255,255,1),inset_0_-2.5px_5px_rgba(0,0,0,0.06),inset_0_0_15px_rgba(255,255,255,0.9)]",
-                          "dark:shadow-[0_6px_22px_rgba(0,0,0,0.55),inset_0_3.5px_6px_rgba(255,255,255,0.5),inset_0_-2.5px_5px_rgba(0,0,0,0.3),inset_0_0_15px_rgba(255,255,255,0.25)]"
-                        )}
-                      >
-                        {/* Glare & sparkle */}
-                        <div className="absolute top-0.5 left-2.5 w-6 h-[2px] bg-gradient-to-r from-white via-white to-white/70 rounded-full blur-[0.15px] shadow-[0_0_4px_rgba(255,255,255,1)]" />
-                        <div className="absolute top-1 right-2.5 w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_4px_#ffffff,0_0_2px_#ffffff]" />
-                        <div className="absolute bottom-0.5 inset-x-2 h-[1.5px] bg-gradient-to-r from-transparent via-white to-transparent rounded-full blur-[0.3px] shadow-[0_0_4px_rgba(255,255,255,0.95)]" />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
                 {/* "All [Category]" Button */}
                 <button
-                  onClick={(e) => handleSubcategorySelect("", e)}
+                  onClick={() => handleSubcategorySelect("")}
                   data-subactive={!subcategoryParam}
                   className={cn(
-                    "relative z-10 px-4 sm:px-5 py-1.5 text-xs sm:text-sm rounded-full transition-colors duration-200 shrink-0 whitespace-nowrap select-none",
+                    "px-3.5 sm:px-4 py-1.5 text-xs sm:text-sm rounded-xl transition-all duration-150 shrink-0 whitespace-nowrap select-none font-semibold cursor-pointer",
                     !subcategoryParam
-                      ? "text-slate-950 dark:text-white font-extrabold"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium"
+                      ? "bg-orange-600 text-white shadow-2xs"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
                   )}
                 >
-                  <span>All {mainCat.name}</span>
+                  All {mainCat.name}
                 </button>
 
                 {/* Subcategories Buttons */}
@@ -413,20 +270,19 @@ export default function CategoryPage() {
                   return (
                     <button
                       key={sub.id}
-                      onClick={(e) => handleSubcategorySelect(sub.slug, e)}
+                      onClick={() => handleSubcategorySelect(sub.slug)}
                       data-subactive={isSelected}
                       className={cn(
-                        "relative z-10 px-3.5 sm:px-4 py-1.5 text-xs sm:text-sm rounded-full transition-colors duration-200 shrink-0 whitespace-nowrap select-none",
+                        "px-3 sm:px-3.5 py-1.5 text-xs sm:text-sm rounded-xl transition-all duration-150 shrink-0 whitespace-nowrap select-none font-medium cursor-pointer",
                         isSelected
-                          ? "text-slate-950 dark:text-white font-extrabold"
-                          : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium"
+                          ? "bg-orange-600 text-white font-semibold shadow-2xs"
+                          : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
                       )}
                     >
-                      <span>{sub.name}</span>
+                      {sub.name}
                     </button>
                   );
                 })}
-
               </div>
             </div>
           )}

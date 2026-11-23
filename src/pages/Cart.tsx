@@ -11,7 +11,8 @@ import { useCJCart } from "@/hooks/useCJCart";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { getCategoryFallbackImage } from "@/utils/productImageHelper";
+import { getCategoryFallbackImage, getDirectImageUrl } from "@/utils/productImageHelper";
+import { CustomerAuthModal } from "@/components/auth/CustomerAuthModal";
 
 export default function Cart() {
   const navigate = useNavigate();
@@ -20,8 +21,13 @@ export default function Cart() {
   const { items: cjItems, loading: cjLoading, subtotal: cjSubtotal, updateQuantity: updateCJQuantity, removeItem: removeCJItem } = useCJCart();
   const { toast } = useToast();
   const [couponCode, setCouponCode] = useState("");
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const handleProceedToCheckout = () => {
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
     const code = couponCode.trim().toUpperCase();
     if (code) {
       try {
@@ -352,6 +358,23 @@ export default function Cart() {
             </Button>
           </div>
         </div>
+
+        <CustomerAuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          onSuccess={() => {
+            setShowAuthModal(false);
+            const code = couponCode.trim().toUpperCase();
+            if (code) {
+              try {
+                sessionStorage.setItem("durtup_pending_coupon", code);
+              } catch {}
+              navigate(`/checkout?coupon=${encodeURIComponent(code)}`);
+            } else {
+              navigate("/checkout");
+            }
+          }}
+        />
       </main>
       <Footer />
     </div>

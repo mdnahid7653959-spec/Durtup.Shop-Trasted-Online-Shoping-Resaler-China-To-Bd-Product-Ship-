@@ -8,6 +8,27 @@ import { FAST_SEED_PRODUCTS } from "@/data/fastSeedCatalog";
 
 const BATCH_SIZE = 18;
 
+function deduplicateProductsStrict(items: Product[]): Product[] {
+  const seen = new Set<string>();
+  const res: Product[] = [];
+  for (const item of items) {
+    if (!item) continue;
+    const nameKey = (item.name || "").trim().toLowerCase();
+    const idKey = String(item.id || "").trim().toLowerCase();
+    const slugKey = String(item.slug || "").trim().toLowerCase();
+    
+    if (idKey && seen.has(`id:${idKey}`)) continue;
+    if (slugKey && seen.has(`slug:${slugKey}`)) continue;
+    if (nameKey && seen.has(`name:${nameKey}`)) continue;
+    
+    if (idKey) seen.add(`id:${idKey}`);
+    if (slugKey) seen.add(`slug:${slugKey}`);
+    if (nameKey) seen.add(`name:${nameKey}`);
+    res.push(item);
+  }
+  return res;
+}
+
 // Keep catalog & loaded products in memory so returning from product details restores immediately without re-fetch flash
 let cachedFeedAllCatalog: Product[] = [];
 let cachedFeedDisplayedProducts: Product[] = [];
@@ -20,20 +41,23 @@ export function InfiniteProductFeed() {
     if (cachedFeedAllCatalog.length > 0) return cachedFeedAllCatalog;
     const sync = getSyncProducts();
     if (sync && sync.length > 10) {
-      cachedFeedAllCatalog = sync;
-      return sync;
+      const deduped = deduplicateProductsStrict(sync);
+      cachedFeedAllCatalog = deduped;
+      return deduped;
     }
-    return FAST_SEED_PRODUCTS;
+    const deduped = deduplicateProductsStrict(FAST_SEED_PRODUCTS);
+    return deduped;
   });
   const [displayedProducts, setDisplayedProducts] = useState<Product[]>(() => {
     if (cachedFeedDisplayedProducts.length > 0) return cachedFeedDisplayedProducts;
     const sync = getSyncProducts();
     if (sync && sync.length > 10) {
-      const batch = sync.slice(0, BATCH_SIZE);
+      const batch = deduplicateProductsStrict(sync).slice(0, BATCH_SIZE);
       cachedFeedDisplayedProducts = batch;
       return batch;
     }
-    return FAST_SEED_PRODUCTS.slice(0, BATCH_SIZE);
+    const batch = deduplicateProductsStrict(FAST_SEED_PRODUCTS).slice(0, BATCH_SIZE);
+    return batch;
   });
   const [page, setPage] = useState(() => cachedFeedPage);
   const [hasMore, setHasMore] = useState(() => cachedFeedHasMore);
@@ -104,7 +128,7 @@ export function InfiniteProductFeed() {
           getCachedMohasagorProducts().catch(() => []),
           EcomsellerEngine.getCachedEcomsellerProducts().catch(() => []),
         ]);
-        const products = interleaveCatalogs(mohasagor, ecomseller);
+        const products = deduplicateProductsStrict(interleaveCatalogs(mohasagor, ecomseller));
         if (products && products.length > 0) {
           setAllCatalog(products);
           cachedFeedAllCatalog = products;
@@ -143,15 +167,16 @@ export function InfiniteProductFeed() {
         getCachedMohasagorProducts().catch(() => []),
         EcomsellerEngine.getCachedEcomsellerProducts().catch(() => []),
       ]);
-      const products = interleaveCatalogs(mohasagor, ecomseller);
+      const products = deduplicateProductsStrict(interleaveCatalogs(mohasagor, ecomseller));
       if (products && products.length > 0) {
         const timeBlock = Math.floor(Date.now() / (5 * 60 * 1000));
         const shift = (timeBlock * BATCH_SIZE) % products.length;
         const rotated = [...products.slice(shift), ...products.slice(0, shift)];
-        setAllCatalog(rotated);
-        setDisplayedProducts(rotated.slice(0, BATCH_SIZE));
+        const dedupedRotated = deduplicateProductsStrict(rotated);
+        setAllCatalog(dedupedRotated);
+        setDisplayedProducts(dedupedRotated.slice(0, BATCH_SIZE));
         setPage(1);
-        setHasMore(rotated.length > BATCH_SIZE);
+        setHasMore(dedupedRotated.length > BATCH_SIZE);
       }
     }, 5 * 60 * 1000);
 
@@ -161,7 +186,7 @@ export function InfiniteProductFeed() {
         getCachedMohasagorProducts().catch(() => []),
         EcomsellerEngine.getCachedEcomsellerProducts().catch(() => []),
       ]);
-      const updated = interleaveCatalogs(mohasagor, ecomseller);
+      const updated = deduplicateProductsStrict(interleaveCatalogs(mohasagor, ecomseller));
       if (updated && updated.length > 0) {
         setAllCatalog(updated);
         setDisplayedProducts((prev) => {
@@ -185,7 +210,7 @@ export function InfiniteProductFeed() {
   const loadNextBatch = () => {
     if (!hasMore || allCatalog.length === 0) return;
     const nextPage = page + 1;
-    const nextBatch = allCatalog.slice(0, nextPage * BATCH_SIZE);
+    const nextBatch = deduplicateProductsStrict(allCatalog.slice(0, nextPage * BATCH_SIZE));
     const more = nextBatch.length < allCatalog.length;
 
     setDisplayedProducts(nextBatch);
@@ -195,6 +220,9 @@ export function InfiniteProductFeed() {
     cachedFeedDisplayedProducts = nextBatch;
     cachedFeedPage = nextPage;
     cachedFeedHasMore = more;
+
+    // Pre-warm next batch of images ahead of time
+    prefetchProductImages(nextBatch.slice((nextPage - 1) * BATCH_SIZE, nextPage * BATCH_SIZE + 12));
   };
 
   // IntersectionObserver for Infinite Scroll with large 1000px look-ahead

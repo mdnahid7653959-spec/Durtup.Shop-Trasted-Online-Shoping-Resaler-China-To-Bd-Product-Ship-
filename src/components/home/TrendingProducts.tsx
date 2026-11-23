@@ -4,6 +4,7 @@ import { supabase } from "@/lib/firebaseAdapter";
 import { ProductCard, type Product } from "@/components/products/ProductCard";
 import { getSmartProductImage } from "@/utils/productImageHelper";
 import { ChevronRight, TrendingUp } from "lucide-react";
+import { HybridApiClient } from "@/services/api/hybridApiClient";
 
 export function TrendingProducts() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -11,53 +12,81 @@ export function TrendingProducts() {
 
   useEffect(() => {
     async function fetchProducts() {
-      const { data, error } = await supabase
-        .from("products")
-        .select(`
-          id,
-          name,
-          slug,
-          regular_price,
-          discount_price,
-          rating_average,
-          rating_count,
-          sold_count,
-          free_shipping,
-          is_best_seller,
-          product_images (
-            image_url,
-            is_primary
-          )
-        `)
-        .eq("status", "active")
-        .order("sold_count", { ascending: false })
-        .limit(6);
+      try {
+        const { data, error } = await supabase
+          .from("products")
+          .select(`
+            id,
+            name,
+            slug,
+            regular_price,
+            discount_price,
+            rating_average,
+            rating_count,
+            sold_count,
+            free_shipping,
+            is_best_seller,
+            product_images (
+              image_url,
+              is_primary
+            )
+          `)
+          .eq("status", "active")
+          .order("sold_count", { ascending: false })
+          .limit(6);
 
-      if (error) {
-        console.error("Error fetching products:", error);
-      } else if (data) {
-        const mappedProducts: Product[] = (data as any[]).map((p, i) => {
-          const primaryImage = p.product_images?.find((img: any) => img.is_primary)?.image_url;
-          const firstImage = p.product_images?.[0]?.image_url;
-          const image = getSmartProductImage(p.name, primaryImage || firstImage, "", i);
+        if (!error && data && data.length > 0) {
+          const mappedProducts: Product[] = (data as any[]).map((p, i) => {
+            const primaryImage = p.product_images?.find((img: any) => img.is_primary)?.image_url;
+            const firstImage = p.product_images?.[0]?.image_url;
+            const image = getSmartProductImage(p.name, primaryImage || firstImage, "", i);
 
-          return {
+            return {
+              id: p.id,
+              name: p.name,
+              slug: p.slug,
+              image,
+              price: p.discount_price || p.regular_price,
+              originalPrice: p.discount_price ? p.regular_price : undefined,
+              rating: Number(p.rating_average) || 4.5,
+              reviews: p.rating_count || 100,
+              sold: p.sold_count || 500,
+              freeShipping: p.free_shipping || false,
+              isBestSeller: true,
+            };
+          });
+          setProducts(mappedProducts);
+          setLoading(false);
+          return;
+        }
+      } catch (err) {
+        console.warn("Supabase fetch failed, falling back to hybrid Redis API:", err);
+      }
+
+      // Fast Hybrid Laravel & Redis API Fallback
+      try {
+        const hybridItems = await HybridApiClient.getFeaturedProducts(6);
+        if (hybridItems && hybridItems.length > 0) {
+          const mapped: Product[] = hybridItems.map((p, i) => ({
             id: p.id,
             name: p.name,
             slug: p.slug,
-            image,
-            price: p.discount_price || p.regular_price,
-            originalPrice: p.discount_price ? p.regular_price : undefined,
-            rating: Number(p.rating_average) || 4.5,
-            reviews: p.rating_count || 100,
-            sold: p.sold_count || 500,
-            freeShipping: p.free_shipping || false,
+            image: getSmartProductImage(p.name, p.image, "", i),
+            price: p.selling_price || p.discount_price || p.regular_price || 0,
+            originalPrice: p.regular_price && p.regular_price > p.selling_price ? p.regular_price : undefined,
+            rating: p.rating || 4.8,
+            reviews: p.reviews_count || 25,
+            sold: p.sold_count || 65,
+            freeShipping: p.free_shipping ?? true,
             isBestSeller: true,
-          };
-        });
-        setProducts(mappedProducts);
+          }));
+          setProducts(mapped);
+        }
+      } catch (fallbackErr) {
+        console.error("Hybrid API fallback failed:", fallbackErr);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
     fetchProducts();
   }, []);

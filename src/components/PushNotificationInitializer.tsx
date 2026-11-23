@@ -1,51 +1,68 @@
-import React, { useEffect } from 'react';
-import { db } from '@/integrations/firebase/client';
+import React, { useEffect, useRef } from 'react';
+import { db, getFirebaseMessaging } from '@/integrations/firebase/client';
 import { collection, query, orderBy, limit, onSnapshot, doc, setDoc } from 'firebase/firestore';
 import { sendBrowserNotification, playNewOrderSound, unlockAudio } from '@/hooks/useAdminOrderNotifications';
+import { getOrGenerateFCMToken } from '@/services/notificationService';
+import { useAuth } from '@/contexts/AuthContext';
+import { onMessage } from 'firebase/messaging';
 import { Capacitor } from '@capacitor/core';
 
 export const PushNotificationInitializer: React.FC = () => {
-  // 1. Register Service Worker & Save Device Token to Firestore + Auto-request native permission on user gesture
+  const { user } = useAuth();
+  const registeredTokenRef = useRef<string | null>(null);
+
+  // 1. Register Service Workers & Obtain Real FCM Token
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Register Service Worker for Mobile Notifications
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch((err) => {
-        console.warn('[PushNotificationInitializer] Service worker register warning:', err);
-      });
-    }
+    let isMounted = true;
 
-    const registerDeviceToken = async () => {
-      try {
-        let deviceId = localStorage.getItem('durtup_device_id');
-        if (!deviceId) {
-          deviceId = 'dev_' + Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
-          localStorage.setItem('durtup_device_id', deviceId);
+    const setupPushServices = async () => {
+      // Register standard application service worker
+      if ('serviceWorker' in navigator) {
+        try {
+          await navigator.serviceWorker.register('/sw.js');
+        } catch (swErr) {
+          console.warn('[PushNotificationInitializer] Service worker register warning:', swErr);
         }
+      }
 
-        const ua = navigator.userAgent;
-        let platform: 'android' | 'ios' | 'web' = 'web';
-        if (/android/i.test(ua)) platform = 'android';
-        else if (/iphone|ipad|ipod/i.test(ua)) platform = 'ios';
-
-        const tokenDocRef = doc(db, 'push_tokens', deviceId);
-        await setDoc(tokenDocRef, {
-          id: deviceId,
-          token: deviceId,
-          platform: platform,
-          is_active: true,
-          permission: 'Notification' in window ? Notification.permission : 'unsupported',
-          user_agent: ua,
-          last_seen: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }, { merge: true });
+      // Generate or retrieve FCM token & sync to Firestore
+      try {
+        const token = await getOrGenerateFCMToken(user?.id, user?.email || undefined);
+        if (isMounted && token) {
+          registeredTokenRef.current = token;
+        }
       } catch (err) {
-        console.warn('[PushNotificationInitializer] Device registration warning:', err);
+        console.warn('[PushNotificationInitializer] Token sync notice:', err);
+      }
+
+      // Initialize Firebase Cloud Messaging Foreground Listener
+      try {
+        const messaging = await getFirebaseMessaging();
+        if (messaging && isMounted) {
+          onMessage(messaging, (payload) => {
+            console.log('[PushNotificationInitializer] Foreground FCM payload received:', payload);
+            playNewOrderSound();
+
+            const title = payload.notification?.title || payload.data?.title || '🛍️ Durtup.shop';
+            const body = payload.notification?.body || payload.data?.body || payload.data?.message || '';
+            const image = payload.notification?.image || payload.data?.image || payload.data?.image_url;
+            const targetUrl = payload.data?.url || payload.data?.action_url || '/';
+
+            sendBrowserNotification(title, {
+              body,
+              product_image: image,
+              data: { url: targetUrl, ...payload.data }
+            });
+          });
+        }
+      } catch (fcmErr) {
+        console.warn('[PushNotificationInitializer] FCM foreground listener warning:', fcmErr);
       }
     };
 
-    registerDeviceToken();
+    setupPushServices();
 
     // If native Capacitor app, register push notifications channel
     if (Capacitor.isNativePlatform() && Capacitor.isPluginAvailable('PushNotifications')) {
@@ -67,7 +84,7 @@ export const PushNotificationInitializer: React.FC = () => {
       }).catch(() => {});
     }
 
-    // Audio unlock on interaction without prompting push notifications
+    // Audio unlock on interaction
     const handleFirstInteraction = () => {
       unlockAudio();
     };
@@ -76,10 +93,11 @@ export const PushNotificationInitializer: React.FC = () => {
     window.addEventListener('touchstart', handleFirstInteraction, { once: true, passive: true });
 
     return () => {
+      isMounted = false;
       window.removeEventListener('click', handleFirstInteraction);
       window.removeEventListener('touchstart', handleFirstInteraction);
     };
-  }, []);
+  }, [user?.id, user?.email]);
 
   // 2. Real-time broadcast notification listener: delivers real OS / Browser push notifications
   useEffect(() => {
@@ -112,7 +130,7 @@ export const PushNotificationInitializer: React.FC = () => {
 
               // 📱 2. System Notification Shade (Native OS / Android / Web push notification)
               sendBrowserNotification(data.title || '🛍️ Durtup.shop Special Offer!', {
-                body: data.message || 'Check out the latest discounts and deals!',
+                body: data.message || data.body || 'Check out the latest discounts and deals!',
                 product_image: data.image_url || data.image || '/icon-512.png',
                 tag: `campaign-${campaignId}`,
                 data: {
@@ -120,7 +138,6 @@ export const PushNotificationInitializer: React.FC = () => {
                   campaign_id: campaignId
                 }
               });
-              // Note: No in-app floating banner is displayed. Notifications come strictly as original device/system notifications.
             }
           }
         });
@@ -134,9 +151,7 @@ export const PushNotificationInitializer: React.FC = () => {
     }
   }, []);
 
-  // No floating banner or in-app popup overlay is rendered on the screen
   return null;
 };
 
 export default PushNotificationInitializer;
-

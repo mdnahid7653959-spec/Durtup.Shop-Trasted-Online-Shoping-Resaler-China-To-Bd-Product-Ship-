@@ -1,11 +1,11 @@
 import { ReactNode, useState, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { 
-  LayoutDashboard, 
-  Package, 
-  ShoppingCart, 
-  Users, 
-  Tag, 
+import {
+  LayoutDashboard,
+  Package,
+  ShoppingCart,
+  Users,
+  Tag,
   Settings,
   LogOut,
   ChevronRight,
@@ -33,6 +33,7 @@ import {
   Link2,
   Search,
   Bot,
+  Coins,
   DownloadCloud,
   Share2,
   TrendingUp,
@@ -40,7 +41,11 @@ import {
   Activity,
   Globe,
   Sparkles,
-  ClipboardList
+  ClipboardList,
+  BellRing,
+  Zap,
+  TrendingDown,
+  HelpCircle
 } from "lucide-react";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
 import { Button } from "@/components/ui/button";
@@ -81,6 +86,8 @@ export const navSections: NavSection[] = [
     items: [
       { icon: Package, label: "Products", href: "/admin/products" },
       { icon: Warehouse, label: "Inventory", href: "/admin/inventory" },
+      { icon: BellRing, label: "Back in Stock Alerts", href: "/admin/back-in-stock", badge: "Restock", badgeColor: "bg-orange-500/20 text-orange-700 dark:text-orange-300" },
+      { icon: TrendingDown, label: "Price Drop Alerts", href: "/admin/price-alerts", badge: "Smart", badgeColor: "bg-blue-500/20 text-blue-700 dark:text-blue-300" },
       { icon: DollarSign, label: "Pricing Rules", href: "/admin/pricing", badge: "New", badgeColor: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" },
       { icon: Layers, label: "Categories", href: "/admin/categories" },
       { icon: Tag, label: "Brands", href: "/admin/brands" },
@@ -104,6 +111,7 @@ export const navSections: NavSection[] = [
       { icon: Link2, label: "Suppliers Hub", href: "/admin/suppliers" },
       { icon: Store, label: "Sellers", href: "/admin/sellers" },
       { icon: MessageSquare, label: "Reviews & Ratings", href: "/admin/reviews" },
+      { icon: HelpCircle, label: "Product Q&A", href: "/admin/product-qa" },
       { icon: MessageSquare, label: "Seller Support", href: "/admin/seller-support" },
     ],
   },
@@ -111,11 +119,15 @@ export const navSections: NavSection[] = [
     group: "Growth & Marketing",
     items: [
       { icon: Megaphone, label: "Marketing", href: "/admin/marketing" },
+      { icon: Zap, label: "Flash Sales", href: "/admin/flash-sale", badge: "Live", badgeColor: "bg-red-500/20 text-red-700 dark:text-red-300" },
       { icon: Percent, label: "Coupons & Discounts", href: "/admin/coupons" },
       { icon: TrendingUp, label: "Ads Manager", href: "/admin/ads", badge: "Pro", badgeColor: "bg-amber-500/20 text-amber-700 dark:text-amber-300" },
       { icon: Search, label: "Search Management", href: "/admin/search-management" },
       { icon: Globe, label: "SEO Management", href: "/admin/seo" },
       { icon: Gift, label: "Loyalty & Points", href: "/admin/loyalty" },
+      { icon: Coins, label: "Cashback Campaigns", href: "/admin/cashback" },
+      { icon: ShoppingCart, label: "Abandoned Carts", href: "/admin/abandoned-carts" },
+      { icon: Sparkles, label: "Smart Recommendations", href: "/admin/recommendations" },
     ],
   },
   {
@@ -172,9 +184,9 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
     <>
       <div className="p-4 border-b shrink-0 bg-card">
         <Link to="/" className="flex items-center gap-2.5" onClick={onItemClick}>
-          <img 
-            src="/durtup-logo.png" 
-            alt="Durtup.shop" 
+          <img
+            src="/durtup-logo.png"
+            alt="Durtup.shop"
             className="h-8 w-auto object-contain"
           />
           <div>
@@ -208,7 +220,7 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
             </p>
             <ul className="space-y-0.5">
               {section.items.map((item) => {
-                const isActive = location.pathname === item.href || 
+                const isActive = location.pathname === item.href ||
                   (item.href !== "/admin" && location.pathname.startsWith(item.href));
                 return (
                   <li key={item.href}>
@@ -268,10 +280,10 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
             Sign Out
           </Button>
           {canInstall && !isInstalled && (
-            <Button 
-              variant="default" 
-              size="sm" 
-              className="h-8 px-2 text-xs" 
+            <Button
+              variant="default"
+              size="sm"
+              className="h-8 px-2 text-xs"
               onClick={install}
               title="Install Desktop App"
             >
@@ -330,7 +342,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
             <span className="text-foreground font-semibold">{title}</span>
           </div>
           <div className="flex items-center gap-4">
-            <Link 
+            <Link
               to="/admin/ai-admin"
               className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-700 dark:text-purple-300 hover:bg-purple-500/20 font-medium transition-colors"
             >
@@ -338,8 +350,8 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
               AI Assistant
             </Link>
             <AdminNotificationBell />
-            <Link 
-              to="/" 
+            <Link
+              to="/"
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs text-primary hover:underline flex items-center gap-1 font-medium bg-primary/5 px-2.5 py-1 rounded-md border border-primary/20"
@@ -349,7 +361,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
             </Link>
           </div>
         </header>
-        
+
         {/* Page Content */}
         <main className="flex-1 p-4 sm:p-6 overflow-y-auto mt-14 lg:mt-0">
           {children}
