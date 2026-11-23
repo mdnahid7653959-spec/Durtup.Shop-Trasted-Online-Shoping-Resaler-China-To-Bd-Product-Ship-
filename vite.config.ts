@@ -326,6 +326,60 @@ function sigmaDevApiPlugin() {
           return;
         }
 
+        if (req.url && (req.url === "/api/telegram" || req.url === "/api/telegram-webhook" || req.url.startsWith("/api/telegram"))) {
+          if (req.method === "OPTIONS") {
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+            res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Telegram-Bot-Api-Secret-Token");
+            res.statusCode = 200;
+            return res.end();
+          }
+
+          if (req.method === "GET") {
+            res.setHeader("Content-Type", "application/json; charset=utf-8");
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            res.statusCode = 200;
+            return res.end(JSON.stringify({ status: "active", service: "Durtup Telegram Admin Control Webhook" }));
+          }
+
+          const bodyChunks: Buffer[] = [];
+          req.on("data", (chunk: any) => {
+            bodyChunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+          });
+
+          req.on("end", async () => {
+            try {
+              const rawBuffer = Buffer.concat(bodyChunks);
+              let bodyStr = rawBuffer.toString("utf8").trim();
+              if (bodyStr.charCodeAt(0) === 0xFEFF) bodyStr = bodyStr.slice(1);
+
+              let parsedBody: any = {};
+              if (bodyStr) {
+                try {
+                  parsedBody = JSON.parse(bodyStr);
+                } catch {
+                  parsedBody = {};
+                }
+              }
+
+              const { handleTelegramWebhookUpdate } = await server.ssrLoadModule("./src/server/telegramAdminEngine.ts");
+              const result = await handleTelegramWebhookUpdate(parsedBody);
+
+              res.setHeader("Content-Type", "application/json; charset=utf-8");
+              res.setHeader("Access-Control-Allow-Origin", "*");
+              res.statusCode = 200;
+              return res.end(JSON.stringify({ ok: true, handled: result.handled }));
+            } catch (err: any) {
+              console.error("[Telegram Dev API Error]:", err);
+              res.setHeader("Content-Type", "application/json; charset=utf-8");
+              res.setHeader("Access-Control-Allow-Origin", "*");
+              res.statusCode = 200;
+              return res.end(JSON.stringify({ ok: false, error: err.message }));
+            }
+          });
+          return;
+        }
+
         next();
       });
     }

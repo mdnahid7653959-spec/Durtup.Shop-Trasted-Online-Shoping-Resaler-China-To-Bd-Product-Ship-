@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   Sparkles,
   ShieldCheck,
+  ShieldAlert,
   Headphones,
   Star,
   ChevronRight
@@ -24,6 +25,7 @@ import { db } from "@/integrations/firebase/client";
 import { doc, getDoc, onSnapshot, setDoc, getDocs, collection } from "firebase/firestore";
 import { useAuth } from "@/contexts/AuthContext";
 import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,6 +69,7 @@ interface OrderItem {
 interface Order {
   id: string;
   order_number: string;
+  user_id?: string;
   status: string;
   payment_status: string;
   payment_method: string;
@@ -267,10 +270,11 @@ export default function OrderDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, loading: authLoading, isAdmin, isSeller } = useAuth();
   const { toast } = useToast();
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUnauthorized, setIsUnauthorized] = useState(false);
   const [copied, setCopied] = useState(false);
 
   // Return Request Modal State
@@ -285,8 +289,17 @@ export default function OrderDetail() {
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!id) return;
+
+    if (!user) {
+      setIsUnauthorized(true);
+      setOrder(null);
+      setIsLoading(false);
+      return;
+    }
+
     const fetchOrder = async () => {
-      if (!id) return;
       setIsLoading(true);
 
       try {
@@ -298,6 +311,22 @@ export default function OrderDetail() {
           .maybeSingle();
 
         if (orderData) {
+          const orderUserId = orderData?.user_id || orderData?.userId;
+          const isOwner = Boolean(user && (orderUserId === user.id || orderUserId === user.uid || (user.email && orderUserId === user.email)));
+          const isStaff = Boolean(isAdmin || isSeller);
+
+          if (!isOwner && !isStaff) {
+            setIsUnauthorized(true);
+            setOrder(null);
+            setIsLoading(false);
+            toast({
+              variant: "destructive",
+              title: "Access Denied",
+              description: "You do not have permission to view this order."
+            });
+            return;
+          }
+
           const { data: itemsData } = await supabase
             .from("order_items")
             .select("*")
@@ -345,10 +374,12 @@ export default function OrderDetail() {
 
           setOrder({
             ...orderData,
+            user_id: orderUserId,
             status: latestStatus,
             payment_status: latestPaymentStatus,
             order_items: formattedItems
           });
+          setIsUnauthorized(false);
           setIsLoading(false);
           return;
         }
@@ -372,6 +403,22 @@ export default function OrderDetail() {
         }
 
         if (raw) {
+          const orderUserId = raw?.user_id || raw?.userId;
+          const isOwner = Boolean(user && (orderUserId === user.id || orderUserId === user.uid || (user.email && orderUserId === user.email)));
+          const isStaff = Boolean(isAdmin || isSeller);
+
+          if (!isOwner && !isStaff) {
+            setIsUnauthorized(true);
+            setOrder(null);
+            setIsLoading(false);
+            toast({
+              variant: "destructive",
+              title: "Access Denied",
+              description: "You do not have permission to view this order."
+            });
+            return;
+          }
+
           let latestStatus = (raw.status || "pending").toLowerCase();
           let latestPaymentStatus = (raw.payment_status || raw.paymentStatus || "pending").toLowerCase();
 
@@ -393,6 +440,7 @@ export default function OrderDetail() {
           const formatted: Order = {
             id: docSnap?.id || raw.id || id,
             order_number: raw.order_number || raw.orderNumber || docSnap?.id?.slice(0, 10) || id,
+            user_id: orderUserId,
             status: latestStatus,
             payment_status: latestPaymentStatus,
             payment_method: raw.payment_method || raw.paymentMethod || "cod",
@@ -408,6 +456,7 @@ export default function OrderDetail() {
             order_items: formattedItems
           };
           setOrder(formatted);
+          setIsUnauthorized(false);
           setIsLoading(false);
           return;
         }
@@ -420,23 +469,36 @@ export default function OrderDetail() {
 
     fetchOrder();
 
-    // Realtime Firestore updates
-    const unsub = onSnapshot(doc(db, "orders", id), (docSnap) => {
-      if (docSnap.exists()) {
-        const raw = docSnap.data();
-        setOrder((prev) => {
-          if (!prev) return null;
-          return {
-            ...prev,
-            status: (raw.status || prev.status).toLowerCase(),
-            payment_status: (raw.payment_status || prev.payment_status).toLowerCase()
-          };
-        });
-      }
-    }, () => {});
+    // Realtime Firestore updates guarded for authorized viewers
+    let unsub = () => {};
+    if (user && !isUnauthorized) {
+      unsub = onSnapshot(doc(db, "orders", id), (docSnap) => {
+        if (docSnap.exists()) {
+          const raw = docSnap.data();
+          const orderUserId = raw?.user_id || raw?.userId;
+          const isOwner = Boolean(user && (orderUserId === user.id || orderUserId === user.uid || (user.email && orderUserId === user.email)));
+          const isStaff = Boolean(isAdmin || isSeller);
+          if (!isOwner && !isStaff) {
+            setIsUnauthorized(true);
+            setOrder(null);
+            return;
+          }
+          setOrder((prev) => {
+            if (!prev) return null;
+            return {
+              ...prev,
+              status: (raw.status || prev.status).toLowerCase(),
+              payment_status: (raw.payment_status || prev.payment_status).toLowerCase()
+            };
+          });
+        }
+      }, (err) => {
+        console.warn("OrderDetail realtime listener error:", err);
+      });
+    }
 
     return () => unsub();
-  }, [id, user]);
+  }, [id, user, authLoading, isAdmin, isSeller, isUnauthorized]);
 
   const handleCopyTracking = () => {
     if (order?.tracking_number) {
@@ -541,13 +603,45 @@ export default function OrderDetail() {
     }
   };
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </main>
+      </div>
+    );
+  }
+
+  if (isUnauthorized) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header />
+        <main className="flex-1 flex items-center justify-center p-4">
+          <Card className="max-w-md w-full border-destructive/20 shadow-lg text-center">
+            <CardContent className="pt-6 pb-6 space-y-4">
+              <div className="w-16 h-16 rounded-full bg-destructive/10 text-destructive mx-auto flex items-center justify-center">
+                <ShieldAlert className="w-8 h-8" />
+              </div>
+              <h2 className="text-xl font-bold text-foreground">Access Denied / অ্যাক্সেস অনুমোদিত নয়</h2>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                You do not have permission to view this order. Customer orders are private to their account owner.
+                <br />
+                এই অর্ডারটির তথ্য দেখার অনুমতি আপনার নেই। গ্রাহকের ব্যক্তিগত গোপনীয়তার সুরক্ষায় শুধুমাত্র সংশ্লিষ্ট গ্রাহক এই পৃষ্ঠা দেখতে পারেন।
+              </p>
+              <div className="flex gap-3 justify-center pt-2">
+                <Button variant="outline" asChild>
+                  <Link to="/orders">My Orders</Link>
+                </Button>
+                <Button asChild>
+                  <Link to="/">হোমে ফিরে যান</Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </main>
+        <Footer />
       </div>
     );
   }

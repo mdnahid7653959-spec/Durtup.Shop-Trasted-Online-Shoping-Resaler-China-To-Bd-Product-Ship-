@@ -84,7 +84,7 @@ export async function saveTelegramConfig(config: TelegramConfig): Promise<boolea
   }
 }
 
-export async function sendTelegramMessage(text: string, customConfig?: Partial<TelegramConfig>): Promise<{ success: boolean; error?: string }> {
+export async function sendTelegramMessage(text: string, customConfig?: Partial<TelegramConfig>, replyMarkup?: any): Promise<{ success: boolean; error?: string }> {
   try {
     const saved = await getTelegramConfig();
     const config = { ...saved, ...customConfig };
@@ -94,15 +94,20 @@ export async function sendTelegramMessage(text: string, customConfig?: Partial<T
     }
 
     const url = `https://api.telegram.org/bot${config.bot_token.trim()}/sendMessage`;
+    const payload: any = {
+      chat_id: config.chat_id.trim(),
+      text: text,
+      parse_mode: "HTML",
+      disable_web_page_preview: true
+    };
+    if (replyMarkup) {
+      payload.reply_markup = replyMarkup;
+    }
+
     const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: config.chat_id.trim(),
-        text: text,
-        parse_mode: "HTML",
-        disable_web_page_preview: true
-      })
+      body: JSON.stringify(payload)
     });
 
     const result = await response.json();
@@ -150,11 +155,22 @@ export async function sendTelegramOrderNotification(order: {
 ${order.email ? `📧 <b>Email:</b> ${order.email}\n` : ""}📍 <b>Address:</b> ${order.address}, ${order.city}
 💳 <b>Payment:</b> <b>${order.paymentMethod.toUpperCase()}</b>
 💰 <b>Total Amount:</b> <b>৳${order.total.toLocaleString()}</b>
+⚡️ <b>Status:</b> ⏳ <b>PENDING CONFIRMATION</b>
 
 🛒 <b>Ordered Items (${order.items?.length || 0}):</b>
-${itemsList}
-━━━━━━━━━━━━━━━━━━━━━━
-⚡️ <a href="${adminUrl}">👉 Click Here to View & Process Order in Admin Panel</a>`;
+${itemsList}`;
 
-  return sendTelegramMessage(message, config);
+  const inlineKeyboard = {
+    inline_keyboard: [
+      [
+        { text: "✅ APPROVE ORDER", callback_data: `order_approve:${order.orderNumber}` },
+        { text: "❌ REJECT ORDER", callback_data: `order_reject:${order.orderNumber}` }
+      ],
+      [
+        { text: "🌐 View in Admin Panel", url: adminUrl }
+      ]
+    ]
+  };
+
+  return sendTelegramMessage(message, config, inlineKeyboard);
 }

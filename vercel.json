@@ -10,6 +10,11 @@
     { "source": "/api/ecomseller/:path*", "destination": "https://ecomsellerbd.com/:path*" },
     { "source": "/api/ai/visual-search", "destination": "/api/ai/visual-search" },
     { "source": "/api/ai/:path*", "destination": "/api/ai/:path*" },
+    { "source": "/api/telegram/:path*", "destination": "/api/telegram" },
+    { "source": "/api/telegram", "destination": "/api/telegram" },
+    { "source": "/api/telegram-webhook", "destination": "/api/telegram" },
+    { "source": "/api/orders/:path*", "destination": "/api/orders" },
+    { "source": "/api/orders", "destination": "/api/orders" },
     { "source": "/api/reseller/:path*", "destination": "/api/reseller" },
     { "source": "/api/reseller", "destination": "/api/reseller" },
     { "source": "/:path*", "destination": "/index.html" }

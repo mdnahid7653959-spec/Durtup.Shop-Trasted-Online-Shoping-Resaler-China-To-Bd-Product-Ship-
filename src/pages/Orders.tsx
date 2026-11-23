@@ -22,7 +22,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { supabase } from "@/lib/firebaseAdapter";
 import { db } from "@/integrations/firebase/client";
-import { collection, getDocs, onSnapshot, doc, deleteDoc } from "firebase/firestore";
+import { collection, getDocs, onSnapshot, doc, deleteDoc, query, where, orderBy } from "firebase/firestore";
 import { isMockOrder, purgeMockOrdersFromStorage } from "@/utils/orderValidation";
 
 interface Order {
@@ -59,10 +59,13 @@ export default function Orders() {
     if (user) {
       fetchOrders();
 
-      // Realtime listener for Firestore orders
-      const unsub = onSnapshot(collection(db, "orders"), () => {
+      // Realtime listener for Firestore orders scoped strictly to authenticated user
+      const userOrdersQuery = query(collection(db, "orders"), where("user_id", "==", user.id));
+      const unsub = onSnapshot(userOrdersQuery, () => {
         fetchOrders();
-      }, () => {});
+      }, (err) => {
+        console.warn("Scoped orders Firestore listener notice:", err);
+      });
 
       // Realtime listener for Supabase orders
       const sbChannel = supabase
@@ -120,8 +123,17 @@ export default function Orders() {
 
     // 2. Query Firestore DB for user orders & merge newest statuses
     try {
-      const snap = await getDocs(collection(db, "orders"));
-      if (!snap.empty) {
+      const ordersCol = collection(db, "orders");
+      let snap;
+      try {
+        const qWithOrder = query(ordersCol, where("user_id", "==", user.id), orderBy("created_at", "desc"));
+        snap = await getDocs(qWithOrder);
+      } catch {
+        const qSimple = query(ordersCol, where("user_id", "==", user.id));
+        snap = await getDocs(qSimple);
+      }
+
+      if (snap && !snap.empty) {
         snap.forEach((d) => {
           const data = d.data();
           const uid = data.user_id || data.userId;
@@ -172,6 +184,11 @@ export default function Orders() {
         const adminOrders = JSON.parse(adminOrdersRaw);
         if (Array.isArray(adminOrders)) {
           adminOrders.filter((ao: any) => !isMockOrder(ao)).forEach((ao: any) => {
+            const aoUid = ao.user_id || ao.userId;
+            // Privacy check: if cached order belongs to a different user, ignore it
+            if (aoUid && aoUid !== user.id && (!user.email || aoUid !== user.email)) {
+              return;
+            }
             for (const [k, v] of orderMap.entries()) {
               if (v.id === ao.id || v.order_number === ao.order_number || v.order_number === ao.id || k === ao.id || k === ao.order_number) {
                 if (ao.status) v.status = ao.status.toLowerCase();

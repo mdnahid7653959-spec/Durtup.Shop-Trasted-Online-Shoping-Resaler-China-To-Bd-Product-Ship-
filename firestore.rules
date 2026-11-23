@@ -19,6 +19,16 @@ service cloud.firestore {
       );
     }
 
+    function isSeller() {
+      return isAuthenticated() && (
+        request.auth.token.seller == true ||
+        request.auth.token.role == 'seller' ||
+        get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.role == 'seller' ||
+        exists(/databases/$(database)/documents/sellers/$(request.auth.uid)) ||
+        isAdmin()
+      );
+    }
+
     // 1. Referral Global Settings
     match /settings/referral {
       allow read: if true;
@@ -65,11 +75,26 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
-    // 6. Orders Collection
+    // 6. Orders Collection (Customer Privacy & Role-Based Access Control)
     match /orders/{orderId} {
-      allow read: if true;
-      allow create: if true;
-      allow update, delete: if true;
+      allow read: if isAuthenticated() && (
+        resource.data.user_id == request.auth.uid ||
+        resource.data.userId == request.auth.uid ||
+        isAdmin() ||
+        isSeller()
+      );
+      // Direct client creation requires owning user_id or admin (server orders engine handles verified orders)
+      allow create: if isAuthenticated() && (
+        request.resource.data.user_id == request.auth.uid ||
+        isAdmin()
+      );
+      // Status and fulfillment updates permitted by admin or assigned seller
+      allow update: if isAuthenticated() && (
+        isAdmin() ||
+        (isSeller() && (resource.data.seller_id == request.auth.uid || resource.data.seller_id == null))
+      );
+      // Deletion strictly restricted to admin
+      allow delete: if isAuthenticated() && isAdmin();
     }
 
     // 7. Product Questions & Answers Collection

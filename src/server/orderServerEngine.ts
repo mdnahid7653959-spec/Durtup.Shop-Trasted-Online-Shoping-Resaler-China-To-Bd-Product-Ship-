@@ -11,6 +11,7 @@ import { FAST_SEED_PRODUCTS } from "../data/fastSeedCatalog";
 import { db } from "../integrations/firebase/client";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { verifyAuthHeader, TokenVerificationResult } from "./tokenVerifier";
+import { sendTelegramOrderNotificationWithActions } from "./telegramAdminEngine";
 
 export interface OrderServerResult {
   status: number;
@@ -644,6 +645,24 @@ export async function handleOrderServerRequest(
       created_at: createdAt
     };
     await setDoc(doc(db, "admin_notifications", orderId), adminNotificationDoc).catch(() => {});
+
+    // 10b. Send Instant Telegram Alert with Interactive Approval/Rejection buttons
+    sendTelegramOrderNotificationWithActions({
+      id: orderId,
+      order_number: orderNumber,
+      customer_name: recipientName,
+      phone: shipping_address.phone,
+      email: shipping_address.email,
+      address: shipping_address.address,
+      city: shipping_address.city,
+      payment_method,
+      total: payableTotal,
+      items: (items || []).map((it: any) => ({
+        name: it.name || "Product",
+        quantity: it.quantity || 1,
+        price: it.price || 0
+      }))
+    }).catch((tgErr) => console.warn("[OrderServerEngine] Telegram notification error:", tgErr));
   } catch (fsErr) {
     console.warn("[OrderServerEngine] Firestore persistence error:", fsErr);
   }
