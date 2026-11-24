@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { ShieldCheck, Truck, Sparkles, CheckCircle2, Loader2 } from "lucide-react";
+import { ShieldCheck, Truck, Clock, Check, Loader2 } from "lucide-react";
 
 export interface CustomerAuthModalProps {
   isOpen: boolean;
@@ -18,7 +18,7 @@ export function CustomerAuthModal({
   onClose,
   onSuccess,
   title = "অর্ডার সম্পন্ন করতে সাইন ইন করুন",
-  description = "আপনার অর্ডারটি নিরাপদ রাখতে এবং দ্রুত ডেলিভারি নিশ্চিত করতে একটি একাউন্ট প্রয়োজন।"
+  description = "আপনার ডেলিভারি তথ্য ও অর্ডার হিস্ট্রি নিরাপদে সংরক্ষণের জন্য একাউন্ট প্রয়োজন।"
 }: CustomerAuthModalProps) {
   const { signInWithGoogle } = useAuth();
   const { toast } = useToast();
@@ -29,25 +29,24 @@ export function CustomerAuthModal({
     try {
       await signInWithGoogle();
       toast({
-        title: "স্বাগতম! সফলভাবে সাইন ইন হয়েছে 🎉",
-        description: "Welcome to Durtup.shop!"
+        title: "স্বাগতম",
+        description: "সফলভাবে সাইন ইন সম্পন্ন হয়েছে।"
       });
       onClose();
       if (onSuccess) {
         onSuccess();
       }
     } catch (error: any) {
-      // Ignore user-initiated popup closing
       if (error?.code === "auth/popup-closed-by-user") {
         return;
       }
       const isUnauthDomain = error?.code === "auth/unauthorized-domain" || error?.message?.includes("unauthorized-domain");
       toast({
         variant: "destructive",
-        title: "সাইন ইন ব্যর্থ হয়েছে",
+        title: "সাইন ইন সম্পন্ন হয়নি",
         description: isUnauthDomain
           ? "Domain authorization issue. Please contact support."
-          : error.message || "Failed to sign in with Google."
+          : error.message || "গুগল সাইন ইন করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।"
       });
     } finally {
       setLoading(false);
@@ -56,58 +55,70 @@ export function CustomerAuthModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="sm:max-w-md w-[92vw] max-w-md mx-auto rounded-2xl p-6 bg-card border-border shadow-2xl">
-        <DialogHeader className="text-center sm:text-center space-y-2">
-          {/* Durtup Brand Signature */}
-          <div className="flex justify-center items-center gap-1 mb-1">
-            <span className="text-2xl font-black text-orange-600 tracking-tight">Durtup</span>
-            <span className="text-2xl font-bold text-foreground">.shop</span>
+      <DialogContent className="sm:max-w-[400px] w-[92vw] max-w-[400px] mx-auto rounded-2xl p-6 bg-card border border-border/80 shadow-xl">
+        <DialogHeader className="text-center sm:text-center space-y-3">
+          {/* Brand Signature Badge */}
+          <div className="mx-auto flex flex-col items-center gap-1.5">
+            <div className="w-10 h-10 rounded-xl bg-orange-500/10 dark:bg-orange-500/15 flex items-center justify-center text-orange-600 dark:text-orange-500 border border-orange-500/20">
+              <ShieldCheck className="w-5 h-5" strokeWidth={1.75} />
+            </div>
+            <div className="flex items-center justify-center gap-1">
+              <span className="text-base font-bold text-orange-600 tracking-tight">Durtup</span>
+              <span className="text-base font-semibold text-foreground">.shop</span>
+            </div>
           </div>
-          <DialogTitle className="text-lg sm:text-xl font-black text-foreground">
-            {title}
-          </DialogTitle>
-          <DialogDescription className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-            {description}
-          </DialogDescription>
+
+          <div className="space-y-1">
+            <DialogTitle className="text-base sm:text-lg font-semibold tracking-tight text-foreground">
+              {title}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground leading-relaxed max-w-[320px] mx-auto">
+              {description}
+            </DialogDescription>
+          </div>
         </DialogHeader>
 
-        {/* Value Proposition & Trust Badges */}
-        <div className="my-4 p-3.5 rounded-xl bg-orange-500/5 dark:bg-orange-950/20 border border-orange-500/15 space-y-2.5">
-          <div className="flex items-center gap-2.5 text-xs text-foreground/90">
-            <Truck className="h-4 w-4 text-orange-600 shrink-0" />
+        {/* Quiet Reassurance List - Unslopped & Cohesive */}
+        <div className="my-4 p-3.5 rounded-xl bg-muted/40 dark:bg-muted/20 border border-border/60 space-y-2.5">
+          <div className="flex items-start gap-2.5 text-xs text-foreground/90 leading-tight">
+            <div className="w-4 h-4 mt-0.5 shrink-0 flex items-center justify-center text-orange-600 dark:text-orange-500">
+              <Truck className="w-3.5 h-3.5" strokeWidth={1.5} />
+            </div>
             <span>লাইভ অর্ডার ট্র্যাকিং ও দ্রুত ডেলিভারি আপডেট</span>
           </div>
-          <div className="flex items-center gap-2.5 text-xs text-foreground/90">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-            <span>ঠিকানা অটো-সেভ — পরবর্তী অর্ডারে এক-ক্লিকে চেকআউট</span>
+
+          <div className="flex items-start gap-2.5 text-xs text-foreground/90 leading-tight">
+            <div className="w-4 h-4 mt-0.5 shrink-0 flex items-center justify-center text-orange-600 dark:text-orange-500">
+              <Clock className="w-3.5 h-3.5" strokeWidth={1.5} />
+            </div>
+            <span>ঠিকানা অটো-সেভ — পরবর্তী অর্ডারে দ্রুত চেকআউট</span>
           </div>
-          <div className="flex items-center gap-2.5 text-xs text-foreground/90">
-            <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
-            <span>এক্সক্লুসিভ রিওয়ার্ড পয়েন্ট ও ক্যাশব্যাক সুবিধা</span>
-          </div>
-          <div className="flex items-center gap-2.5 text-xs text-foreground/90">
-            <ShieldCheck className="h-4 w-4 text-blue-600 shrink-0" />
-            <span>১০০% নিরাপদ ও সুরক্ষিত গুগল ভেরিফিকেশন</span>
+
+          <div className="flex items-start gap-2.5 text-xs text-foreground/90 leading-tight">
+            <div className="w-4 h-4 mt-0.5 shrink-0 flex items-center justify-center text-orange-600 dark:text-orange-500">
+              <Check className="w-3.5 h-3.5" strokeWidth={1.75} />
+            </div>
+            <span>১০০% নিরাপদ ও সুরক্ষিত গুগল অথেন্টিকেশন</span>
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="space-y-2.5 pt-1">
+        {/* Primary and Secondary Actions */}
+        <div className="space-y-2 pt-1">
           <Button
             type="button"
             size="lg"
             onClick={handleGoogleSignIn}
             disabled={loading}
-            className="w-full h-12 text-sm sm:text-base font-bold bg-white hover:bg-slate-50 text-slate-900 border border-slate-300 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-white dark:border-slate-700 shadow-sm flex items-center justify-center gap-3 rounded-xl transition-all active:scale-[0.98]"
+            className="w-full h-11 text-sm font-medium bg-background hover:bg-muted/40 text-foreground border border-input shadow-xs rounded-xl flex items-center justify-center gap-3 transition-colors active:scale-[0.98]"
           >
             {loading ? (
               <>
-                <Loader2 className="h-5 w-5 animate-spin text-orange-600" />
-                <span>সাইন ইন হচ্ছে...</span>
+                <Loader2 className="h-4 w-4 animate-spin text-orange-600" />
+                <span className="text-muted-foreground">সাইন ইন হচ্ছে...</span>
               </>
             ) : (
               <>
-                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                   <path
                     fill="#4285F4"
                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -135,9 +146,9 @@ export function CustomerAuthModal({
             variant="ghost"
             onClick={onClose}
             disabled={loading}
-            className="w-full h-10 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground rounded-xl"
+            className="w-full h-9 text-xs font-normal text-muted-foreground hover:text-foreground rounded-lg"
           >
-            পরে করব / ব্রাউজিং চালিয়ে যান (Cancel)
+            পরে করব
           </Button>
         </div>
       </DialogContent>
