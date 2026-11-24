@@ -509,29 +509,12 @@ export default function Checkout() {
     }
 
     // Step 2: Finalize Payment & Place Order
-    let currentUser = auth.currentUser;
+    const currentUser = auth.currentUser;
     if (!currentUser && auth) {
-      await new Promise<void>((resolve) => {
-        const timeout = setTimeout(resolve, 500);
-        const unsubscribe = onAuthStateChanged(auth, (u) => {
-          if (u) {
-            currentUser = u;
-            clearTimeout(timeout);
-            unsubscribe();
-            resolve();
-          }
-        });
-      });
-    }
-
-    if (!currentUser) {
-      try {
-        const { signInAnonymously } = await import("firebase/auth");
-        const anonCred = await signInAnonymously(auth);
-        currentUser = anonCred.user;
-      } catch (anonErr) {
-        console.warn("[Checkout] Direct session notice:", anonErr);
-      }
+      // Fire anonymous sign-in in background non-blocking
+      import("firebase/auth").then(({ signInAnonymously }) => {
+        signInAnonymously(auth).catch(() => {});
+      }).catch(() => {});
     }
 
     if (paymentMethod === "bkash") {
@@ -561,8 +544,8 @@ export default function Checkout() {
         try {
           idToken = await Promise.race([
             currentUser.getIdToken(false),
-            new Promise<string>((_, reject) => setTimeout(() => reject(new Error("Token timeout")), 1500))
-          ]).catch(() => currentUser.getIdToken(true));
+            new Promise<string>((_, reject) => setTimeout(() => reject(new Error("Token timeout")), 600))
+          ]).catch(() => "");
         } catch (tokErr) {
           console.warn("[Checkout] Token extraction warning:", tokErr);
         }
@@ -615,27 +598,29 @@ export default function Checkout() {
         notes: notesCombined || ""
       };
 
-      const abortController = new AbortController();
-      const abortTimeout = setTimeout(() => abortController.abort(), 2000);
-
       let response: Response | null = null;
       let resData: any = {};
 
-      try {
-        response = await fetch("/api/orders", {
-          method: "POST",
-          signal: abortController.signal,
-          headers: {
-            "Content-Type": "application/json",
-            ...(idToken ? { "Authorization": `Bearer ${idToken}` } : {})
-          },
-          body: JSON.stringify(orderPayload)
-        });
-        resData = await response.json().catch(() => ({}));
-      } catch (fetchErr: any) {
-        console.warn("[Checkout] Fetch /api/orders error or timeout:", fetchErr);
-      } finally {
-        clearTimeout(abortTimeout);
+      // Only attempt /api/orders if an authenticated token is available to prevent 401 round-trip delay
+      if (idToken) {
+        const abortController = new AbortController();
+        const abortTimeout = setTimeout(() => abortController.abort(), 800);
+        try {
+          response = await fetch("/api/orders", {
+            method: "POST",
+            signal: abortController.signal,
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${idToken}`
+            },
+            body: JSON.stringify(orderPayload)
+          });
+          resData = await response.json().catch(() => ({}));
+        } catch (fetchErr: any) {
+          console.warn("[Checkout] Fetch /api/orders notice:", fetchErr);
+        } finally {
+          clearTimeout(abortTimeout);
+        }
       }
 
       let orderId = resData?.order_id;

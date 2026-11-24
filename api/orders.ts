@@ -1,3 +1,5 @@
+import { handleOrderServerRequest } from "../src/server/orderServerEngine";
+
 export default async function handler(req: any, res: any) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
@@ -18,8 +20,6 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const { handleOrderServerRequest } = await import("../src/server/orderServerEngine");
-
     let body = req.body || {};
     if (typeof body === "string") {
       try {

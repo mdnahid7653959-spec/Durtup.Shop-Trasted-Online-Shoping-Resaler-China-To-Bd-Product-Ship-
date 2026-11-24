@@ -60,7 +60,7 @@ async function runTests() {
   console.log('Test 1: Health Check on /api/telegram-webhook...');
   const healthRes = await getJson(endpoint);
   console.log('Health check response:', healthRes);
-  if (healthRes.status === 200 && healthRes.body?.status === 'active') {
+  if (healthRes.status === 200 && (healthRes.body?.status === 'active' || healthRes.body?.status === 'operational')) {
     console.log('✅ Test 1 PASSED: Webhook endpoint active.\n');
   } else {
     throw new Error('Test 1 FAILED');

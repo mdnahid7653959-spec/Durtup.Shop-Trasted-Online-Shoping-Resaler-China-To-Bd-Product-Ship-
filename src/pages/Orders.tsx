@@ -21,7 +21,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { supabase } from "@/lib/firebaseAdapter";
-import { db } from "@/integrations/firebase/client";
+import { auth, db } from "@/integrations/firebase/client";
 import { collection, getDocs, onSnapshot, doc, deleteDoc, query, where, orderBy } from "firebase/firestore";
 import { isMockOrder, purgeMockOrdersFromStorage } from "@/utils/orderValidation";
 
@@ -217,7 +217,7 @@ export default function Orders() {
           adminOrders.filter((ao: any) => !isMockOrder(ao)).forEach((ao: any) => {
             const aoUid = ao.user_id || ao.userId;
             // Privacy check: if cached order belongs to a different user, ignore it
-            if (aoUid && aoUid !== user.id && (!user.email || aoUid !== user.email)) {
+            if (user && aoUid && aoUid !== user.id && (!user.email || aoUid !== user.email)) {
               return;
             }
             for (const [k, v] of orderMap.entries()) {
@@ -282,6 +282,7 @@ export default function Orders() {
         };
         removeMatching("enterprise_admin_orders");
         removeMatching("local_orders");
+        removeMatching("durtup_recent_placed_orders");
       } catch {}
     } catch (err) {
       console.error("Delete order failed:", err);
