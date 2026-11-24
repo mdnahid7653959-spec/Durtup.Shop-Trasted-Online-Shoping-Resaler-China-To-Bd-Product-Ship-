@@ -8,6 +8,9 @@ export interface TelegramConfig {
   chat_id: string;
 }
 
+export const DEFAULT_TELEGRAM_BOT_TOKEN = "9052891455:AAFjL5lmNWIgTBgrk-KN8gN3pY1ZNZYQhEI";
+export const DEFAULT_TELEGRAM_CHAT_ID = "8204855335";
+
 const LOCAL_STORAGE_KEY = "durtup_telegram_config";
 
 export async function getTelegramConfig(): Promise<TelegramConfig> {
@@ -50,7 +53,7 @@ export async function getTelegramConfig(): Promise<TelegramConfig> {
     console.warn("Supabase telegram config read warning:", e);
   }
 
-  return { enabled: true, bot_token: "", chat_id: "" };
+  return { enabled: true, bot_token: DEFAULT_TELEGRAM_BOT_TOKEN, chat_id: DEFAULT_TELEGRAM_CHAT_ID };
 }
 
 export async function saveTelegramConfig(config: TelegramConfig): Promise<boolean> {
@@ -87,15 +90,16 @@ export async function saveTelegramConfig(config: TelegramConfig): Promise<boolea
 export async function sendTelegramMessage(text: string, customConfig?: Partial<TelegramConfig>, replyMarkup?: any): Promise<{ success: boolean; error?: string }> {
   try {
     const saved = await getTelegramConfig();
-    const config = { ...saved, ...customConfig };
+    const botToken = (customConfig?.bot_token || saved.bot_token || DEFAULT_TELEGRAM_BOT_TOKEN).trim();
+    const chatId = (customConfig?.chat_id || saved.chat_id || DEFAULT_TELEGRAM_CHAT_ID).trim();
     
-    if (!config.bot_token || !config.chat_id) {
+    if (!botToken || !chatId) {
       return { success: false, error: "Telegram Bot Token বা Chat ID সেট করা নেই।" };
     }
 
-    const url = `https://api.telegram.org/bot${config.bot_token.trim()}/sendMessage`;
+    const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
     const payload: any = {
-      chat_id: config.chat_id.trim(),
+      chat_id: chatId,
       text: text,
       parse_mode: "HTML",
       disable_web_page_preview: true
@@ -112,6 +116,7 @@ export async function sendTelegramMessage(text: string, customConfig?: Partial<T
 
     const result = await response.json();
     if (!result.ok) {
+      console.warn("Telegram API result warning:", result);
       return { success: false, error: result.description || "Failed to send Telegram message" };
     }
     return { success: true };
@@ -142,7 +147,9 @@ export async function sendTelegramOrderNotification(order: {
   }>;
 }) {
   const config = await getTelegramConfig();
-  if (!config.enabled && !config.bot_token) return;
+  const botToken = config.bot_token || DEFAULT_TELEGRAM_BOT_TOKEN;
+  const chatId = config.chat_id || DEFAULT_TELEGRAM_CHAT_ID;
+  const activeConfig = { ...config, bot_token: botToken, chat_id: chatId };
 
   const baseUrl = typeof window !== "undefined" && window.location.origin
     ? window.location.origin
@@ -202,5 +209,5 @@ ${itemsList}`;
     ]
   };
 
-  return sendTelegramMessage(message, config, inlineKeyboard);
+  return sendTelegramMessage(message, activeConfig, inlineKeyboard);
 }

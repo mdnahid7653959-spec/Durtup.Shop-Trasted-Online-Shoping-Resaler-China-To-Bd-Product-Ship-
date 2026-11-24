@@ -736,11 +736,24 @@ export default function Checkout() {
         productName: primaryProductName
       });
 
-      // 4. Clear cart
+      // 4. Immediately dispatch Telegram Order Alert
+      sendTelegramOrderNotification({
+        orderNumber: orderNumber,
+        customerName: fullNameCombined,
+        phone: safePhone,
+        email: safeEmail,
+        address: safeAddress,
+        city: safeCity,
+        paymentMethod: paymentMethod,
+        total: confirmedTotal,
+        items: enrichedItems.map(i => ({ name: i.name, quantity: i.quantity, price: i.price, product_id: i.product_id }))
+      }).catch((tgErr) => console.warn("[Checkout] Immediate Telegram dispatch notice:", tgErr));
+
+      // 5. Clear cart
       clearCart().catch(() => { });
       clearCJCart();
 
-      // 5. Background side-effects (loyalty, wallet, address, notifications, meta pixel)
+      // 6. Background side-effects (loyalty, wallet, address, notifications, meta pixel)
       Promise.resolve().then(async () => {
         try {
           if (useLoyaltyPoints && pointsToRedeem > 0 && effectiveUserId && effectiveUserId !== "guest") {
@@ -776,17 +789,6 @@ export default function Checkout() {
             country: safeCountry,
             is_default: true,
             updated_at: new Date().toISOString(),
-          }).catch(() => {});
-          sendTelegramOrderNotification({
-            orderNumber: orderNumber,
-            customerName: fullNameCombined,
-            phone: safePhone,
-            email: safeEmail,
-            address: safeAddress,
-            city: safeCity,
-            paymentMethod: paymentMethod,
-            total: confirmedTotal,
-            items: enrichedItems.map(i => ({ name: i.name, quantity: i.quantity, price: i.price }))
           }).catch(() => {});
           markCartAsRecovered(effectiveUserId, orderId, subtotal).catch(() => {});
           triggerCustomerOrderPhoneNotification({

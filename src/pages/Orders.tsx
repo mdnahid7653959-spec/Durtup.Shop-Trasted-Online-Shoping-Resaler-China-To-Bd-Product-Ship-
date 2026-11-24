@@ -378,10 +378,6 @@ export default function Orders() {
     );
   }
 
-  if (!user) {
-    return null;
-  }
-
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
@@ -425,9 +421,16 @@ export default function Orders() {
                     <p className="text-muted-foreground mb-4">
                       When you place orders, they will appear here.
                     </p>
-                    <Button asChild>
-                      <Link to="/products">Start Shopping</Link>
-                    </Button>
+                    <div className="flex items-center justify-center gap-3">
+                      {!user && (
+                        <Button variant="outline" asChild>
+                          <Link to="/login">Sign In</Link>
+                        </Button>
+                      )}
+                      <Button asChild>
+                        <Link to="/products">Start Shopping</Link>
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ) : (
