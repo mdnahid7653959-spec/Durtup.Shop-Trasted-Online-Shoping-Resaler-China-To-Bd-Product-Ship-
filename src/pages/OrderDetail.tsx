@@ -296,15 +296,25 @@ export default function OrderDetail() {
       location.state?.orderPlaced ||
       (typeof window !== "undefined" && (
         localStorage.getItem("durtup_recent_order_" + id) ||
-        localStorage.getItem("durtup_last_placed_order_id") === id
+        localStorage.getItem("durtup_last_placed_order_id") === id ||
+        localStorage.getItem("durtup_last_placed_order_number") === id ||
+        localStorage.getItem("durtup_recent_placed_orders")?.includes(id)
       ))
     );
 
     if (!user && !auth.currentUser && !isRecentOwner) {
-      setIsUnauthorized(true);
-      setOrder(null);
-      setIsLoading(false);
-      return;
+      // Check if this order exists in local storage before denying access
+      const hasLocalRecord = typeof window !== "undefined" && Boolean(
+        localStorage.getItem("durtup_recent_order_" + id) ||
+        localStorage.getItem("durtup_last_placed_order_id") === id ||
+        localStorage.getItem("durtup_last_placed_order_number") === id
+      );
+      if (!hasLocalRecord) {
+        setIsUnauthorized(true);
+        setOrder(null);
+        setIsLoading(false);
+        return;
+      }
     }
 
     const fetchOrder = async () => {
@@ -362,6 +372,7 @@ export default function OrderDetail() {
           const effectiveViewerId = user?.id || user?.uid || auth.currentUser?.uid;
           const isOwner = Boolean(
             isRecentOwner ||
+            Boolean(localStorage.getItem("durtup_recent_order_" + id)) ||
             (effectiveViewerId && (orderUserId === effectiveViewerId || (user?.email && orderUserId === user.email) || (auth.currentUser?.email && orderUserId === auth.currentUser.email)))
           );
           const isStaff = Boolean(isAdmin || isSeller);
@@ -464,6 +475,7 @@ export default function OrderDetail() {
           const effectiveViewerId = user?.id || user?.uid || auth.currentUser?.uid;
           const isOwner = Boolean(
             isRecentOwner ||
+            Boolean(localStorage.getItem("durtup_recent_order_" + id)) ||
             (effectiveViewerId && (orderUserId === effectiveViewerId || (user?.email && orderUserId === user.email) || (auth.currentUser?.email && orderUserId === auth.currentUser.email)))
           );
           const isStaff = Boolean(isAdmin || isSeller);

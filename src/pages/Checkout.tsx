@@ -638,6 +638,9 @@ export default function Checkout() {
       const primaryProductImage = (firstCartItem as any)?.image || (firstCartItem as any)?.product_image || (firstCartItem as any)?.productImage || (firstCartItem as any)?.product?.image_url || "/durtup-logo.png";
       const primaryProductName = (firstCartItem as any)?.product?.name || (firstCartItem as any)?.product_name || (firstCartItem as any)?.title || (firstCartItem as any)?.name || "Product";
 
+      const totalDiscount = (couponDiscount || 0) + (referralDiscount || 0) + (loyaltyDiscount || 0) + (walletDiscount || 0);
+      const effectiveShippingCost = shipping;
+
       const orderRecord = {
         id: orderId,
         order_id: orderId,
@@ -649,7 +652,7 @@ export default function Checkout() {
         customer_name: fullNameCombined,
         customer_phone: safePhone,
         subtotal,
-        shipping_cost: shippingCost,
+        shipping_cost: effectiveShippingCost,
         tax_amount: 0,
         discount_amount: totalDiscount,
         coupon_discount: couponDiscount,
@@ -683,6 +686,7 @@ export default function Checkout() {
         localStorage.setItem("durtup_recent_order_" + orderId, JSON.stringify(orderRecord));
         localStorage.setItem("durtup_recent_order_" + orderNumber, JSON.stringify(orderRecord));
         localStorage.setItem("durtup_last_placed_order_id", orderId);
+        localStorage.setItem("durtup_last_placed_order_number", orderNumber);
 
         const existingRecentRaw = localStorage.getItem("durtup_recent_placed_orders");
         let existingRecent: any[] = [];
@@ -728,7 +732,8 @@ export default function Checkout() {
         customerName: fullNameCombined,
         phone: safePhone,
         address: safeAddress,
-        city: safeCity
+        city: safeCity,
+        productName: primaryProductName
       });
 
       // 4. Clear cart
@@ -807,13 +812,6 @@ export default function Checkout() {
 
       // 7. 🚀 INSTANT REDIRECT TO ORDER DETAILS PAGE
       navigate(`/orders/${orderId}`, { replace: true, state: { orderPlaced: true, orderNumber: orderNumber, orderId } });
-
-      // 8. Bulletproof fallback: ensure browser navigated
-      setTimeout(() => {
-        if (typeof window !== "undefined" && window.location.pathname.includes("/checkout")) {
-          window.location.replace(`/orders/${orderId}`);
-        }
-      }, 50);
 
     } catch (error: any) {
       console.error("Order error:", error);
@@ -1114,7 +1112,7 @@ export default function Checkout() {
             )}
           </div>
 
-          <form id="checkout-form" action="#" onSubmit={(e) => { e.preventDefault(); e.stopPropagation(); handleSubmit(e); }}>
+          <form id="checkout-form" onSubmit={(e) => { e.preventDefault(); e.stopPropagation(); handleSubmit(e); }}>
             <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
               {/* Main Column */}
               <div className="lg:col-span-2 space-y-4 sm:space-y-5">
