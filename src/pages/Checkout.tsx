@@ -42,6 +42,24 @@ interface AppliedCoupon {
   max_discount_amount: number | null;
 }
 
+// Recursively sanitize objects so Firestore setDoc never encounters undefined
+function sanitizeForFirestore<T = any>(val: T): T {
+  if (val === undefined) return null as any;
+  if (val === null || typeof val !== "object") return val;
+  if (val instanceof Date) return val.toISOString() as any;
+  if (Array.isArray(val)) {
+    return val.map((item) => sanitizeForFirestore(item)) as any;
+  }
+  const clean: Record<string, any> = {};
+  for (const key of Object.keys(val as any)) {
+    const v = (val as any)[key];
+    if (v !== undefined) {
+      clean[key] = sanitizeForFirestore(v);
+    }
+  }
+  return clean as any;
+}
+
 export default function Checkout() {
   const { items: regularItems, subtotal: regularSubtotal, clearCart, loading: cartLoading } = useCart();
   const { items: cjItems, subtotal: cjSubtotal, clearCart: clearCJCart, loading: cjLoading } = useCJCart();
@@ -562,7 +580,7 @@ export default function Checkout() {
           price: Number(item.price || item.unit_price || item.product?.price || 0),
           image: item.image || item.product_image || item.product?.image_url || "",
           quantity: item.quantity || 1,
-          selected_variants: item.selected_variants || (item.variant_name ? { variant: item.variant_name } : undefined),
+          selected_variants: item.selected_variants || (item.variant_name ? { variant: item.variant_name } : null) || null,
           source: "regular" as const
         })),
         ...cjItems.map(item => ({
@@ -571,7 +589,7 @@ export default function Checkout() {
           price: Number(item.price || 0),
           image: item.image || item.product_image || "",
           quantity: item.quantity || 1,
-          selected_variants: item.variant ? { variant: item.variant } : undefined,
+          selected_variants: item.variant ? { variant: item.variant } : null,
           source: "cj" as const
         }))
       ];
@@ -598,7 +616,7 @@ export default function Checkout() {
       };
 
       const abortController = new AbortController();
-      const abortTimeout = setTimeout(() => abortController.abort(), 4000);
+      const abortTimeout = setTimeout(() => abortController.abort(), 2000);
 
       let response: Response | null = null;
       let resData: any = {};
@@ -642,7 +660,7 @@ export default function Checkout() {
         orderNumber,
         user_id: effectiveUserId,
         userId: effectiveUserId,
-        customer_email: currentUser?.email || safeEmail,
+        customer_email: currentUser?.email || safeEmail || "",
         customer_name: fullNameCombined,
         customer_phone: safePhone,
         subtotal,
@@ -669,17 +687,28 @@ export default function Checkout() {
           zipCode: safeZip,
           country: safeCountry
         },
-        notes: notesCombined,
+        notes: notesCombined || "",
         bkash_details: paymentMethod === "bkash" ? { sender_number: bkashNumber.trim(), trx_id: bkashTrxId.trim() } : null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
 
-      // 1. Immediately cache locally for 0ms order detail load
+      // 1. Immediately cache locally for 0ms order detail load and instant Orders list appearance
       try {
         localStorage.setItem("durtup_recent_order_" + orderId, JSON.stringify(orderRecord));
         localStorage.setItem("durtup_recent_order_" + orderNumber, JSON.stringify(orderRecord));
         localStorage.setItem("durtup_last_placed_order_id", orderId);
+
+        const existingRecentRaw = localStorage.getItem("durtup_recent_placed_orders");
+        let existingRecent: any[] = [];
+        try {
+          existingRecent = existingRecentRaw ? JSON.parse(existingRecentRaw) : [];
+          if (!Array.isArray(existingRecent)) existingRecent = [];
+        } catch {}
+        existingRecent = existingRecent.filter((o: any) => o.id !== orderId && o.order_number !== orderNumber);
+        existingRecent.unshift(orderRecord);
+        localStorage.setItem("durtup_recent_placed_orders", JSON.stringify(existingRecent.slice(0, 20)));
+
         localStorage.setItem("durtup_saved_address", JSON.stringify({
           fullName: fullNameCombined,
           phone: safePhone,
@@ -692,16 +721,33 @@ export default function Checkout() {
         }));
       } catch {}
 
-      // 2. Persist to Firestore (non-blocking)
-      setDoc(doc(db, "orders", orderId), orderRecord).catch((e) => {
-        console.warn("[Checkout] Firestore setDoc warning:", e);
+      // 2. Persist to Firestore (isolated and sanitized so it CANNOT throw synchronously)
+      try {
+        const safeFirestoreRecord = sanitizeForFirestore(orderRecord);
+        setDoc(doc(db, "orders", orderId), safeFirestoreRecord).catch((e) => {
+          console.warn("[Checkout] Firestore setDoc async notice:", e);
+        });
+      } catch (fsSyncErr) {
+        console.warn("[Checkout] Firestore setDoc sync catch:", fsSyncErr);
+      }
+
+      // 3. Prevent empty cart flash during transition
+      setOrderPlaced(true);
+      setConfirmedOrderData({
+        orderNumber,
+        total: confirmedTotal,
+        paymentMethod,
+        customerName: fullNameCombined,
+        phone: safePhone,
+        address: safeAddress,
+        city: safeCity
       });
 
-      // 3. Clear cart
+      // 4. Clear cart
       clearCart().catch(() => { });
       clearCJCart();
 
-      // 4. Background side-effects (loyalty, wallet, address, notifications, meta pixel)
+      // 5. Background side-effects (loyalty, wallet, address, notifications, meta pixel)
       Promise.resolve().then(async () => {
         try {
           if (useLoyaltyPoints && pointsToRedeem > 0 && effectiveUserId && effectiveUserId !== "guest") {
@@ -765,21 +811,21 @@ export default function Checkout() {
         }
       });
 
-      // 5. Toast notification
+      // 6. Toast notification
       toast({
         title: "অর্ডার সফলভাবে সম্পন্ন হয়েছে! 🎉",
         description: `আপনার অর্ডার #${orderNumber} কনফার্ম করা হয়েছে।`
       });
 
-      // 6. 🚀 INSTANT REDIRECT TO ORDER DETAILS PAGE
+      // 7. 🚀 INSTANT REDIRECT TO ORDER DETAILS PAGE
       navigate(`/orders/${orderId}`, { replace: true, state: { orderPlaced: true, orderNumber: orderNumber, orderId } });
 
-      // 7. Bulletproof fallback: ensure browser navigated
+      // 8. Bulletproof fallback: ensure browser navigated
       setTimeout(() => {
         if (typeof window !== "undefined" && window.location.pathname.includes("/checkout")) {
-          window.location.href = `/orders/${orderId}`;
+          window.location.replace(`/orders/${orderId}`);
         }
-      }, 200);
+      }, 50);
 
     } catch (error: any) {
       console.error("Order error:", error);

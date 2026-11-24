@@ -680,9 +680,22 @@ export async function handleOrderServerRequest(
   inMemoryOrdersMap.set(orderId, orderRecord);
   inMemoryOrdersMap.set(orderNumber, orderRecord);
 
+  // Helper: recursive sanitization for Firestore
+  const sanitizeRecord = (val: any): any => {
+    if (val === undefined) return null;
+    if (val === null || typeof val !== "object") return val;
+    if (Array.isArray(val)) return val.map(sanitizeRecord);
+    const res: Record<string, any> = {};
+    for (const [k, v] of Object.entries(val)) {
+      if (v !== undefined) res[k] = sanitizeRecord(v);
+    }
+    return res;
+  };
+
   // 10. Persist to Firestore with non-blocking race
   try {
-    const fsOrderPromise = setDoc(doc(db, "orders", orderId), orderRecord);
+    const safeOrder = sanitizeRecord(orderRecord);
+    const fsOrderPromise = setDoc(doc(db, "orders", orderId), safeOrder);
     // Non-blocking timeout race: wait max 1200ms so customer gets instant response (<500ms)
     await Promise.race([
       fsOrderPromise,

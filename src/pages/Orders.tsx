@@ -50,15 +50,19 @@ export default function Orders() {
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    if (!loading && !user) {
+    const hasRecentLocalOrders = Boolean(
+      typeof window !== "undefined" &&
+      (localStorage.getItem("durtup_recent_placed_orders") || localStorage.getItem("durtup_last_placed_order_id"))
+    );
+    if (!loading && !user && !auth.currentUser && !hasRecentLocalOrders) {
       navigate("/login");
     }
   }, [user, loading, navigate]);
 
   useEffect(() => {
-    if (user) {
-      fetchOrders();
+    fetchOrders();
 
+    if (user) {
       // Realtime listener for Firestore orders scoped strictly to authenticated user
       const userOrdersQuery = query(collection(db, "orders"), where("user_id", "==", user.id));
       const unsub = onSnapshot(userOrdersQuery, () => {
@@ -92,88 +96,115 @@ export default function Orders() {
   }, [user]);
 
   const fetchOrders = async () => {
-    if (!user) return;
     setLoadingOrders(true);
     let orderMap = new Map<string, Order>();
 
-    // 1. Query Supabase DB
+    // 0. Load recent locally placed orders first (0ms instantaneous display)
     try {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (!error && data && data.length > 0) {
-        data.forEach((o: any) => {
-          const key = o.order_number || o.id;
-          orderMap.set(key, {
-            id: o.id,
-            order_number: o.order_number || o.id.slice(0, 10),
-            status: (o.status || "pending").toLowerCase(),
-            total: Number(o.total || o.totalAmount || 0),
-            created_at: o.created_at || new Date().toISOString(),
-            payment_status: (o.payment_status || "pending").toLowerCase()
-          });
-        });
-      }
-    } catch (error) {
-      console.warn("Error fetching Supabase orders:", error);
-    }
-
-    // 2. Query Firestore DB for user orders & merge newest statuses
-    try {
-      const ordersCol = collection(db, "orders");
-      let snap;
-      try {
-        const qWithOrder = query(ordersCol, where("user_id", "==", user.id), orderBy("created_at", "desc"));
-        snap = await getDocs(qWithOrder);
-      } catch {
-        const qSimple = query(ordersCol, where("user_id", "==", user.id));
-        snap = await getDocs(qSimple);
-      }
-
-      if (snap && !snap.empty) {
-        snap.forEach((d) => {
-          const data = d.data();
-          const uid = data.user_id || data.userId;
-          const isUserMatch = uid === user.id || (user.email && uid === user.email);
-          const pid = d.id;
-          const orderNum = data.order_number || data.orderNumber || (pid.startsWith("ORD-") ? pid : pid.slice(0, 10));
-          const status = (data.status || "pending").toLowerCase();
-          const total = Number(data.totalAmount || data.price || data.total || 0);
-          const createdAt = data.createdAt || data.created_at || new Date().toISOString();
-          const paymentStatus = (data.payment_status || data.paymentStatus || "pending").toLowerCase();
-
-          // Check if matches existing order in map
-          let existingKey: string | null = null;
-          for (const [k, v] of orderMap.entries()) {
-            if (v.id === pid || v.order_number === orderNum || k === pid || k === orderNum) {
-              existingKey = k;
-              break;
+      const recentPlacedRaw = localStorage.getItem("durtup_recent_placed_orders");
+      if (recentPlacedRaw) {
+        const recentOrders = JSON.parse(recentPlacedRaw);
+        if (Array.isArray(recentOrders)) {
+          recentOrders.forEach((ro: any) => {
+            if (!ro || isMockOrder(ro)) return;
+            const key = ro.order_number || ro.orderNumber || ro.id;
+            if (!key) return;
+            const total = Number(ro.total || ro.totalAmount || 0);
+            if (total > 0 && !orderMap.has(key)) {
+              orderMap.set(key, {
+                id: ro.id || key,
+                order_number: ro.order_number || ro.orderNumber || key,
+                status: (ro.status || "pending").toLowerCase(),
+                total: total,
+                created_at: ro.created_at || new Date().toISOString(),
+                payment_status: (ro.payment_status || "pending").toLowerCase()
+              });
             }
-          }
-
-          if (existingKey) {
-            const existing = orderMap.get(existingKey)!;
-            if (data.status) existing.status = status;
-            if (data.payment_status) existing.payment_status = paymentStatus;
-            if (total > 0) existing.total = total;
-          } else if (isUserMatch && total > 0 && !isMockOrder(data) && !isMockOrder({ id: pid, ...data })) {
-            // Only add new entry if user strictly matches and total > 0 (prevents 0-taka ghost duplicates)
-            orderMap.set(orderNum || pid, {
-              id: pid,
-              order_number: orderNum,
-              status: status,
-              total: total,
-              created_at: createdAt,
-              payment_status: paymentStatus
-            });
-          }
-        });
+          });
+        }
       }
-    } catch (fsErr) {
-      console.warn("Error fetching Firestore orders:", fsErr);
+    } catch {}
+
+    if (user) {
+      // 1. Query Supabase DB
+      try {
+        const { data, error } = await supabase
+          .from("orders")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          data.forEach((o: any) => {
+            const key = o.order_number || o.id;
+            orderMap.set(key, {
+              id: o.id,
+              order_number: o.order_number || o.id.slice(0, 10),
+              status: (o.status || "pending").toLowerCase(),
+              total: Number(o.total || o.totalAmount || 0),
+              created_at: o.created_at || new Date().toISOString(),
+              payment_status: (o.payment_status || "pending").toLowerCase()
+            });
+          });
+        }
+      } catch (error) {
+        console.warn("Error fetching Supabase orders:", error);
+      }
+
+      // 2. Query Firestore DB for user orders & merge newest statuses
+      try {
+        const ordersCol = collection(db, "orders");
+        let snap;
+        try {
+          const qWithOrder = query(ordersCol, where("user_id", "==", user.id), orderBy("created_at", "desc"));
+          snap = await getDocs(qWithOrder);
+        } catch {
+          const qSimple = query(ordersCol, where("user_id", "==", user.id));
+          snap = await getDocs(qSimple);
+        }
+
+        if (snap && !snap.empty) {
+          snap.forEach((d) => {
+            const data = d.data();
+            const uid = data.user_id || data.userId;
+            const isUserMatch = uid === user.id || (user.email && uid === user.email);
+            const pid = d.id;
+            const orderNum = data.order_number || data.orderNumber || (pid.startsWith("ORD-") ? pid : pid.slice(0, 10));
+            const status = (data.status || "pending").toLowerCase();
+            const total = Number(data.totalAmount || data.price || data.total || 0);
+            const createdAt = data.createdAt || data.created_at || new Date().toISOString();
+            const paymentStatus = (data.payment_status || data.paymentStatus || "pending").toLowerCase();
+
+            // Check if matches existing order in map
+            let existingKey: string | null = null;
+            for (const [k, v] of orderMap.entries()) {
+              if (v.id === pid || v.order_number === orderNum || k === pid || k === orderNum) {
+                existingKey = k;
+                break;
+              }
+            }
+
+            if (existingKey) {
+              const existing = orderMap.get(existingKey)!;
+              if (data.status) existing.status = status;
+              if (data.payment_status) existing.payment_status = paymentStatus;
+              if (total > 0) existing.total = total;
+            } else if (isUserMatch && total > 0 && !isMockOrder(data) && !isMockOrder({ id: pid, ...data })) {
+              // Only add new entry if user strictly matches and total > 0 (prevents 0-taka ghost duplicates)
+              orderMap.set(orderNum || pid, {
+                id: pid,
+                order_number: orderNum,
+                status: status,
+                total: total,
+                created_at: createdAt,
+                payment_status: paymentStatus
+              });
+            }
+          });
+        }
+      } catch (fsErr) {
+        console.warn("Error fetching Firestore orders:", fsErr);
+      }
     }
 
     // 3. Merge latest statuses from LocalStorage (enterprise_admin_orders & local_orders)
