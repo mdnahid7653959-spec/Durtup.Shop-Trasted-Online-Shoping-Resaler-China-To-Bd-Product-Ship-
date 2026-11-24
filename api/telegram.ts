@@ -6,7 +6,7 @@
  * 1. Order Requests: View, Approve, Ship, Deliver, or Cancel orders with 1 tap.
  * 2. Product Management: Search catalog, check stock, update prices, update stock.
  * 3. Store Analytics: Live sales, revenue, order statistics, conversion numbers.
- * 4. Customer Support: Customer lookup by phone number, addresses, order history.
+ * 4. Customer Support: Registered users & customers lookup by phone, email, order history.
  * 5. Instant Push Alerts: Interactive rich notifications on new customer orders.
  */
 
@@ -121,6 +121,34 @@ function getMainAdminKeyboard() {
   };
 }
 
+// Helper: Check if an order is a mock/test order
+function isMockOrderRecord(orderNum: string, phone: string = "", name: string = ""): boolean {
+  const num = (orderNum || "").toLowerCase().trim();
+  const cleanPhone = phone.replace(/[^\d]/g, "").trim();
+  const cleanName = (name || "").toLowerCase().trim();
+
+  if (
+    num.startsWith("ord-test-") ||
+    num.startsWith("test-") ||
+    num.startsWith("mock-") ||
+    num.includes("mock") ||
+    num === "ord-1001" ||
+    num === "ord-1002" ||
+    num === "ord-2026-1001" ||
+    num === "ord-2026-1002" ||
+    cleanPhone === "01711223344" ||
+    cleanPhone === "01700000000" ||
+    cleanPhone === "01800000000" ||
+    cleanPhone === "01911111111" ||
+    cleanName.includes("test user") ||
+    cleanName.includes("mock customer") ||
+    cleanName.includes("demo user")
+  ) {
+    return true;
+  }
+  return false;
+}
+
 // Helper: Parse order fields cleanly from Firestore REST format
 function parseFirestoreOrder(docItem: any) {
   const f = docItem.fields || {};
@@ -128,9 +156,24 @@ function parseFirestoreOrder(docItem: any) {
   const orderNum = f.order_number?.stringValue || f.orderNumber?.stringValue || id;
   const total = f.total?.integerValue || f.total?.doubleValue || f.total_price?.integerValue || f.total_price?.doubleValue || 0;
   const status = (f.status?.stringValue || "pending").toLowerCase();
-  const customerName = f.customer_name?.stringValue || f.customerName?.stringValue || "Customer";
-  const phone = f.phone?.stringValue || "N/A";
-  const address = f.address?.stringValue || f.full_address?.stringValue || "N/A";
+  
+  // Parse shipping details
+  const shipMap = f.shipping_address?.mapValue?.fields || {};
+  const firstName = shipMap.firstName?.stringValue || "";
+  const lastName = shipMap.lastName?.stringValue || "";
+  const fullNameFromShip = [firstName, lastName].filter(Boolean).join(" ");
+  const customerName = f.customer_name?.stringValue || f.customerName?.stringValue || shipMap.name?.stringValue || fullNameFromShip || "Customer";
+  
+  const phone = f.phone?.stringValue || f.customer_phone?.stringValue || shipMap.phone?.stringValue || "N/A";
+  
+  const addressParts = [
+    shipMap.address?.stringValue,
+    shipMap.city?.stringValue,
+    shipMap.state?.stringValue,
+    shipMap.country?.stringValue
+  ].filter(Boolean);
+  const address = f.address?.stringValue || f.full_address?.stringValue || (addressParts.length > 0 ? addressParts.join(", ") : "N/A");
+  
   const paymentMethod = f.payment_method?.stringValue || f.paymentMethod?.stringValue || "Cash on Delivery";
   const dateStr = f.created_at?.stringValue || docItem.createTime || "";
   
@@ -140,9 +183,9 @@ function parseFirestoreOrder(docItem: any) {
     f.items.arrayValue.values.forEach((iv: any) => {
       const im = iv.mapValue?.fields || {};
       items.push({
-        name: im.name?.stringValue || im.title?.stringValue || "Product Item",
+        name: im.name?.stringValue || im.title?.stringValue || im.product_name?.stringValue || "Product Item",
         quantity: Number(im.quantity?.integerValue || 1),
-        price: Number(im.price?.integerValue || im.price?.doubleValue || 0)
+        price: Number(im.price?.integerValue || im.price?.doubleValue || im.unit_price?.integerValue || 0)
       });
     });
   }
@@ -159,6 +202,113 @@ function parseFirestoreOrder(docItem: any) {
     dateStr,
     items
   };
+}
+
+// Helper: Store User Interface matching Web Admin
+interface StoreUser {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: string;
+  status: string;
+  joinedDate: string;
+  orderCount: number;
+  totalSpent: number;
+}
+
+// Helper: Retrieve all registered store users from Firestore (profiles + master admin + orders)
+async function getStoreUsers(): Promise<StoreUser[]> {
+  const users: StoreUser[] = [];
+  const userMap = new Map<string, StoreUser>();
+
+  // 1. Master Super Admin (always present matching Admin Users page)
+  const masterAdmin: StoreUser = {
+    id: "3d0aed73-3d4d-4f0a-ad90-fddbb05eab81",
+    name: "HI Admin (Super Admin)",
+    email: "admin@durtup.shop",
+    phone: "+8801700000000",
+    role: "admin",
+    status: "Active",
+    joinedDate: "10/25/2026",
+    orderCount: 0,
+    totalSpent: 0
+  };
+  userMap.set(masterAdmin.id, masterAdmin);
+
+  // 2. Fetch profiles from Firestore /profiles
+  try {
+    const pRes = await fetch(`${FIRESTORE_BASE}/profiles?pageSize=50`);
+    if (pRes.ok) {
+      const pJson = await pRes.json();
+      (pJson.documents || []).forEach((doc: any) => {
+        const f = doc.fields || {};
+        const id = doc.name?.split("/").pop() || "";
+        const name = f.full_name?.stringValue || f.name?.stringValue || f.displayName?.stringValue || "Customer";
+        const email = f.email?.stringValue || (f.phone?.stringValue ? `${f.phone.stringValue}@phone.durtup.shop` : "No email");
+        const phone = f.phone?.stringValue || "No phone";
+        const role = f.role?.stringValue || "customer";
+        const isActive = f.is_active?.booleanValue !== false;
+        const createdAtRaw = f.created_at?.stringValue || doc.createTime || "";
+        let joinedDate = "Recent";
+        if (createdAtRaw) {
+          try {
+            const d = new Date(createdAtRaw);
+            joinedDate = `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
+          } catch (e) {}
+        }
+        userMap.set(id, {
+          id,
+          name,
+          email,
+          phone,
+          role,
+          status: isActive ? "Active" : "Inactive",
+          joinedDate,
+          orderCount: 0,
+          totalSpent: 0
+        });
+      });
+    }
+  } catch (err) {
+    console.error("[getStoreUsers profiles error]:", err);
+  }
+
+  // 3. Cross-reference orders to compute orders count and total spent
+  try {
+    const oRes = await fetch(`${FIRESTORE_BASE}/orders?pageSize=50`);
+    if (oRes.ok) {
+      const oJson = await oRes.json();
+      (oJson.documents || []).forEach((doc: any) => {
+        const f = doc.fields || {};
+        const oNum = (f.order_number?.stringValue || f.orderNumber?.stringValue || "").toLowerCase();
+        const shipMap = f.shipping_address?.mapValue?.fields || {};
+        const oPhone = (f.phone?.stringValue || f.customer_phone?.stringValue || shipMap.phone?.stringValue || "").replace(/[^\d]/g, "");
+        const oName = f.customer_name?.stringValue || f.customerName?.stringValue || shipMap.name?.stringValue || "";
+
+        if (isMockOrderRecord(oNum, oPhone, oName)) return;
+
+        const oEmail = (f.customer_email?.stringValue || shipMap.email?.stringValue || "").toLowerCase();
+        const total = Number(f.total?.integerValue || f.total?.doubleValue || 0);
+
+        if (oPhone || oEmail) {
+          for (const u of userMap.values()) {
+            const uCleanPhone = u.phone.replace(/[^\d]/g, "");
+            const uCleanEmail = u.email.toLowerCase();
+            if ((oPhone && uCleanPhone && uCleanPhone === oPhone) || (oEmail && uCleanEmail && uCleanEmail === oEmail)) {
+              u.orderCount += 1;
+              u.totalSpent += total;
+              break;
+            }
+          }
+        }
+      });
+    }
+  } catch (err) {
+    console.error("[getStoreUsers orders error]:", err);
+  }
+
+  return Array.from(userMap.values());
 }
 
 // Helper: Format single order detail card with action buttons
@@ -250,56 +400,59 @@ export default async function handler(req: any, res: any) {
     return res.status(200).end();
   }
 
-  // GET Health Check (Instant 200 OK)
+  // Health check / GET diagnostics endpoint
   if (req.method === "GET") {
+    const config = await getTelegramConfig();
     return res.status(200).json({
-      status: "active",
-      service: "Durtup Telegram Admin Control Webhook (Full Management Engine)",
-      time: new Date().toISOString()
+      service: "Durtup.shop Telegram Admin Bot Engine",
+      status: "operational",
+      version: "2.5.0-integrated",
+      timestamp: new Date().toISOString(),
+      authorized_admins_count: config.admin_chat_ids.length,
+      admins: config.admin_chat_ids,
+      webhook_target: `${STORE_URL}/api/telegram-webhook`
     });
   }
 
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed. Use POST." });
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
-    let update = req.body;
-    if (typeof update === "string") {
-      try {
-        update = JSON.parse(update);
-      } catch {
-        update = null;
-      }
-    }
-
-    if (!update || typeof update !== "object") {
-      return res.status(400).json({ error: "Invalid payload" });
+    const update = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+    if (!update) {
+      return res.status(400).json({ error: "Invalid JSON update payload" });
     }
 
     const config = await getTelegramConfig();
 
     // ==========================================
-    // 1. HANDLE INLINE BUTTON CALLBACKS
+    // 1. HANDLE INLINE KEYBOARD CALLBACK QUERIES
     // ==========================================
     if (update.callback_query) {
       const cb = update.callback_query;
       const cbId = cb.id;
-      const data = cb.data || "";
+      const data = (cb.data || "").trim();
       const chatId = cb.message?.chat?.id;
       const messageId = cb.message?.message_id;
       const fromId = String(cb.from?.id || "");
       const fromName = [cb.from?.first_name, cb.from?.last_name].filter(Boolean).join(" ") || "Admin";
 
-      // A. Self-Pairing Callback
+      // A. Self-service Admin Pairing
       if (data.startsWith("admin_pair:")) {
-        const pairId = data.replace("admin_pair:", "").trim();
-        await addAdminId(pairId);
-        await callTelegram("answerCallbackQuery", { callback_query_id: cbId, text: "Admin Access Granted! 🎉" });
+        const targetId = data.replace("admin_pair:", "").trim();
+        await addAdminId(targetId);
+
+        await callTelegram("answerCallbackQuery", {
+          callback_query_id: cbId,
+          text: `🎉 Telegram ID ${targetId} authorized as Store Admin!`,
+          show_alert: true
+        });
+
         if (chatId) {
           await callTelegram("sendMessage", {
             chat_id: chatId,
-            text: `🎉 <b>Welcome to Durtup.shop Admin Assistant, ${fromName}!</b>\n\nYour Telegram User ID (<code>${pairId}</code>) is now authorized as a <b>Store Administrator</b>.\n\nYou can manage order requests, check inventory, update prices, and view sales statistics directly from Telegram.`,
+            text: `🎉 <b>Congratulations, ${fromName}!</b>\n\nYour Telegram User ID (<code>${targetId}</code>) is now officially registered as an <b>Authorized Store Administrator</b> for <b>${STORE_NAME}</b>.\n\nYou have full live control over orders, stock, prices, customers, and analytics.`,
             parse_mode: "HTML",
             reply_markup: getMainAdminKeyboard()
           });
@@ -307,22 +460,22 @@ export default async function handler(req: any, res: any) {
         return res.status(200).json({ ok: true });
       }
 
-      // Authorization Gate for sensitive actions
-      const isAuthorized = config.admin_chat_ids.length === 0 || config.admin_chat_ids.includes(fromId);
+      // Security check: Only allow authorized admin IDs to execute callback actions
+      const isAuthorized = config.admin_chat_ids.includes(fromId);
       if (!isAuthorized) {
         await callTelegram("answerCallbackQuery", {
           callback_query_id: cbId,
-          text: "⛔ Access Denied! Your Telegram ID is not authorized.",
+          text: "⛔ Access Denied! You are not authorized to perform admin actions.",
           show_alert: true
         });
         return res.status(200).json({ ok: true });
       }
 
-      // B. Return to Main Dashboard
-      if (data === "cmd_dashboard" || data === "cmd_menu") {
+      // B. Main Dashboard / Menu Callback
+      if (data === "cmd_dashboard") {
         await callTelegram("sendMessage", {
           chat_id: chatId,
-          text: `🏠 <b>DURTUP.SHOP ADMIN CONTROL PANEL</b>\n━━━━━━━━━━━━━━━━━━━━━━\nSelect a section below to manage your online store in real time:`,
+          text: `🏠 <b>DURTUP.SHOP ADMIN CONTROL PANEL</b>\n━━━━━━━━━━━━━━━━━━━━━━\nSelect a section below or type commands to manage your store:`,
           parse_mode: "HTML",
           reply_markup: getMainAdminKeyboard()
         });
@@ -335,7 +488,7 @@ export default async function handler(req: any, res: any) {
         const orderNum = data.replace("order_approve:", "").trim();
         const nowIso = new Date().toISOString();
 
-        await fetch(`${FIRESTORE_BASE}/orders/${orderNum}?updateMask.fieldPaths=status&updateMask.fieldPaths=approved_by_telegram&updateMask.fieldPaths=approved_by_name&updateMask.fieldPaths=approved_at&updateMask.fieldPaths=updated_at`, {
+        await fetch(`${FIRESTORE_BASE}/orders/${orderNum}?updateMask.fieldPaths=status&updateMask.fieldPaths=approved_by_telegram&updateMask.fieldPaths=approved_by_name&updateMask.fieldPaths=confirmed_at&updateMask.fieldPaths=updated_at`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -343,7 +496,7 @@ export default async function handler(req: any, res: any) {
               status: { stringValue: "confirmed" },
               approved_by_telegram: { stringValue: fromId },
               approved_by_name: { stringValue: fromName },
-              approved_at: { stringValue: nowIso },
+              confirmed_at: { stringValue: nowIso },
               updated_at: { stringValue: nowIso }
             }
           })
@@ -513,13 +666,16 @@ export default async function handler(req: any, res: any) {
       // G. Orders Request List (Recent Orders or Pending Action Needed)
       if (data === "cmd_orders" || data === "cmd_pending") {
         const isPendingOnly = data === "cmd_pending";
-        const resOrders = await fetch(`${FIRESTORE_BASE}/orders?pageSize=10`);
+        const resOrders = await fetch(`${FIRESTORE_BASE}/orders?pageSize=30`);
         let ordersList: any[] = [];
 
         if (resOrders.ok) {
           const oJson = await resOrders.json();
           const docs = oJson.documents || [];
-          ordersList = docs.map(parseFirestoreOrder);
+          ordersList = docs
+            .map(parseFirestoreOrder)
+            .filter(o => !isMockOrderRecord(o.orderNum, o.phone, o.customerName));
+
           if (isPendingOnly) {
             ordersList = ordersList.filter(o => o.status === "pending");
           }
@@ -528,7 +684,7 @@ export default async function handler(req: any, res: any) {
         if (ordersList.length === 0) {
           await callTelegram("sendMessage", {
             chat_id: chatId,
-            text: `📦 <b>${isPendingOnly ? "Pending Orders" : "Recent Orders"}:</b>\n━━━━━━━━━━━━━━━━━━━━━━\n<i>No ${isPendingOnly ? "pending" : ""} orders found at this moment.</i>`,
+            text: `📦 <b>${isPendingOnly ? "Pending Orders" : "Recent Orders"}:</b>\n━━━━━━━━━━━━━━━━━━━━━━\n<i>No ${isPendingOnly ? "pending" : ""} customer orders found at this moment.</i>`,
             parse_mode: "HTML",
             reply_markup: getMainAdminKeyboard()
           });
@@ -622,9 +778,11 @@ export default async function handler(req: any, res: any) {
         if (resOrders.ok) {
           const oJson = await resOrders.json();
           const docs = oJson.documents || [];
-          totalOrders = docs.length;
           docs.forEach((docItem: any) => {
             const o = parseFirestoreOrder(docItem);
+            if (isMockOrderRecord(o.orderNum, o.phone, o.customerName)) return;
+
+            totalOrders++;
             if (o.status === "confirmed") {
               confirmed++;
               totalRevenue += o.total;
@@ -666,42 +824,36 @@ export default async function handler(req: any, res: any) {
         return res.status(200).json({ ok: true });
       }
 
-      // K. Customers Summary
+      // K. Customers & Registered Users Summary
       if (data === "cmd_customers") {
-        const resOrders = await fetch(`${FIRESTORE_BASE}/orders?pageSize=15`);
-        let customerList: Array<{ name: string; phone: string; address: string; spent: number }> = [];
-
-        if (resOrders.ok) {
-          const oJson = await resOrders.json();
-          const docs = oJson.documents || [];
-          docs.forEach((docItem: any) => {
-            const o = parseFirestoreOrder(docItem);
-            if (o.phone !== "N/A") {
-              customerList.push({
-                name: o.customerName,
-                phone: o.phone,
-                address: o.address,
-                spent: o.total
-              });
-            }
-          });
-        }
-
-        let custMsg = `👥 <b>RECENT STORE BUYERS & CUSTOMERS</b>\n━━━━━━━━━━━━━━━━━━━━━━\n`;
-        if (customerList.length === 0) {
-          custMsg += `<i>No customer profiles available yet.</i>`;
-        } else {
-          customerList.slice(0, 6).forEach(c => {
-            custMsg += `👤 <b>${c.name}</b>\n📞 <code>${c.phone}</code> | 📍 ${c.address}\n💰 Total Bill: ৳${c.spent.toLocaleString()}\n\n`;
-          });
-        }
-        custMsg += `━━━━━━━━━━━━━━━━━━━━━━\n💡 <i>To inspect a specific customer, send: <code>/customer &lt;phone&gt;</code></i>`;
+        const users = await getStoreUsers();
+        
+        let custMsg = `👥 <b>DURTUP.SHOP REGISTERED USERS (${users.length})</b>\n━━━━━━━━━━━━━━━━━━━━━━\n`;
+        users.forEach((u, idx) => {
+          const roleBadge = u.role === "admin" ? "🛡️ <b>Super Admin</b>" : "👤 <i>Customer</i>";
+          const phoneDisplay = u.phone !== "No phone" ? `<code>${u.phone}</code>` : "<i>No phone</i>";
+          custMsg += `${idx + 1}. <b>${u.name}</b>\n`;
+          custMsg += `   📞 ${phoneDisplay} | ✉️ <code>${u.email}</code>\n`;
+          custMsg += `   🏷️ Role: ${roleBadge} | 🟢 <b>${u.status}</b> | 📅 Joined: ${u.joinedDate}\n`;
+          if (u.orderCount > 0) {
+            custMsg += `   🛍️ Orders: <b>${u.orderCount}</b> | 💰 Spent: <b>৳${u.totalSpent.toLocaleString()}</b>\n`;
+          }
+          custMsg += `\n`;
+        });
+        custMsg += `━━━━━━━━━━━━━━━━━━━━━━\n💡 <i>Search user details: <code>/customer &lt;phone or name&gt;</code></i>`;
 
         await callTelegram("sendMessage", {
           chat_id: chatId,
           text: custMsg,
           parse_mode: "HTML",
-          reply_markup: getMainAdminKeyboard()
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: "👥 Open Users in Web Admin", url: `${STORE_URL}/admin/users` },
+                { text: "🔙 Main Dashboard", callback_data: "cmd_dashboard" }
+              ]
+            ]
+          }
         });
         await callTelegram("answerCallbackQuery", { callback_query_id: cbId });
         return res.status(200).json({ ok: true });
@@ -720,7 +872,7 @@ export default async function handler(req: any, res: any) {
 🔹 <b>/search &lt;name&gt;</b> - Find product details & price
 🔹 <b>/price &lt;id&gt; &lt;amount&gt;</b> - Directly change product price
 🔹 <b>/stock &lt;id&gt; &lt;quantity&gt;</b> - Update product stock
-🔹 <b>/customer &lt;phone&gt;</b> - View customer order history
+🔹 <b>/customer &lt;phone&gt;</b> - View customer profile & orders
 🔹 <b>/myid</b> - Show your numeric Telegram ID
 ━━━━━━━━━━━━━━━━━━━━━━
 💡 <i>Tip: You can use the buttons directly without typing commands!</i>`;
@@ -801,13 +953,16 @@ export default async function handler(req: any, res: any) {
       // Command: /orders or /pending
       if (text === "/orders" || text === "/pending") {
         const isPendingOnly = text === "/pending";
-        const resOrders = await fetch(`${FIRESTORE_BASE}/orders?pageSize=10`);
+        const resOrders = await fetch(`${FIRESTORE_BASE}/orders?pageSize=30`);
         let ordersList: any[] = [];
 
         if (resOrders.ok) {
           const oJson = await resOrders.json();
           const docs = oJson.documents || [];
-          ordersList = docs.map(parseFirestoreOrder);
+          ordersList = docs
+            .map(parseFirestoreOrder)
+            .filter(o => !isMockOrderRecord(o.orderNum, o.phone, o.customerName));
+
           if (isPendingOnly) {
             ordersList = ordersList.filter(o => o.status === "pending");
           }
@@ -816,11 +971,16 @@ export default async function handler(req: any, res: any) {
         if (ordersList.length === 0) {
           await callTelegram("sendMessage", {
             chat_id: chatId,
-            text: `📦 <i>No ${isPendingOnly ? "pending" : ""} orders found.</i>`,
+            text: `📦 <i>No ${isPendingOnly ? "pending" : ""} customer orders found.</i>`,
             parse_mode: "HTML",
             reply_markup: getMainAdminKeyboard()
           });
         } else {
+          await callTelegram("sendMessage", {
+            chat_id: chatId,
+            text: `📦 <b>${isPendingOnly ? "Pending Orders" : "Recent Orders"} (${ordersList.length}):</b>`,
+            parse_mode: "HTML"
+          });
           for (const ord of ordersList.slice(0, 5)) {
             const card = formatOrderCard(ord);
             await callTelegram("sendMessage", {
@@ -975,37 +1135,99 @@ export default async function handler(req: any, res: any) {
         return res.status(200).json({ ok: true });
       }
 
-      // Command: /customer <phone_or_name>
-      if (text.startsWith("/customer ")) {
-        const queryTerm = text.replace("/customer ", "").trim().toLowerCase();
-        const resOrders = await fetch(`${FIRESTORE_BASE}/orders?pageSize=30`);
-        let matches: any[] = [];
+      // Command: /customer <phone_or_email_or_name>
+      if (text.startsWith("/customer")) {
+        const queryTerm = text.replace("/customer", "").trim().toLowerCase();
+        const users = await getStoreUsers();
 
+        if (!queryTerm) {
+          let listMsg = `👥 <b>DURTUP REGISTERED USERS (${users.length}):</b>\n━━━━━━━━━━━━━━━━━━━━━━\n`;
+          users.forEach(u => {
+            const roleBadge = u.role === "admin" ? "[Admin]" : "[Customer]";
+            listMsg += `• <b>${u.name}</b> ${roleBadge}\n  📞 ${u.phone} | ✉️ ${u.email}\n`;
+          });
+          listMsg += `\n💡 <i>To inspect an individual profile, type: <code>/customer &lt;phone or email&gt;</code></i>`;
+          await callTelegram("sendMessage", {
+            chat_id: chatId,
+            text: listMsg,
+            parse_mode: "HTML",
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: "👥 View on Web Admin", url: `${STORE_URL}/admin/users` }]
+              ]
+            }
+          });
+          return res.status(200).json({ ok: true });
+        }
+
+        const cleanQueryPhone = queryTerm.replace(/[^\d]/g, "");
+        const matchedUsers = users.filter(u =>
+          u.name.toLowerCase().includes(queryTerm) ||
+          u.email.toLowerCase().includes(queryTerm) ||
+          (cleanQueryPhone && u.phone.replace(/[^\d]/g, "").includes(cleanQueryPhone))
+        );
+
+        // Also fetch customer orders
+        const resOrders = await fetch(`${FIRESTORE_BASE}/orders?pageSize=50`);
+        let customerOrders: any[] = [];
         if (resOrders.ok) {
           const oJson = await resOrders.json();
           const docs = oJson.documents || [];
-          matches = docs
+          customerOrders = docs
             .map(parseFirestoreOrder)
-            .filter(o => o.phone.toLowerCase().includes(queryTerm) || o.customerName.toLowerCase().includes(queryTerm));
+            .filter(o => !isMockOrderRecord(o.orderNum, o.phone, o.customerName) && (
+              (cleanQueryPhone && o.phone.replace(/[^\d]/g, "").includes(cleanQueryPhone)) ||
+              o.customerName.toLowerCase().includes(queryTerm)
+            ));
         }
 
-        if (matches.length === 0) {
+        if (matchedUsers.length === 0 && customerOrders.length === 0) {
           await callTelegram("sendMessage", {
             chat_id: chatId,
-            text: `❌ No customer found matching <i>"${queryTerm}"</i>.`,
+            text: `❌ No registered user or customer found matching <i>"${queryTerm}"</i>.\n\nSearch on Web Admin: <a href="${STORE_URL}/admin/users?search=${encodeURIComponent(queryTerm)}">Open Users Page</a>`,
             parse_mode: "HTML"
           });
-        } else {
-          let msg = `👤 <b>Customer Profile:</b>\n━━━━━━━━━━━━━━━━━━━━━━\n• Name: <b>${matches[0].customerName}</b>\n• Phone: <code>${matches[0].phone}</code>\n• Address: ${matches[0].address}\n• Total Orders: <b>${matches.length}</b>\n\n<b>Order History:</b>\n`;
-          matches.forEach(m => {
-            msg += `• #${m.orderNum} - ৳${m.total.toLocaleString()} (${m.status.toUpperCase()})\n`;
-          });
-          await callTelegram("sendMessage", {
-            chat_id: chatId,
-            text: msg,
-            parse_mode: "HTML"
+          return res.status(200).json({ ok: true });
+        }
+
+        let reply = "";
+        if (matchedUsers.length > 0) {
+          const u = matchedUsers[0];
+          const roleBadge = u.role === "admin" ? "🛡️ Super Admin" : "👤 Customer";
+          reply += `👤 <b>USER PROFILE: ${u.name}</b>\n━━━━━━━━━━━━━━━━━━━━━━\n`;
+          reply += `• <b>Role:</b> ${roleBadge}\n`;
+          reply += `• <b>Account Status:</b> 🟢 ${u.status}\n`;
+          reply += `• <b>Phone:</b> <code>${u.phone}</code>\n`;
+          reply += `• <b>Email:</b> <code>${u.email}</code>\n`;
+          reply += `• <b>Joined Date:</b> ${u.joinedDate}\n`;
+          reply += `• <b>Total Orders:</b> ${customerOrders.length || u.orderCount}\n`;
+          reply += `• <b>Total Spent:</b> ৳${u.totalSpent.toLocaleString()}\n`;
+        } else if (customerOrders.length > 0) {
+          const firstOrd = customerOrders[0];
+          reply += `👤 <b>CUSTOMER PROFILE (from orders):</b>\n━━━━━━━━━━━━━━━━━━━━━━\n`;
+          reply += `• <b>Name:</b> ${firstOrd.customerName}\n`;
+          reply += `• <b>Phone:</b> <code>${firstOrd.phone}</code>\n`;
+          reply += `• <b>Address:</b> ${firstOrd.address}\n`;
+          reply += `• <b>Total Orders:</b> ${customerOrders.length}\n`;
+        }
+
+        if (customerOrders.length > 0) {
+          reply += `\n📦 <b>Order History (${customerOrders.length}):</b>\n`;
+          customerOrders.slice(0, 5).forEach(m => {
+            reply += `• <b>#${m.orderNum}</b> - ৳${m.total.toLocaleString()} (${m.status.toUpperCase()})\n  🕒 ${new Date(m.dateStr).toLocaleDateString("en-BD")}\n`;
           });
         }
+
+        await callTelegram("sendMessage", {
+          chat_id: chatId,
+          text: reply,
+          parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: "🌐 View in Admin Panel", url: `${STORE_URL}/admin/users?search=${encodeURIComponent(queryTerm)}` }]
+            ]
+          }
+        });
         return res.status(200).json({ ok: true });
       }
 
@@ -1020,9 +1242,11 @@ export default async function handler(req: any, res: any) {
         if (resOrders.ok) {
           const oJson = await resOrders.json();
           const docs = oJson.documents || [];
-          totalOrders = docs.length;
           docs.forEach((docItem: any) => {
             const o = parseFirestoreOrder(docItem);
+            if (isMockOrderRecord(o.orderNum, o.phone, o.customerName)) return;
+
+            totalOrders++;
             if (o.status === "confirmed" || o.status === "delivered" || o.status === "shipped") {
               totalRevenue += o.total;
               confirmed++;
