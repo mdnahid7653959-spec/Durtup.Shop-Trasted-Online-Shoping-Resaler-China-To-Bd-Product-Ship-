@@ -560,8 +560,8 @@ export default function Checkout() {
         ...regularItems.map(item => ({
           product_id: item.product_id || item.id,
           name: item.name || item.title || item.product?.name || "Product",
-          price: Number(item.price || item.unit_price || item.product?.price || 0),
-          image: item.image || item.product_image || item.product?.image_url || "",
+          price: Number(item.price || item.unit_price || item.product?.discount_price || item.product?.price || item.product?.regular_price || 0),
+          image: item.image || item.product_image || item.product?.image_url || (Array.isArray(item.product?.images) ? item.product.images[0] : "") || "",
           quantity: item.quantity || 1,
           selected_variants: item.selected_variants || (item.variant_name ? { variant: item.variant_name } : null) || null,
           source: "regular" as const
@@ -711,6 +711,9 @@ export default function Checkout() {
         const safeFirestoreRecord = sanitizeForFirestore(orderRecord);
         setDoc(doc(db, "orders", orderId), safeFirestoreRecord).catch((e) => {
           console.warn("[Checkout] Firestore setDoc async notice:", e);
+        });
+        setDoc(doc(db, "orders", orderNumber), safeFirestoreRecord).catch((e) => {
+          console.warn("[Checkout] Firestore setDoc orderNumber async notice:", e);
         });
       } catch (fsSyncErr) {
         console.warn("[Checkout] Firestore setDoc sync catch:", fsSyncErr);

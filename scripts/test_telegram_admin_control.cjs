@@ -51,7 +51,7 @@ function getJson(url) {
 }
 
 async function runTests() {
-  const endpoint = process.env.TARGET_URL || 'https://www.durtup.shop/api/telegram-webhook';
+  const endpoint = process.argv[2] || process.env.TARGET_URL || 'https://www.durtup.shop/api/telegram-webhook';
   console.log('====================================================');
   console.log(`🧪 Starting Durtup.shop Telegram Admin Bot Tests on ${endpoint}`);
   console.log('====================================================\n');

@@ -588,23 +588,60 @@ export default async function handler(req: any, res: any) {
         return res.status(200).json({ ok: true });
       }
 
+      // Helper: reliably update Firestore order status across direct ID or order_number lookup
+      const updateOrderStatusInFirestore = async (orderIdentifier: string, statusFields: Record<string, any>) => {
+        const mask = Object.keys(statusFields).map(k => `updateMask.fieldPaths=${k}`).join("&");
+        // 1. Direct PATCH by orderIdentifier
+        await fetch(`${FIRESTORE_BASE}/orders/${orderIdentifier}?${mask}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fields: statusFields })
+        }).catch(() => {});
+
+        // 2. Query Firestore by order_number to find matching document if stored under ord_... ID
+        try {
+          const qRes = await fetch(`${FIRESTORE_BASE}:runQuery`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              structuredQuery: {
+                from: [{ collectionId: "orders" }],
+                where: {
+                  fieldFilter: {
+                    field: { fieldPath: "order_number" },
+                    op: "EQUAL",
+                    value: { stringValue: orderIdentifier }
+                  }
+                },
+                limit: 1
+              }
+            })
+          });
+          if (qRes.ok) {
+            const qDocs = await qRes.json();
+            if (Array.isArray(qDocs) && qDocs[0]?.document?.name) {
+              const docPath = qDocs[0].document.name;
+              await fetch(`https://firestore.googleapis.com/v1/${docPath}?${mask}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ fields: statusFields })
+              }).catch(() => {});
+            }
+          }
+        } catch {}
+      };
+
       // MODULE 2: Order Approval Action
       if (data.startsWith("order_approve:")) {
         const orderNum = data.replace("order_approve:", "").trim();
         const nowIso = new Date().toISOString();
 
-        await fetch(`${FIRESTORE_BASE}/orders/${orderNum}?updateMask.fieldPaths=status&updateMask.fieldPaths=approved_by_telegram&updateMask.fieldPaths=approved_by_name&updateMask.fieldPaths=confirmed_at&updateMask.fieldPaths=updated_at`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            fields: {
-              status: { stringValue: "confirmed" },
-              approved_by_telegram: { stringValue: fromId },
-              approved_by_name: { stringValue: fromName },
-              confirmed_at: { stringValue: nowIso },
-              updated_at: { stringValue: nowIso }
-            }
-          })
+        await updateOrderStatusInFirestore(orderNum, {
+          status: { stringValue: "confirmed" },
+          approved_by_telegram: { stringValue: fromId },
+          approved_by_name: { stringValue: fromName },
+          confirmed_at: { stringValue: nowIso },
+          updated_at: { stringValue: nowIso }
         });
 
         await recordAuditLog(fromId, "ORDER_APPROVE", orderNum, `Approved by ${fromName}`);
@@ -643,16 +680,10 @@ export default async function handler(req: any, res: any) {
         const orderNum = data.replace("order_ship:", "").trim();
         const nowIso = new Date().toISOString();
 
-        await fetch(`${FIRESTORE_BASE}/orders/${orderNum}?updateMask.fieldPaths=status&updateMask.fieldPaths=shipped_at&updateMask.fieldPaths=updated_at`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            fields: {
-              status: { stringValue: "shipped" },
-              shipped_at: { stringValue: nowIso },
-              updated_at: { stringValue: nowIso }
-            }
-          })
+        await updateOrderStatusInFirestore(orderNum, {
+          status: { stringValue: "shipped" },
+          shipped_at: { stringValue: nowIso },
+          updated_at: { stringValue: nowIso }
         });
 
         await recordAuditLog(fromId, "ORDER_SHIP", orderNum, `Shipped by ${fromName}`);
@@ -687,16 +718,10 @@ export default async function handler(req: any, res: any) {
         const orderNum = data.replace("order_deliver:", "").trim();
         const nowIso = new Date().toISOString();
 
-        await fetch(`${FIRESTORE_BASE}/orders/${orderNum}?updateMask.fieldPaths=status&updateMask.fieldPaths=delivered_at&updateMask.fieldPaths=updated_at`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            fields: {
-              status: { stringValue: "delivered" },
-              delivered_at: { stringValue: nowIso },
-              updated_at: { stringValue: nowIso }
-            }
-          })
+        await updateOrderStatusInFirestore(orderNum, {
+          status: { stringValue: "delivered" },
+          delivered_at: { stringValue: nowIso },
+          updated_at: { stringValue: nowIso }
         });
 
         await recordAuditLog(fromId, "ORDER_DELIVER", orderNum, `Delivered by ${fromName}`);
@@ -728,16 +753,10 @@ export default async function handler(req: any, res: any) {
         const orderNum = data.replace("order_reject:", "").trim();
         const nowIso = new Date().toISOString();
 
-        await fetch(`${FIRESTORE_BASE}/orders/${orderNum}?updateMask.fieldPaths=status&updateMask.fieldPaths=cancelled_at&updateMask.fieldPaths=updated_at`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            fields: {
-              status: { stringValue: "cancelled" },
-              cancelled_at: { stringValue: nowIso },
-              updated_at: { stringValue: nowIso }
-            }
-          })
+        await updateOrderStatusInFirestore(orderNum, {
+          status: { stringValue: "cancelled" },
+          cancelled_at: { stringValue: nowIso },
+          updated_at: { stringValue: nowIso }
         });
 
         await recordAuditLog(fromId, "ORDER_REJECT", orderNum, `Cancelled by ${fromName}`);

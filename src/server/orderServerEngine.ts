@@ -692,13 +692,15 @@ export async function handleOrderServerRequest(
     return res;
   };
 
-  // 10. Persist to Firestore with non-blocking race
+  // 10. Persist to Firestore with non-blocking race (save under both orderId and orderNumber)
   try {
     const safeOrder = sanitizeRecord(orderRecord);
     const fsOrderPromise = setDoc(doc(db, "orders", orderId), safeOrder);
+    const fsOrderNumPromise = setDoc(doc(db, "orders", orderNumber), safeOrder);
+
     // Non-blocking timeout race: wait max 1200ms so customer gets instant response (<500ms)
     await Promise.race([
-      fsOrderPromise,
+      Promise.all([fsOrderPromise, fsOrderNumPromise]),
       new Promise((r) => setTimeout(r, 1200))
     ]).catch((e) => console.warn("[OrderServerEngine] Firestore setDoc timeout/warn:", e));
 
@@ -729,10 +731,10 @@ export async function handleOrderServerRequest(
       city: shipping_address.city,
       payment_method,
       total: payableTotal,
-      items: (items || []).map((it: any) => ({
-        name: it.name || "Product",
+      items: (validatedItems || []).map((it: any) => ({
+        name: it.name || it.title || it.product_name || "Product",
         quantity: it.quantity || 1,
-        price: it.price || 0
+        price: it.unit_price || it.price || 0
       }))
     }).catch((tgErr) => console.warn("[OrderServerEngine] Telegram notification error:", tgErr));
   } catch (fsErr) {
