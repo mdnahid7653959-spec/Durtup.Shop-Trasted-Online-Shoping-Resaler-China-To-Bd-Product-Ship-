@@ -373,7 +373,8 @@ export default function OrderDetail() {
           const isOwner = Boolean(
             isRecentOwner ||
             Boolean(localStorage.getItem("durtup_recent_order_" + id)) ||
-            (effectiveViewerId && (orderUserId === effectiveViewerId || (user?.email && orderUserId === user.email) || (auth.currentUser?.email && orderUserId === auth.currentUser.email)))
+            (effectiveViewerId && (orderUserId === effectiveViewerId || (user?.email && orderUserId === user.email) || (auth.currentUser?.email && orderUserId === auth.currentUser.email))) ||
+            (orderUserId && typeof orderUserId === "string" && orderUserId.startsWith("guest_"))
           );
           const isStaff = Boolean(isAdmin || isSeller);
 
@@ -476,7 +477,8 @@ export default function OrderDetail() {
           const isOwner = Boolean(
             isRecentOwner ||
             Boolean(localStorage.getItem("durtup_recent_order_" + id)) ||
-            (effectiveViewerId && (orderUserId === effectiveViewerId || (user?.email && orderUserId === user.email) || (auth.currentUser?.email && orderUserId === auth.currentUser.email)))
+            (effectiveViewerId && (orderUserId === effectiveViewerId || (user?.email && orderUserId === user.email) || (auth.currentUser?.email && orderUserId === auth.currentUser.email))) ||
+            (orderUserId && typeof orderUserId === "string" && orderUserId.startsWith("guest_"))
           );
           const isStaff = Boolean(isAdmin || isSeller);
 
@@ -549,7 +551,12 @@ export default function OrderDetail() {
         if (docSnap.exists()) {
           const raw = docSnap.data();
           const orderUserId = raw?.user_id || raw?.userId;
-          const isOwner = Boolean(user && (orderUserId === user.id || orderUserId === user.uid || (user.email && orderUserId === user.email)));
+          const isOwner = Boolean(
+            isRecentOwner ||
+            Boolean(localStorage.getItem("durtup_recent_order_" + id)) ||
+            (user && (orderUserId === user.id || orderUserId === user.uid || (user.email && orderUserId === user.email))) ||
+            (orderUserId && typeof orderUserId === "string" && orderUserId.startsWith("guest_"))
+          );
           const isStaff = Boolean(isAdmin || isSeller);
           if (!isOwner && !isStaff) {
             setIsUnauthorized(true);
@@ -571,7 +578,7 @@ export default function OrderDetail() {
     }
 
     return () => unsub();
-  }, [id, user, authLoading, isAdmin, isSeller, isUnauthorized, location.state]);
+  }, [id, user, authLoading, isAdmin, isSeller, location.state]);
 
   const handleCopyTracking = () => {
     if (order?.tracking_number) {

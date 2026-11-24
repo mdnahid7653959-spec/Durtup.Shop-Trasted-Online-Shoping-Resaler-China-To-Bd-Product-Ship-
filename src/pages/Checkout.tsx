@@ -604,7 +604,7 @@ export default function Checkout() {
       // Only attempt /api/orders if an authenticated token is available to prevent 401 round-trip delay
       if (idToken) {
         const abortController = new AbortController();
-        const abortTimeout = setTimeout(() => abortController.abort(), 800);
+        const abortTimeout = setTimeout(() => abortController.abort(), 8000);
         try {
           response = await fetch("/api/orders", {
             method: "POST",
