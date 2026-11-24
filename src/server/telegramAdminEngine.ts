@@ -11,6 +11,7 @@
 
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, query, orderBy, limit, where } from "firebase/firestore";
+import { handleTelegramWebhookUpdate as routerHandleTelegramWebhookUpdate } from "./telegram/telegramRouter";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCIcvphAtwx7rup-aV3MZPDK0w-xCN1Xoc",
@@ -41,7 +42,7 @@ export interface TelegramBotConfig {
   webhook_secret?: string;
 }
 
-const DEFAULT_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "9052891455:AAGoY4tAc6JaEAN8AxAI96RMMQBS6UcMYpw";
+const DEFAULT_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 const STORE_NAME = "Durtup.shop";
 const STORE_URL = process.env.VITE_SITE_URL || "https://durtup.shop";
 
@@ -127,7 +128,13 @@ export async function isAuthorizedAdmin(userId: string | number): Promise<boolea
  * Raw Telegram API caller
  */
 export async function callTelegramApi(method: string, payload: any, tokenOverride?: string): Promise<any> {
-  const token = tokenOverride || DEFAULT_BOT_TOKEN;
+  let token = tokenOverride || DEFAULT_BOT_TOKEN;
+  if (!token) {
+    try {
+      const cfg = await getTelegramConfig();
+      token = cfg.bot_token;
+    } catch {}
+  }
   if (!token) {
     throw new Error("Telegram Bot Token is not configured.");
   }
@@ -247,23 +254,13 @@ ${itemsList}
 
 /**
  * Handles incoming Telegram Webhook updates (commands & callback queries)
+ * Unified: delegates directly to central telegramRouter engine.
  */
-export async function handleTelegramWebhookUpdate(update: any): Promise<{ handled: boolean; response?: any }> {
-  if (!update) return { handled: false };
-
-  const config = await getAuthoritativeTelegramConfig();
-
-  // 1. Handle Inline Button Callback Queries
-  if (update.callback_query) {
-    return handleCallbackQuery(update.callback_query, config);
-  }
-
-  // 2. Handle Text Messages & Commands
-  if (update.message && update.message.text) {
-    return handleTextMessage(update.message, config);
-  }
-
-  return { handled: false };
+export async function handleTelegramWebhookUpdate(
+  update: any,
+  secretHeader?: string
+): Promise<{ handled: boolean; response?: any; action?: string; authorized?: boolean; error?: string }> {
+  return routerHandleTelegramWebhookUpdate(update, secretHeader);
 }
 
 /**

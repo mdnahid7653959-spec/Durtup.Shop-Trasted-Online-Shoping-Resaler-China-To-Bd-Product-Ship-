@@ -362,13 +362,14 @@ function sigmaDevApiPlugin() {
                 }
               }
 
-              const { handleTelegramWebhookUpdate } = await server.ssrLoadModule("./src/server/telegramAdminEngine.ts");
-              const result = await handleTelegramWebhookUpdate(parsedBody);
+              const { handleTelegramWebhookUpdate } = await server.ssrLoadModule("./src/server/telegram/telegramRouter.ts");
+              const secretHeader = (req.headers["x-telegram-bot-api-secret-token"] || req.headers["X-Telegram-Bot-Api-Secret-Token"]) as string | undefined;
+              const result = await handleTelegramWebhookUpdate(parsedBody, secretHeader);
 
               res.setHeader("Content-Type", "application/json; charset=utf-8");
               res.setHeader("Access-Control-Allow-Origin", "*");
               res.statusCode = 200;
-              return res.end(JSON.stringify({ ok: true, handled: result.handled }));
+              return res.end(JSON.stringify({ ok: true, handled: result.handled, ...result }));
             } catch (err: any) {
               console.error("[Telegram Dev API Error]:", err);
               res.setHeader("Content-Type", "application/json; charset=utf-8");
