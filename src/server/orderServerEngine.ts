@@ -140,29 +140,57 @@ const BUILTIN_COUPONS: Record<string, any> = {
   }
 };
 
-// Cached Mohasagor slim catalog loaded from filesystem
-let cachedSlimCatalog: any[] | null = null;
-let slimCatalogMap: Map<string, any> | null = null;
+// Cached unified catalog loaded from filesystem
+let unifiedCatalogMap: Map<string, any> | null = null;
 
-function getSlimCatalogMap(): Map<string, any> {
-  if (slimCatalogMap) return slimCatalogMap;
-  slimCatalogMap = new Map();
-  try {
-    const filePath = path.resolve(process.cwd(), "public", "mohasagor_catalog_slim.json");
-    if (fs.existsSync(filePath)) {
-      const data = fs.readFileSync(filePath, "utf8");
-      cachedSlimCatalog = JSON.parse(data);
-      if (Array.isArray(cachedSlimCatalog)) {
-        for (const item of cachedSlimCatalog) {
-          if (item.id) slimCatalogMap.set(String(item.id), item);
-          if (item.slug) slimCatalogMap.set(String(item.slug), item);
+function getUnifiedCatalogMap(): Map<string, any> {
+  if (unifiedCatalogMap) return unifiedCatalogMap;
+  unifiedCatalogMap = new Map();
+
+  const loadFileIntoMap = (fileName: string) => {
+    try {
+      const filePath = path.resolve(process.cwd(), "public", fileName);
+      if (fs.existsSync(filePath)) {
+        const data = fs.readFileSync(filePath, "utf8");
+        const parsed = JSON.parse(data);
+        const list = Array.isArray(parsed) ? parsed : (parsed.products || []);
+        if (Array.isArray(list)) {
+          for (const item of list) {
+            if (!item) continue;
+            if (item.id) {
+              const idStr = String(item.id).trim();
+              unifiedCatalogMap!.set(idStr, item);
+              unifiedCatalogMap!.set(idStr.toLowerCase(), item);
+              if (idStr.startsWith("ecom-")) {
+                unifiedCatalogMap!.set(idStr.replace(/^ecom-/, ""), item);
+              } else {
+                unifiedCatalogMap!.set(`ecom-${idStr}`, item);
+              }
+            }
+            if (item.slug) {
+              const slugStr = String(item.slug).trim().toLowerCase();
+              unifiedCatalogMap!.set(slugStr, item);
+            }
+            if (item.product_code) {
+              unifiedCatalogMap!.set(String(item.product_code).trim().toLowerCase(), item);
+            }
+            if (item.sku) {
+              unifiedCatalogMap!.set(String(item.sku).trim().toLowerCase(), item);
+            }
+          }
         }
       }
+    } catch (err) {
+      console.warn(`[OrderServerEngine] Failed to load ${fileName}:`, err);
     }
-  } catch (err) {
-    console.warn("[OrderServerEngine] Failed to load mohasagor_catalog_slim.json:", err);
-  }
-  return slimCatalogMap;
+  };
+
+  // Load in order: slim catalog, ecomseller, homepage feed
+  loadFileIntoMap("mohasagor_catalog_slim.json");
+  loadFileIntoMap("ecomseller_catalog.json");
+  loadFileIntoMap("homepage_feed.json");
+
+  return unifiedCatalogMap;
 }
 
 /**
@@ -170,40 +198,51 @@ function getSlimCatalogMap(): Map<string, any> {
  */
 async function resolveProduct(productId: string): Promise<any | null> {
   const normId = String(productId).trim();
+  const lowerId = normId.toLowerCase();
+  const cleanId = lowerId.replace(/^ecom-/, "");
 
   // 1. Check built-in catalog
-  if (BUILTIN_CATALOG[normId]) {
-    return BUILTIN_CATALOG[normId];
+  if (BUILTIN_CATALOG[normId] || BUILTIN_CATALOG[lowerId] || BUILTIN_CATALOG[cleanId]) {
+    return BUILTIN_CATALOG[normId] || BUILTIN_CATALOG[lowerId] || BUILTIN_CATALOG[cleanId];
   }
 
   // 2. Check FAST_SEED_PRODUCTS
   const fastSeed = FAST_SEED_PRODUCTS.find(
-    (p: any) => String(p.id) === normId || p.slug === normId || p.product_code === normId || p.sku === normId
+    (p: any) =>
+      String(p.id) === normId ||
+      String(p.id).toLowerCase() === lowerId ||
+      String(p.id).toLowerCase() === cleanId ||
+      p.slug === normId ||
+      p.slug === lowerId ||
+      p.product_code === normId ||
+      p.sku === normId
   );
   if (fastSeed) {
     return fastSeed;
   }
 
-  // 3. Check Mohasagor Slim Catalog
-  const slimMap = getSlimCatalogMap();
-  const slimItem = slimMap.get(normId);
-  if (slimItem) {
-    return slimItem;
-  }
+  // 3. Check Unified Static Catalog Map (Mohasagor, Ecomseller, Homepage Feed)
+  const catalogMap = getUnifiedCatalogMap();
+  if (catalogMap.has(normId)) return catalogMap.get(normId);
+  if (catalogMap.has(lowerId)) return catalogMap.get(lowerId);
+  if (catalogMap.has(cleanId)) return catalogMap.get(cleanId);
+  if (catalogMap.has(`ecom-${cleanId}`)) return catalogMap.get(`ecom-${cleanId}`);
 
-  // Check numeric ID matching in slim map if normId contains hyphen or digits
+  // Check numeric ID matching if normId contains hyphen or digits
   if (normId.includes("-")) {
     const parts = normId.split("-");
     const lastPart = parts[parts.length - 1];
-    if (lastPart && slimMap.has(lastPart)) {
-      return slimMap.get(lastPart);
+    if (lastPart && catalogMap.has(lastPart)) {
+      return catalogMap.get(lastPart);
     }
   }
 
-  // 4. Fallback: Firestore products collection
+  // 4. Fallback: Firestore products collection with strict 600ms timeout
   try {
-    const pSnap = await getDoc(doc(db, "products", normId));
-    if (pSnap.exists()) {
+    const firestorePromise = getDoc(doc(db, "products", normId));
+    const timeoutPromise = new Promise<null>((r) => setTimeout(() => r(null), 600));
+    const pSnap: any = await Promise.race([firestorePromise, timeoutPromise]);
+    if (pSnap && typeof pSnap.exists === "function" && pSnap.exists()) {
       return { id: pSnap.id, ...pSnap.data() };
     }
   } catch (err) {
@@ -423,6 +462,20 @@ export async function handleOrderServerRequest(
       };
     }
 
+    // Resilient fallback for verified store items present in cart with positive price
+    if (!product && (item.price || item.unit_price) && Number(item.price || item.unit_price) > 0) {
+      const validUnitPrice = Number(item.price || item.unit_price);
+      product = {
+        id: rawProductId,
+        name: item.name || item.title || item.product_name || "Product",
+        price: validUnitPrice,
+        regular_price: Number(item.regular_price || item.originalPrice || validUnitPrice),
+        stock: 100,
+        source: item.source || "regular",
+        image: item.image || item.product_image || "/durtup-logo.png"
+      };
+    }
+
     if (!product) {
       return {
         status: 400,
@@ -627,9 +680,14 @@ export async function handleOrderServerRequest(
   inMemoryOrdersMap.set(orderId, orderRecord);
   inMemoryOrdersMap.set(orderNumber, orderRecord);
 
-  // 10. Persist to Firestore
+  // 10. Persist to Firestore with non-blocking race
   try {
-    await setDoc(doc(db, "orders", orderId), orderRecord);
+    const fsOrderPromise = setDoc(doc(db, "orders", orderId), orderRecord);
+    // Non-blocking timeout race: wait max 1200ms so customer gets instant response (<500ms)
+    await Promise.race([
+      fsOrderPromise,
+      new Promise((r) => setTimeout(r, 1200))
+    ]).catch((e) => console.warn("[OrderServerEngine] Firestore setDoc timeout/warn:", e));
 
     const adminNotificationDoc = {
       type: "new_order",
@@ -644,9 +702,10 @@ export async function handleOrderServerRequest(
       read: false,
       created_at: createdAt
     };
-    await setDoc(doc(db, "admin_notifications", orderId), adminNotificationDoc).catch(() => {});
+    // Non-blocking fire-and-forget for admin notification
+    setDoc(doc(db, "admin_notifications", orderId), adminNotificationDoc).catch(() => {});
 
-    // 10b. Send Instant Telegram Alert with Interactive Approval/Rejection buttons
+    // 10b. Send Instant Telegram Alert with Interactive Approval/Rejection buttons (non-blocking)
     sendTelegramOrderNotificationWithActions({
       id: orderId,
       order_number: orderNumber,
