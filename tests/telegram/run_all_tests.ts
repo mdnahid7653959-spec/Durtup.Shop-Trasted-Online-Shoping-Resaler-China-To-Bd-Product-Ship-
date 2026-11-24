@@ -552,21 +552,23 @@ export async function loadAllSuites(): Promise<TestSuite[]> {
   // Try loading Tier 3
   try {
     const tier3Module = await import('./tier3_combos.test');
-    if (tier3Module?.tier3Suite) {
-      suites.push(tier3Module.tier3Suite);
+    const tier3 = tier3Module?.tier3TestSuite || tier3Module?.tier3Suite;
+    if (tier3) {
+      suites.push(tier3);
     }
   } catch (err: any) {
-    // Module not created yet
+    console.error('[Error loading Tier 3 Suite]:', err);
   }
 
   // Try loading Tier 4
   try {
     const tier4Module = await import('./tier4_scenarios.test');
-    if (tier4Module?.tier4Suite) {
-      suites.push(tier4Module.tier4Suite);
+    const tier4 = tier4Module?.tier4TestSuite || tier4Module?.tier4Suite;
+    if (tier4) {
+      suites.push(tier4);
     }
   } catch (err: any) {
-    // Module not created yet
+    console.error('[Error loading Tier 4 Suite]:', err);
   }
 
   return suites;

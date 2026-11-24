@@ -26,7 +26,12 @@ import { recordTelegramAudit } from '../../../src/server/telegram/auditHelper';
 // ==========================================
 
 export function attributeSupplier(sku: string = '', explicitSupplier?: string): string {
-  if (explicitSupplier && explicitSupplier !== 'Unknown') return explicitSupplier;
+  if (explicitSupplier && explicitSupplier !== 'Unknown') {
+    if (explicitSupplier === 'DropShipping' || explicitSupplier === 'Dropshipping') {
+      return 'DropShipping.com.bd';
+    }
+    return explicitSupplier;
+  }
   const upperSku = sku.toUpperCase().trim();
   if (upperSku.startsWith('ECOM-') || upperSku.includes('ECOMSELLER')) {
     return 'EcomsellerBD';
@@ -941,4 +946,149 @@ export async function toggleMaintenanceMode(
   });
 
   return { success: true, settings: updated };
+}
+
+// ==========================================
+// Loyalty Points & Cross-Feature Helpers
+// ==========================================
+
+export async function awardLoyaltyPoints(
+  db: MockDatabase,
+  userId: string,
+  orderId: string,
+  amount: number,
+  pointsPerHundred: number = 5,
+  adminId: number | string = 8204855335
+): Promise<{ success: boolean; pointsAwarded: number; newBalance: number }> {
+  const pointsAwarded = Math.floor((amount / 100) * pointsPerHundred);
+  
+  // Find profile or create/update loyalty entry
+  let profile = db.query('profiles', p => p.user_id === userId || p.id === userId)[0] as any;
+  let currentPoints = profile?.loyalty_points || 0;
+  let newBalance = currentPoints + pointsAwarded;
+
+  if (profile) {
+    db.updateDoc('profiles', profile.id, {
+      loyalty_points: newBalance,
+      total_spent: (profile.total_spent || 0) + amount
+    });
+  }
+
+  // Record audit log
+  await recordTelegramAudit({
+    telegramAdminId: adminId,
+    adminName: 'Master Admin',
+    action: 'LOYALTY_POINTS_AWARDED',
+    entityType: 'customer',
+    entityId: userId,
+    oldValue: currentPoints,
+    newValue: newBalance,
+    details: `Awarded ${pointsAwarded} loyalty points for order ${orderId} (Spend: ৳${amount})`
+  });
+
+  db.addAuditLog({
+    telegramAdminId: adminId,
+    adminName: 'Master Admin',
+    action: 'LOYALTY_POINTS_AWARDED',
+    entityType: 'customer',
+    entityId: userId,
+    oldValue: currentPoints,
+    newValue: newBalance,
+    details: `Awarded ${pointsAwarded} loyalty points for order ${orderId}`
+  });
+
+  return { success: true, pointsAwarded, newBalance };
+}
+
+export async function deductLoyaltyPoints(
+  db: MockDatabase,
+  userId: string,
+  orderId: string,
+  pointsToDeduct: number,
+  adminId: number | string = 8204855335
+): Promise<{ success: boolean; pointsDeducted: number; newBalance: number }> {
+  let profile = db.query('profiles', p => p.user_id === userId || p.id === userId)[0] as any;
+  let currentPoints = profile?.loyalty_points || 0;
+  let newBalance = Math.max(0, currentPoints - pointsToDeduct);
+
+  if (profile) {
+    db.updateDoc('profiles', profile.id, {
+      loyalty_points: newBalance
+    });
+  }
+
+  await recordTelegramAudit({
+    telegramAdminId: adminId,
+    adminName: 'Master Admin',
+    action: 'LOYALTY_POINTS_DEDUCTED',
+    entityType: 'customer',
+    entityId: userId,
+    oldValue: currentPoints,
+    newValue: newBalance,
+    details: `Deducted ${pointsToDeduct} loyalty points on refund for order ${orderId}`
+  });
+
+  db.addAuditLog({
+    telegramAdminId: adminId,
+    adminName: 'Master Admin',
+    action: 'LOYALTY_POINTS_DEDUCTED',
+    entityType: 'customer',
+    entityId: userId,
+    oldValue: currentPoints,
+    newValue: newBalance
+  });
+
+  return { success: true, pointsDeducted: pointsToDeduct, newBalance };
+}
+
+export function calculateOrderDiscount(
+  db: MockDatabase,
+  couponCode: string,
+  orderAmount: number
+): { valid: boolean; discountAmount: number; finalAmount: number; reason?: string } {
+  const code = couponCode.toUpperCase().trim();
+  const coupon = db.query('coupons', c => c.code === code)[0] as MockCoupon | undefined;
+
+  if (!coupon) {
+    return { valid: false, discountAmount: 0, finalAmount: orderAmount, reason: 'Coupon code not found' };
+  }
+
+  if (!coupon.is_active) {
+    return { valid: false, discountAmount: 0, finalAmount: orderAmount, reason: 'Coupon is inactive' };
+  }
+
+  if (coupon.min_order_amount && orderAmount < coupon.min_order_amount) {
+    return {
+      valid: false,
+      discountAmount: 0,
+      finalAmount: orderAmount,
+      reason: `Minimum order amount ৳${coupon.min_order_amount} required`
+    };
+  }
+
+  let discount = 0;
+  if (coupon.discount_type === 'percentage') {
+    discount = Math.floor((orderAmount * coupon.discount_value) / 100);
+  } else {
+    discount = Math.min(orderAmount, coupon.discount_value);
+  }
+
+  const finalAmount = Math.max(0, orderAmount - discount);
+  return { valid: true, discountAmount: discount, finalAmount };
+}
+
+export function computeOrderProfitMargin(
+  order: MockOrder,
+  supplierCostRatio = 0.65
+): { totalAmount: number; supplierCost: number; platformCommission: number; netProfit: number } {
+  const total = order.total_amount || 0;
+  const supplierCost = Math.round(total * supplierCostRatio);
+  const platformCommission = total - supplierCost;
+  const netProfit = platformCommission; // platform net margin
+  return {
+    totalAmount: total,
+    supplierCost,
+    platformCommission,
+    netProfit
+  };
 }
