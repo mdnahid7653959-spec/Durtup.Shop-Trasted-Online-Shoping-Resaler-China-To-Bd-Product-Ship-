@@ -27,7 +27,11 @@ export function CustomerAuthModal({
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
-      await signInWithGoogle();
+      // Strict 12-second timeout so Google popup never hangs indefinitely on mobile
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("সাইন ইন সময় শেষ হয়ে গেছে। আবার চেষ্টা করুন বা সরাসরি অর্ডার করুন।")), 12000)
+      );
+      await Promise.race([signInWithGoogle(), timeoutPromise]);
       toast({
         title: "স্বাগতম",
         description: "সফলভাবে সাইন ইন সম্পন্ন হয়েছে।"
@@ -45,7 +49,7 @@ export function CustomerAuthModal({
         variant: "destructive",
         title: "সাইন ইন সম্পন্ন হয়নি",
         description: isUnauthDomain
-          ? "Domain authorization issue. Please contact support."
+          ? "Domain authorization issue. Please contact support or use direct order."
           : error.message || "গুগল সাইন ইন করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।"
       });
     } finally {
@@ -143,12 +147,25 @@ export function CustomerAuthModal({
 
           <Button
             type="button"
+            variant="outline"
+            onClick={() => {
+              onClose();
+              if (onSuccess) onSuccess();
+            }}
+            disabled={loading}
+            className="w-full h-10 text-xs font-semibold border-orange-500/30 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20 rounded-xl transition-colors"
+          >
+            মোবাইল নম্বর ও নাম দিয়ে সরাসরি অর্ডার করুন
+          </Button>
+
+          <Button
+            type="button"
             variant="ghost"
             onClick={onClose}
             disabled={loading}
-            className="w-full h-9 text-xs font-normal text-muted-foreground hover:text-foreground rounded-lg"
+            className="w-full h-8 text-xs font-normal text-muted-foreground hover:text-foreground rounded-lg"
           >
-            পরে করব
+            পরে করব / ব্রাউজিং চালিয়ে যান
           </Button>
         </div>
       </DialogContent>

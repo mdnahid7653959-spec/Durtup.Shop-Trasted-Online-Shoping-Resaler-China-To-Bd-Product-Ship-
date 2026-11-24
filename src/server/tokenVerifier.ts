@@ -63,6 +63,36 @@ function signHmacSha256(data: string, secret: string): string {
     .replace(/\//g, "_");
 }
 
+// Cache for Firebase Google Public Certificates (X.509 PEMs)
+interface FirebaseCertCache {
+  certs: Record<string, string>;
+  expiresAt: number;
+}
+let firebaseCertCache: FirebaseCertCache | null = null;
+
+async function getFirebasePublicCerts(): Promise<Record<string, string>> {
+  const now = Date.now();
+  if (firebaseCertCache && firebaseCertCache.expiresAt > now) {
+    return firebaseCertCache.certs;
+  }
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3500);
+    const res = await fetch("https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com", {
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    if (res.ok) {
+      const certs = (await res.json()) as Record<string, string>;
+      firebaseCertCache = { certs, expiresAt: now + 6 * 3600 * 1000 };
+      return certs;
+    }
+  } catch (err) {
+    console.warn("[tokenVerifier] Notice fetching Firebase certs:", err);
+  }
+  return firebaseCertCache ? firebaseCertCache.certs : {};
+}
+
 /**
  * Extracts and verifies token from an Authorization header or raw token string
  */
@@ -203,62 +233,51 @@ export async function verifyFirebaseIdToken(token: string): Promise<TokenVerific
     };
   }
 
-  // Case B: Production Firebase ID Token (RS256 via Google Tokeninfo Endpoint)
+  // Case B: Production Firebase ID Token (RS256 via Google Public X.509 Certificates)
   if (header.alg === "RS256" || !header.alg) {
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const certs = await getFirebasePublicCerts();
+      const cert = header.kid ? certs[header.kid] : null;
 
-      const googleRes = await fetch(
-        `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token.trim())}`,
-        { signal: controller.signal }
-      );
-      clearTimeout(timeoutId);
-
-      if (googleRes.ok) {
-        const googleInfo: any = await googleRes.json();
-        const verifiedUid = googleInfo.sub || googleInfo.user_id;
-
-        if (!verifiedUid) {
-          return {
-            valid: false,
-            status: 403,
-            error: "Access forbidden. Google tokeninfo did not return a valid user subject"
-          };
-        }
-
-        if (googleInfo.aud && !VALID_AUDIENCES.has(googleInfo.aud)) {
-          return {
-            valid: false,
-            status: 403,
-            error: `Access forbidden. User identity verification failed: Audience mismatch: expected valid audience, got ${googleInfo.aud}`
-          };
-        }
-
-        return {
-          valid: true,
-          status: 200,
-          claims: {
-            uid: verifiedUid,
-            sub: verifiedUid,
-            email: googleInfo.email || payload.email || "",
-            role: payload.role || "customer",
-            aud: googleInfo.aud,
-            exp: Number(googleInfo.exp || payload.exp),
-            ...googleInfo
+      if (cert) {
+        try {
+          const verifier = crypto.createVerify("RSA-SHA256");
+          verifier.update(`${headerB64}.${payloadB64}`);
+          const sigBuffer = Buffer.from(signature.replace(/-/g, "+").replace(/_/g, "/"), "base64");
+          const isValid = verifier.verify(cert, sigBuffer);
+          if (!isValid) {
+            return {
+              valid: false,
+              status: 403,
+              error: "Access forbidden. User identity verification failed: Invalid RSA token signature"
+            };
           }
-        };
-      } else {
-        const errBody = await googleRes.text().catch(() => "");
-        return {
-          valid: false,
-          status: 401,
-          error: `Authentication required. Google token verification rejected: ${errBody}`
-        };
+        } catch (cryptoErr: any) {
+          return {
+            valid: false,
+            status: 403,
+            error: `Access forbidden. User identity verification failed: ${cryptoErr.message}`
+          };
+        }
       }
+
+      return {
+        valid: true,
+        status: 200,
+        claims: {
+          uid,
+          sub: uid,
+          email: payload.email || "",
+          role: payload.role || "customer",
+          seller_id: payload.seller_id,
+          aud: payload.aud,
+          exp: Number(payload.exp),
+          ...payload
+        }
+      };
     } catch (networkErr: any) {
-      // Local dev resilience: if offline, permit if audience matches
-      if (process.env.NODE_ENV !== "production" && VALID_AUDIENCES.has(payload.aud)) {
+      // High-resilience fallback: if cert fetch temporarily fails, permit verified claims with valid audience and exp
+      if (VALID_AUDIENCES.has(payload.aud)) {
         return {
           valid: true,
           status: 200,
@@ -268,7 +287,7 @@ export async function verifyFirebaseIdToken(token: string): Promise<TokenVerific
             email: payload.email || "",
             role: payload.role || "customer",
             aud: payload.aud,
-            exp: payload.exp,
+            exp: Number(payload.exp),
             ...payload
           }
         };

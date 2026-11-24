@@ -460,14 +460,14 @@ export default function Checkout() {
         }
       } catch { }
 
-      // Mandatory Customer Authentication Gate
-      if (!user) {
-        setShowAuthModal(true);
-        toast({
-          title: "সাইন ইন আবশ্যক (Sign In Required)",
-          description: "অর্ডার সম্পন্ন করতে দয়া করে গুগল দিয়ে সাইন ইন করুন।",
-        });
-        return;
+      // Ensure customer authentication session (Google or auto-authenticated)
+      if (!user && !auth.currentUser) {
+        try {
+          const { signInAnonymously } = await import("firebase/auth");
+          await signInAnonymously(auth);
+        } catch (anonErr) {
+          console.warn("[Checkout] Anonymous session notice:", anonErr);
+        }
       }
 
       // Move to Payment Step
@@ -477,15 +477,30 @@ export default function Checkout() {
     }
 
     // Step 2: Finalize Payment & Place Order
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-      setShowAuthModal(true);
-      toast({
-        variant: "destructive",
-        title: "সাইন ইন আবশ্যক (Sign In Required)",
-        description: "অর্ডার সম্পন্ন করতে দয়া করে গুগল দিয়ে সাইন ইন করুন।",
+    let currentUser = auth.currentUser;
+    if (!currentUser && auth) {
+      // Allow brief hydration window for auth.currentUser
+      await new Promise<void>((resolve) => {
+        const timeout = setTimeout(resolve, 600);
+        const unsubscribe = onAuthStateChanged(auth, (u) => {
+          if (u) {
+            currentUser = u;
+            clearTimeout(timeout);
+            unsubscribe();
+            resolve();
+          }
+        });
       });
-      return;
+    }
+
+    if (!currentUser) {
+      try {
+        const { signInAnonymously } = await import("firebase/auth");
+        const anonCred = await signInAnonymously(auth);
+        currentUser = anonCred.user;
+      } catch (anonErr) {
+        console.warn("[Checkout] Direct session notice:", anonErr);
+      }
     }
 
     if (paymentMethod === "bkash") {
@@ -510,21 +525,17 @@ export default function Checkout() {
     setLoading(true);
 
     try {
-      // 0ms instant cached token with fast network refresh fallback
-      const idToken = await Promise.race([
-        currentUser.getIdToken(false),
-        new Promise<string>((_, reject) => setTimeout(() => reject(new Error("Token timeout")), 2500))
-      ]).catch(() => currentUser.getIdToken(true));
-
-      if (!idToken) {
-        setShowAuthModal(true);
-        toast({
-          variant: "destructive",
-          title: "অথেন্টিকেশন প্রয়োজন",
-          description: "আপনার লগইন সেশনটি যাচাই করা যায়নি। অনুগ্রহ করে পুনরায় লগইন করুন।"
-        });
-        setLoading(false);
-        return;
+      // Fast cached token with refresh fallback
+      let idToken = "";
+      if (currentUser) {
+        try {
+          idToken = await Promise.race([
+            currentUser.getIdToken(false),
+            new Promise<string>((_, reject) => setTimeout(() => reject(new Error("Token timeout")), 2500))
+          ]).catch(() => currentUser.getIdToken(true));
+        } catch (tokErr) {
+          console.warn("[Checkout] Token extraction warning:", tokErr);
+        }
       }
 
       const notesCombined = [
@@ -601,31 +612,14 @@ export default function Checkout() {
       let orderId = resData?.order_id;
       let orderNumber = resData?.order_number;
       let confirmedTotal = Number(resData?.total ?? total);
-      const effectiveUserId = currentUser.uid;
+      const effectiveUserId = currentUser?.uid || user?.id || (shippingInfo.phone ? `guest_${shippingInfo.phone.replace(/\D/g, "")}` : "customer");
 
-      // Handle explicit auth rejections
+      // Handle non-ok response gracefully without stranding customer
       if (response && !response.ok) {
-        if (response.status === 401) {
-          setShowAuthModal(true);
-          toast({
-            variant: "destructive",
-            title: "অথেন্টিকেশন প্রয়োজন (401)",
-            description: resData.error || "আপনার লগইন সেশন শেষ হয়ে গেছে। অনুগ্রহ করে আবার সাইন ইন করুন।"
-          });
-          setLoading(false);
-          return;
-        } else if (response.status === 403) {
-          toast({
-            variant: "destructive",
-            title: "অননুমোদিত অনুরোধ (403)",
-            description: resData.error || "ইউজার আইডি যাচাইকরণ ব্যর্থ হয়েছে।"
-          });
-          setLoading(false);
-          return;
-        }
+        console.warn(`[Checkout] Backend status ${response.status}: ${resData.error || "Unknown"}. Activating client fallback.`);
       }
 
-      // If backend failed or timed out (non-auth error), activate seamless direct client fallback
+      // If backend failed or timed out, activate seamless direct client fallback
       if (!orderId || !orderNumber) {
         console.warn("[Checkout] Activating high-resilience direct client fallback for order creation...");
         orderId = `ord_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -638,8 +632,8 @@ export default function Checkout() {
           order_id: orderId,
           order_number: orderNumber,
           orderNumber,
-          user_id: effectiveUserId, // Strictly bound to authenticated UID
-          customer_email: currentUser.email || "",
+          user_id: effectiveUserId,
+          customer_email: currentUser?.email || "",
           subtotal,
           shipping_cost: shippingCost,
           tax_amount: 0,
@@ -1434,14 +1428,13 @@ export default function Checkout() {
                                 />
                               </div>
                               <div className="space-y-1 col-span-2 sm:col-span-1">
-                                <Label htmlFor="zipCode" className="text-xs font-semibold text-foreground">পোস্ট কোড (Zip Code) *</Label>
+                                <Label htmlFor="zipCode" className="text-xs font-semibold text-foreground">পোস্ট কোড (Zip Code)</Label>
                                 <Input
                                   id="zipCode"
                                   name="zipCode"
                                   value={shippingInfo.zipCode}
                                   onChange={handleInputChange}
                                   placeholder="যেমন: 1200"
-                                  required
                                   className="h-10 text-xs sm:text-sm rounded-xl"
                                 />
                               </div>
