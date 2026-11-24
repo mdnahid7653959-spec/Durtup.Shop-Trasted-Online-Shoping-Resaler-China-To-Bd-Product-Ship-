@@ -89,6 +89,7 @@ function getDb() {
 
 /**
  * Computes live or cached KPI metrics for the header.
+ * When Firestore is disconnected or empty, returns zeros and isOffline = true.
  */
 export async function getDashboardStats(): Promise<{
   pendingOrders: number;
@@ -96,12 +97,14 @@ export async function getDashboardStats(): Promise<{
   totalProducts: number;
   lowStockCount: number;
   recentRevenue: number;
+  isOffline: boolean;
 }> {
   let pendingOrders = 0;
   let pendingPayments = 0;
-  let totalProducts = 2140; // baseline catalog size
+  let totalProducts = 0;
   let lowStockCount = 0;
   let recentRevenue = 0;
+  let isOffline = false;
 
   try {
     const db = getDb();
@@ -126,20 +129,19 @@ export async function getDashboardStats(): Promise<{
         }
       });
     } else {
-      pendingOrders = 3;
-      pendingPayments = 2;
-      lowStockCount = 4;
-      recentRevenue = 48500;
+      isOffline = true;
     }
   } catch (e) {
-    // Graceful offline fallback
-    pendingOrders = 3;
-    pendingPayments = 2;
-    lowStockCount = 4;
-    recentRevenue = 48500;
+    // Graceful offline fallback: strictly zeroed metrics with offline indicator
+    isOffline = true;
+    pendingOrders = 0;
+    pendingPayments = 0;
+    totalProducts = 0;
+    lowStockCount = 0;
+    recentRevenue = 0;
   }
 
-  return { pendingOrders, pendingPayments, totalProducts, lowStockCount, recentRevenue };
+  return { pendingOrders, pendingPayments, totalProducts, lowStockCount, recentRevenue, isOffline };
 }
 
 /**
@@ -156,18 +158,24 @@ export async function getDashboardSummaryText(
     timeStyle: "short"
   });
 
+  const statusLine = stats.isOffline
+    ? "🟡 <b>Status:</b> All 16 Modules Online (Firestore Offline / Zero State)"
+    : "🟢 <b>Status:</b> All 16 Modules Online";
+
+  const offlineSuffix = stats.isOffline ? " <i>(offline)</i>" : "";
+
   return `🏠 <b>DURTUP.SHOP — SUPER ADMIN CONTROL CENTER</b>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 👤 <b>Admin:</b> ${escapeHtml(userName)} <code>(${userId})</code>
 🕒 <b>Dhaka Time:</b> ${dhakaTime} BST
-🟢 <b>Status:</b> All 16 Modules Online
+${statusLine}
 
 📊 <b>QUICK STORE OVERVIEW:</b>
-• ⏳ <b>Pending Orders:</b> <code>${stats.pendingOrders}</code> awaiting confirmation
-• 💳 <b>Pending Payments:</b> <code>${stats.pendingPayments}</code> awaiting verification
-• 🛍️ <b>Catalog Products:</b> <code>${stats.totalProducts}</code> active items
-• ⚠️ <b>Low Stock Items:</b> <code>${stats.lowStockCount}</code> items &le; 10 pcs
-• 💰 <b>Sampled Revenue:</b> ৳${stats.recentRevenue.toLocaleString()}
+• ⏳ <b>Pending Orders:</b> <code>${stats.pendingOrders}</code> awaiting confirmation${offlineSuffix}
+• 💳 <b>Pending Payments:</b> <code>${stats.pendingPayments}</code> awaiting verification${offlineSuffix}
+• 🛍️ <b>Catalog Products:</b> <code>${stats.totalProducts}</code> active items${offlineSuffix}
+• ⚠️ <b>Low Stock Items:</b> <code>${stats.lowStockCount}</code> items &le; 10 pcs${offlineSuffix}
+• 💰 <b>Sampled Revenue:</b> ৳${stats.recentRevenue.toLocaleString()}${offlineSuffix}
 
 👇 <b>Select an administrative module below:</b>`;
 }

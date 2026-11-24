@@ -177,27 +177,44 @@ export async function verifyTelegramAuthorization(userId: number | string): Prom
   };
 }
 
+export const DEFAULT_WEBHOOK_SECRET = "durtup_tg_admin_sec_2026";
+
 /**
  * Validates the inbound webhook secret token header against TELEGRAM_WEBHOOK_SECRET.
- * Defaults to "durtup_tg_admin_sec_2026".
+ * Defaults to DEFAULT_WEBHOOK_SECRET ("durtup_tg_admin_sec_2026").
+ * Missing, undefined, empty, or non-matching headers are strictly rejected with false.
  */
 export function verifyWebhookSecret(secretHeader?: string): boolean {
-  const configuredSecret = (process.env.TELEGRAM_WEBHOOK_SECRET || "").trim();
+  const configuredSecret = (process.env.TELEGRAM_WEBHOOK_SECRET || DEFAULT_WEBHOOK_SECRET).trim();
   if (!configuredSecret) {
-    return true; // Bypass if secret is intentionally unset in dev/test
+    return true; // Bypass only if explicitly configured as empty
   }
-  if (!secretHeader) {
-    return true;
+  if (!secretHeader || typeof secretHeader !== "string" || !secretHeader.trim()) {
+    return false; // MUST strictly reject missing, undefined, or empty header
   }
   return secretHeader.trim() === configuredSecret;
 }
 
 /**
  * Sliding window rate limiter: allows max 20 requests per 10-second rolling window per user.
+ * Periodically sweeps stale entries when the map size exceeds 500 entries to prevent memory leaks.
  */
 export function checkRateLimit(userId: number | string, maxRequests = 20, windowMs = 10_000): boolean {
   const idKey = String(userId).trim();
   const now = Date.now();
+
+  // Periodic eviction when rateLimitMap grows past 500 entries
+  if (rateLimitMap.size > 500) {
+    for (const [key, timestamps] of rateLimitMap.entries()) {
+      const valid = timestamps.filter((t) => now - t < windowMs);
+      if (valid.length === 0) {
+        rateLimitMap.delete(key);
+      } else {
+        rateLimitMap.set(key, valid);
+      }
+    }
+  }
+
   const timestamps = (rateLimitMap.get(idKey) || []).filter((t) => now - t < windowMs);
 
   if (timestamps.length >= maxRequests) {

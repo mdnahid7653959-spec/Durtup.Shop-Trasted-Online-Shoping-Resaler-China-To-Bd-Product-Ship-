@@ -264,20 +264,49 @@ export const tier1TestSuite: TestSuite = {
       'Valid X-Telegram-Bot-Api-Secret-Token allows webhook execution',
       async (ctx: TestContext) => {
         const isValid = verifyWebhookSecret('durtup_tg_admin_sec_2026');
-        ctx.assert.isTrue(isValid);
+        ctx.assert.isTrue(isValid, 'Valid secret token must be verified successfully');
+
+        // Verify router execution with valid secret
+        const update = ctx.createCommandUpdate('/admin', 8204855335);
+        const result = await handleTelegramWebhookUpdate(update, 'durtup_tg_admin_sec_2026');
+        ctx.assert.isTrue(result.handled, 'Valid secret update must be handled');
+        ctx.assert.isTrue(result.authorized, 'Master admin must be authorized');
       }
     ),
     createTier1Test(
       'T1-F03-02',
       'F03',
-      'Invalid webhook secret token header is rejected by router',
+      'Missing, empty, whitespace, and wrong webhook secret token headers are strictly rejected',
       async (ctx: TestContext) => {
         const update = ctx.createCommandUpdate('/admin', 8204855335);
-        const result = await handleTelegramWebhookUpdate(update, 'wrong_secret_token');
 
-        ctx.assert.isFalse(result.handled);
-        ctx.assert.isFalse(result.authorized);
-        ctx.assert.equal(result.error, 'Invalid webhook secret');
+        // 1. Missing secret header (undefined)
+        ctx.assert.isFalse(verifyWebhookSecret(undefined), 'Undefined secret header must be rejected');
+        const resMissing = await handleTelegramWebhookUpdate(update, undefined);
+        ctx.assert.isFalse(resMissing.handled, 'Missing secret must not be handled');
+        ctx.assert.isFalse(resMissing.authorized, 'Missing secret must not be authorized');
+        ctx.assert.equal(resMissing.error, 'Invalid webhook secret');
+
+        // 2. Empty secret header ("")
+        ctx.assert.isFalse(verifyWebhookSecret(''), 'Empty secret header must be rejected');
+        const resEmpty = await handleTelegramWebhookUpdate(update, '');
+        ctx.assert.isFalse(resEmpty.handled, 'Empty secret must not be handled');
+        ctx.assert.isFalse(resEmpty.authorized, 'Empty secret must not be authorized');
+        ctx.assert.equal(resEmpty.error, 'Invalid webhook secret');
+
+        // 3. Whitespace secret header ("   ")
+        ctx.assert.isFalse(verifyWebhookSecret('   '), 'Whitespace secret header must be rejected');
+        const resWhitespace = await handleTelegramWebhookUpdate(update, '   ');
+        ctx.assert.isFalse(resWhitespace.handled, 'Whitespace secret must not be handled');
+        ctx.assert.isFalse(resWhitespace.authorized, 'Whitespace secret must not be authorized');
+        ctx.assert.equal(resWhitespace.error, 'Invalid webhook secret');
+
+        // 4. Wrong secret header
+        ctx.assert.isFalse(verifyWebhookSecret('wrong_secret_token'), 'Wrong secret header must be rejected');
+        const resWrong = await handleTelegramWebhookUpdate(update, 'wrong_secret_token');
+        ctx.assert.isFalse(resWrong.handled, 'Wrong secret must not be handled');
+        ctx.assert.isFalse(resWrong.authorized, 'Wrong secret must not be authorized');
+        ctx.assert.equal(resWrong.error, 'Invalid webhook secret');
       }
     ),
     createTier1Test(
