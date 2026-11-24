@@ -16,6 +16,7 @@ import { useCJCart } from "@/hooks/useCJCart";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/firebaseAdapter";
 import { auth, db } from "@/integrations/firebase/client";
+import { onAuthStateChanged, signInAnonymously } from "firebase/auth";
 import { doc, setDoc, getDoc, collection, getDocs } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { sendTelegramOrderNotification } from "@/utils/telegramNotifier";
@@ -414,8 +415,11 @@ export default function Checkout() {
     }
   }, [subtotal, appliedCoupon, searchParams]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
+    if (e && typeof e.preventDefault === "function") {
+      e.preventDefault();
+      e.stopPropagation();
+    }
 
     if (totalItems === 0) {
       toast({ variant: "destructive", title: "Cart is empty", description: "Please add items to your cart" });
@@ -932,8 +936,16 @@ export default function Checkout() {
         console.warn("Meta Pixel purchase event warning:", pxErr);
       }
 
+      // Save recent order identifier to localStorage so OrderDetail immediately recognizes owner
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("durtup_recent_order_" + orderId, JSON.stringify({ orderId, orderNumber }));
+          localStorage.setItem("durtup_last_placed_order_id", orderId);
+        } catch {}
+      }
+
       // 🚀 Instant redirect to Order Details Page
-      navigate(`/orders/${orderId}`, { replace: true, state: { orderPlaced: true, orderNumber: orderNumber } });
+      navigate(`/orders/${orderId}`, { replace: true, state: { orderPlaced: true, orderNumber: orderNumber, orderId } });
     } catch (error: any) {
       console.error("Order error:", error);
       toast({
@@ -1233,7 +1245,7 @@ export default function Checkout() {
             )}
           </div>
 
-          <form id="checkout-form" onSubmit={handleSubmit}>
+          <form id="checkout-form" action="#" onSubmit={(e) => { e.preventDefault(); e.stopPropagation(); handleSubmit(e); }}>
             <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
               {/* Main Column */}
               <div className="lg:col-span-2 space-y-4 sm:space-y-5">
@@ -1954,7 +1966,8 @@ export default function Checkout() {
                     </div>
 
                     <Button
-                      type="submit"
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleSubmit(e); }}
                       className="w-full h-11 text-sm font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-md shadow-primary/20 transition-all active:scale-[0.99] flex items-center justify-center gap-2"
                       disabled={loading}
                     >
@@ -1996,7 +2009,8 @@ export default function Checkout() {
                   <p className="text-lg font-black text-primary leading-tight">৳{total.toLocaleString()}</p>
                 </div>
                 <Button
-                  type="submit"
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleSubmit(e); }}
                   size="lg"
                   className="h-11 px-6 text-sm font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl flex-1 max-w-[240px] shadow-md shadow-primary/25 transition-all active:scale-[0.99] flex items-center justify-center gap-1.5 ml-auto"
                   disabled={loading}

@@ -21,7 +21,7 @@ import {
   ChevronRight
 } from "lucide-react";
 import { supabase } from "@/lib/firebaseAdapter";
-import { db } from "@/integrations/firebase/client";
+import { auth, db } from "@/integrations/firebase/client";
 import { doc, getDoc, onSnapshot, setDoc, getDocs, collection } from "firebase/firestore";
 import { useAuth } from "@/contexts/AuthContext";
 import { Header } from "@/components/layout/Header";
@@ -292,7 +292,15 @@ export default function OrderDetail() {
     if (authLoading) return;
     if (!id) return;
 
-    if (!user) {
+    const isRecentOwner = Boolean(
+      location.state?.orderPlaced ||
+      (typeof window !== "undefined" && (
+        localStorage.getItem("durtup_recent_order_" + id) ||
+        localStorage.getItem("durtup_last_placed_order_id") === id
+      ))
+    );
+
+    if (!user && !auth.currentUser && !isRecentOwner) {
       setIsUnauthorized(true);
       setOrder(null);
       setIsLoading(false);
@@ -312,7 +320,11 @@ export default function OrderDetail() {
 
         if (orderData) {
           const orderUserId = orderData?.user_id || orderData?.userId;
-          const isOwner = Boolean(user && (orderUserId === user.id || orderUserId === user.uid || (user.email && orderUserId === user.email)));
+          const effectiveViewerId = user?.id || user?.uid || auth.currentUser?.uid;
+          const isOwner = Boolean(
+            isRecentOwner ||
+            (effectiveViewerId && (orderUserId === effectiveViewerId || (user?.email && orderUserId === user.email) || (auth.currentUser?.email && orderUserId === auth.currentUser.email)))
+          );
           const isStaff = Boolean(isAdmin || isSeller);
 
           if (!isOwner && !isStaff) {
@@ -404,7 +416,11 @@ export default function OrderDetail() {
 
         if (raw) {
           const orderUserId = raw?.user_id || raw?.userId;
-          const isOwner = Boolean(user && (orderUserId === user.id || orderUserId === user.uid || (user.email && orderUserId === user.email)));
+          const effectiveViewerId = user?.id || user?.uid || auth.currentUser?.uid;
+          const isOwner = Boolean(
+            isRecentOwner ||
+            (effectiveViewerId && (orderUserId === effectiveViewerId || (user?.email && orderUserId === user.email) || (auth.currentUser?.email && orderUserId === auth.currentUser.email)))
+          );
           const isStaff = Boolean(isAdmin || isSeller);
 
           if (!isOwner && !isStaff) {
@@ -498,7 +514,7 @@ export default function OrderDetail() {
     }
 
     return () => unsub();
-  }, [id, user, authLoading, isAdmin, isSeller, isUnauthorized]);
+  }, [id, user, authLoading, isAdmin, isSeller, isUnauthorized, location.state]);
 
   const handleCopyTracking = () => {
     if (order?.tracking_number) {
