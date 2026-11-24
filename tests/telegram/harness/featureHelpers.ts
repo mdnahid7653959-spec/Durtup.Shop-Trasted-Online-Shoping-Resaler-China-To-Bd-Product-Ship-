@@ -179,14 +179,49 @@ export function buildConfirmationPromptKeyboard(actionCallback: string, returnCa
 // F09: Payment Inspection & Verification
 // ==========================================
 
+export function validateBkashTrxId(trxId: string): boolean {
+  if (!trxId || typeof trxId !== 'string') return false;
+  const trimmed = trxId.trim();
+  // Valid bKash Trx ID: 8 to 15 alphanumeric characters, no whitespace, no symbols
+  return /^[A-Za-z0-9]{8,15}$/.test(trimmed);
+}
+
 export async function verifyPayment(
   db: MockDatabase,
   orderId: string,
-  adminId: number | string = 8204855335
-): Promise<{ success: boolean; order: MockOrder }> {
+  adminId: number | string = 8204855335,
+  options?: {
+    rejectIfAlreadyVerified?: boolean;
+    trxId?: string;
+    senderPhone?: string;
+  }
+): Promise<{ success: boolean; order: MockOrder; message?: string }> {
   const existing = db.getDoc('orders', orderId) as MockOrder | null;
   if (!existing) {
     throw new Error(`Order ${orderId} not found.`);
+  }
+
+  // Idempotency guard: prevent duplicate verification
+  if (options?.rejectIfAlreadyVerified && existing.payment_status === 'verified') {
+    return {
+      success: false,
+      order: existing,
+      message: `Payment for order ${orderId} is already verified.`
+    };
+  }
+
+  // Transaction ID format boundary check
+  if (options?.trxId !== undefined && !validateBkashTrxId(options.trxId)) {
+    throw new Error(`Malformed bKash transaction ID: '${options.trxId}'. Must be 8-15 alphanumeric characters.`);
+  }
+
+  // Sender phone verification check
+  if (options?.senderPhone && existing.customer_phone && options.senderPhone.trim() !== existing.customer_phone.trim()) {
+    return {
+      success: false,
+      order: existing,
+      message: `Mismatched sender phone: provided ${options.senderPhone}, expected ${existing.customer_phone}`
+    };
   }
 
   const oldPayStatus = existing.payment_status;
@@ -203,7 +238,7 @@ export async function verifyPayment(
     entityId: orderId,
     oldValue: oldPayStatus,
     newValue: 'verified',
-    details: `Payment verified for ${existing.payment_method} (trx: ${existing.bKash_trx_id || 'N/A'})`
+    details: `Payment verified for ${existing.payment_method} (trx: ${options?.trxId || existing.bKash_trx_id || 'N/A'})`
   });
 
   db.addAuditLog({
@@ -228,11 +263,29 @@ export async function processRefund(
   db: MockDatabase,
   orderId: string,
   adminId: number | string = 8204855335,
-  reason: string = 'Admin approved return'
-): Promise<{ success: boolean; order: MockOrder }> {
+  reason: string = 'Admin approved return',
+  options?: {
+    rejectIfAlreadyRefunded?: boolean;
+    proofImages?: string[];
+  }
+): Promise<{ success: boolean; order: MockOrder; message?: string }> {
   const existing = db.getDoc('orders', orderId) as MockOrder | null;
   if (!existing) {
     throw new Error(`Order ${orderId} not found.`);
+  }
+
+  // Reject already refunded order
+  if (options?.rejectIfAlreadyRefunded && (existing.status === 'refunded' || existing.payment_status === 'refunded')) {
+    return {
+      success: false,
+      order: existing,
+      message: `Order ${orderId} is already marked as refunded.`
+    };
+  }
+
+  // Mandatory proof images boundary check
+  if (options?.proofImages !== undefined && options.proofImages.length === 0) {
+    throw new Error('Refund request rejected: at least one proof image is required.');
   }
 
   const oldStatus = existing.status;
@@ -287,6 +340,10 @@ export async function updateProductPrice(
   newPrice: number,
   adminId: number | string = 8204855335
 ): Promise<{ success: boolean; product: MockProduct }> {
+  if (typeof newPrice !== 'number' || isNaN(newPrice) || newPrice < 0) {
+    throw new Error(`Product price cannot be negative or invalid. Got: ${newPrice}`);
+  }
+
   const prod = db.getDoc('products', productId) as MockProduct | null;
   if (!prod) {
     throw new Error(`Product ${productId} not found.`);
@@ -327,6 +384,10 @@ export async function updateProductStock(
   adminId: number | string = 8204855335,
   reason: string = 'Manual Telegram admin adjustment'
 ): Promise<{ success: boolean; product: MockProduct }> {
+  if (typeof newStock !== 'number' || isNaN(newStock) || newStock < 0) {
+    throw new Error(`Stock quantity cannot be negative or invalid. Got: ${newStock}`);
+  }
+
   const prod = db.getDoc('products', productId) as MockProduct | null;
   if (!prod) {
     throw new Error(`Product ${productId} not found.`);
@@ -456,6 +517,13 @@ export function getLowStockAlerts(db: MockDatabase): MockProduct[] {
 // F13: Customer Profile & Access Control
 // ==========================================
 
+export function validateCustomerPhone(phone: string): boolean {
+  if (!phone || typeof phone !== 'string') return false;
+  const trimmed = phone.trim();
+  // Valid Bangladesh mobile numbers: +8801XXXXXXXXX or 01XXXXXXXXX (11-14 digits)
+  return /^(?:\+?8801|01)[3-9]\d{8}$/.test(trimmed);
+}
+
 export async function toggleCustomerAccess(
   db: MockDatabase,
   profileId: string,
@@ -501,13 +569,18 @@ export async function toggleCustomerAccess(
 export async function assignCourierToOrder(
   db: MockDatabase,
   orderId: string,
-  courier: 'Pathao' | 'RedX' | 'SteadFast',
+  courier: 'Pathao' | 'RedX' | 'SteadFast' | string,
   trackingId?: string,
   adminId: number | string = 8204855335
 ): Promise<{ success: boolean; order: MockOrder; message: string }> {
   const order = db.getDoc('orders', orderId) as MockOrder | null;
   if (!order) {
     throw new Error(`Order ${orderId} not found.`);
+  }
+
+  const allowedCouriers = ['Pathao', 'RedX', 'SteadFast'];
+  if (!allowedCouriers.includes(courier)) {
+    throw new Error(`Invalid courier '${courier}'. Supported couriers are: ${allowedCouriers.join(', ')}`);
   }
 
   // Prevent duplicate courier booking if already booked
@@ -564,6 +637,68 @@ export async function assignCourierToOrder(
 // ==========================================
 // F15: Coupons & Review / Q&A Moderation
 // ==========================================
+
+export function validateCouponDiscount(discount: number, type: 'percentage' | 'fixed' = 'percentage'): boolean {
+  if (typeof discount !== 'number' || isNaN(discount) || discount <= 0) {
+    return false;
+  }
+  if (type === 'percentage' && discount > 100) {
+    return false;
+  }
+  return true;
+}
+
+export async function createCoupon(
+  db: MockDatabase,
+  couponData: {
+    code: string;
+    discount_value: number;
+    discount_type: 'percentage' | 'fixed';
+    min_order_amount?: number;
+    expires_at?: string;
+    is_active?: boolean;
+  },
+  adminId: number | string = 8204855335
+): Promise<{ success: boolean; coupon: MockCoupon }> {
+  if (!validateCouponDiscount(couponData.discount_value, couponData.discount_type)) {
+    throw new Error(`Invalid coupon discount: ${couponData.discount_value}. Discount must be greater than zero.`);
+  }
+
+  const id = `coup-${couponData.code.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+  const newCoupon: MockCoupon = {
+    id,
+    code: couponData.code.toUpperCase().trim(),
+    discount_value: couponData.discount_value,
+    discount_type: couponData.discount_type,
+    is_active: couponData.is_active ?? true,
+    min_order_amount: couponData.min_order_amount ?? 0,
+    expires_at: couponData.expires_at || '2026-12-31T23:59:59Z',
+    created_at: new Date().toISOString()
+  };
+
+  db.setDoc('coupons', id, newCoupon);
+
+  await recordTelegramAudit({
+    telegramAdminId: adminId,
+    adminName: 'Master Admin',
+    action: 'COUPON_CREATED',
+    entityType: 'coupon',
+    entityId: id,
+    newValue: newCoupon,
+    details: `Coupon ${newCoupon.code} created`
+  });
+
+  db.addAuditLog({
+    telegramAdminId: adminId,
+    adminName: 'Master Admin',
+    action: 'COUPON_CREATED',
+    entityType: 'coupon',
+    entityId: id,
+    newValue: newCoupon
+  });
+
+  return { success: true, coupon: newCoupon };
+}
 
 export async function toggleCouponActive(
   db: MockDatabase,
@@ -686,8 +821,9 @@ export async function moderateQuestion(
 
 export function computeAnalyticsReport(
   db: MockDatabase,
-  range: 'today' | 'yesterday' | '7d' | '30d',
-  referenceDate: Date = new Date('2026-11-24T12:00:00Z')
+  range: 'today' | 'yesterday' | '7d' | '30d' | 'custom',
+  referenceDate: Date = new Date('2026-11-24T12:00:00Z'),
+  customRange?: { startDate: string | Date; endDate: string | Date }
 ): {
   range: string;
   totalOrders: number;
@@ -738,6 +874,10 @@ export function computeAnalyticsReport(
       inRange = oDate >= sevenDaysAgo && oDate <= referenceDate;
     } else if (range === '30d') {
       inRange = oDate >= thirtyDaysAgo && oDate <= referenceDate;
+    } else if (range === 'custom' && customRange) {
+      const start = new Date(customRange.startDate);
+      const end = new Date(customRange.endDate);
+      inRange = oDate >= start && oDate <= end;
     }
 
     if (inRange) {

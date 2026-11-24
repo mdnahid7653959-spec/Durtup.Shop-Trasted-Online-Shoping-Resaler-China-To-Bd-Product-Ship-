@@ -541,8 +541,9 @@ export async function loadAllSuites(): Promise<TestSuite[]> {
   // Try loading Tier 2
   try {
     const tier2Module = await import('./tier2_boundaries.test');
-    if (tier2Module?.tier2Suite) {
-      suites.push(tier2Module.tier2Suite);
+    const tier2 = tier2Module?.tier2TestSuite || tier2Module?.tier2Suite;
+    if (tier2) {
+      suites.push(tier2);
     }
   } catch (err: any) {
     // Module not created yet
