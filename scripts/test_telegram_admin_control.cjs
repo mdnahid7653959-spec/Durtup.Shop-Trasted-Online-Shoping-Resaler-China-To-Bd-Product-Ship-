@@ -1,13 +1,15 @@
 const http = require('http');
+const https = require('https');
 
 function postJson(url, data) {
   return new Promise((resolve, reject) => {
     const u = new URL(url);
+    const transport = u.protocol === 'https:' ? https : http;
     const body = JSON.stringify(data);
-    const req = http.request({
+    const req = transport.request({
       hostname: u.hostname,
-      port: u.port || 80,
-      path: u.pathname,
+      port: u.port || (u.protocol === 'https:' ? 443 : 80),
+      path: u.pathname + (u.search || ''),
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -32,7 +34,9 @@ function postJson(url, data) {
 
 function getJson(url) {
   return new Promise((resolve, reject) => {
-    http.get(url, res => {
+    const u = new URL(url);
+    const transport = u.protocol === 'https:' ? https : http;
+    transport.get(url, res => {
       let respData = '';
       res.on('data', chunk => respData += chunk);
       res.on('end', () => {
@@ -47,13 +51,14 @@ function getJson(url) {
 }
 
 async function runTests() {
+  const endpoint = process.env.TARGET_URL || 'https://www.durtup.shop/api/telegram-webhook';
   console.log('====================================================');
-  console.log('🧪 Starting Durtup.shop Telegram Admin Bot Tests');
+  console.log(`🧪 Starting Durtup.shop Telegram Admin Bot Tests on ${endpoint}`);
   console.log('====================================================\n');
 
   // Test 1: GET /api/telegram-webhook Health Check
   console.log('Test 1: Health Check on /api/telegram-webhook...');
-  const healthRes = await getJson('http://localhost:8080/api/telegram-webhook');
+  const healthRes = await getJson(endpoint);
   console.log('Health check response:', healthRes);
   if (healthRes.status === 200 && healthRes.body?.status === 'active') {
     console.log('✅ Test 1 PASSED: Webhook endpoint active.\n');
@@ -73,7 +78,7 @@ async function runTests() {
       text: '/orders'
     }
   };
-  const unauthRes = await postJson('http://localhost:8080/api/telegram-webhook', unauthUpdate);
+  const unauthRes = await postJson(endpoint, unauthUpdate);
   console.log('Unauth response:', unauthRes);
   if (unauthRes.status === 200 && unauthRes.body?.ok === true) {
     console.log('✅ Test 2 PASSED: Unauthorized user handled securely (denied).\n');
@@ -94,7 +99,7 @@ async function runTests() {
       text: '/setup'
     }
   };
-  const setupRes = await postJson('http://localhost:8080/api/telegram-webhook', setupUpdate);
+  const setupRes = await postJson(endpoint, setupUpdate);
   console.log('Setup response:', setupRes);
   if (setupRes.status === 200 && setupRes.body?.ok === true) {
     console.log('✅ Test 3 PASSED: Admin registered successfully.\n');
@@ -114,7 +119,7 @@ async function runTests() {
       text: '/start'
     }
   };
-  const startRes = await postJson('http://localhost:8080/api/telegram-webhook', startUpdate);
+  const startRes = await postJson(endpoint, startUpdate);
   console.log('Start command response:', startRes);
   if (startRes.status === 200 && startRes.body?.ok === true) {
     console.log('✅ Test 4 PASSED: /start menu generated successfully.\n');
@@ -134,7 +139,7 @@ async function runTests() {
       text: '/stats'
     }
   };
-  const statsRes = await postJson('http://localhost:8080/api/telegram-webhook', statsUpdate);
+  const statsRes = await postJson(endpoint, statsUpdate);
   console.log('Stats response:', statsRes);
   if (statsRes.status === 200 && statsRes.body?.ok === true) {
     console.log('✅ Test 5 PASSED: /stats computed and sent.\n');
@@ -158,7 +163,7 @@ async function runTests() {
       data: 'order_approve:ORD-TEST-99'
     }
   };
-  const approveRes = await postJson('http://localhost:8080/api/telegram-webhook', approveCallback);
+  const approveRes = await postJson(endpoint, approveCallback);
   console.log('Approve callback response:', approveRes);
   if (approveRes.status === 200 && approveRes.body?.ok === true) {
     console.log('✅ Test 6 PASSED: Order approval callback executed.\n');
@@ -182,7 +187,7 @@ async function runTests() {
       data: 'order_reject:ORD-TEST-100'
     }
   };
-  const rejectRes = await postJson('http://localhost:8080/api/telegram-webhook', rejectCallback);
+  const rejectRes = await postJson(endpoint, rejectCallback);
   console.log('Reject callback response:', rejectRes);
   if (rejectRes.status === 200 && rejectRes.body?.ok === true) {
     console.log('✅ Test 7 PASSED: Order rejection callback executed.\n');
