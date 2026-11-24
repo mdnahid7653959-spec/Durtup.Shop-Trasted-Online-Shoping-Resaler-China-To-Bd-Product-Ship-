@@ -11,7 +11,7 @@
  */
 
 const FIRESTORE_BASE = "https://firestore.googleapis.com/v1/projects/eshop-app-6119d/databases/(default)/documents";
-const DEFAULT_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "9052891455:AAGoY4tAc6JaEAN8AxAI96RMMQBS6UcMYpw";
+const DEFAULT_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "9052891455:AAGrB4DfvjuXqmTwnRKmKubC7vCmgaO0QcM";
 const STORE_NAME = "Durtup.shop";
 const STORE_URL = process.env.VITE_SITE_URL || "https://www.durtup.shop";
 
