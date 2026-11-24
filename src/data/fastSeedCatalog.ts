@@ -1,4 +1,31 @@
-import type { Product } from "@/components/products/ProductCard";
+export interface Product {
+  id: string | number;
+  name: string;
+  slug?: string;
+  product_code?: string;
+  sku?: string;
+  price: number;
+  originalPrice?: number;
+  regular_price?: number;
+  discount_price?: number;
+  rating?: number;
+  reviews?: number;
+  sold?: number;
+  stock?: number;
+  image?: string;
+  images?: string[];
+  product_images?: any[];
+  category?: string;
+  category_name?: string;
+  category_slug?: string;
+  categorySlug?: string;
+  categoryName?: string;
+  product_variants?: any[];
+  variants?: any[];
+  details?: string;
+  description?: string;
+  [key: string]: any;
+}
 
 export const FAST_SEED_PRODUCTS: Product[] = [
   {

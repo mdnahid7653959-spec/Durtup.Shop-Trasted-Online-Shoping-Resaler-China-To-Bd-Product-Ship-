@@ -1,5 +1,5 @@
-import { FAST_SEED_PRODUCTS } from "@/data/fastSeedCatalog";
-import { supabase } from "@/lib/firebaseAdapter";
+import { FAST_SEED_PRODUCTS } from "../data/fastSeedCatalog";
+import { supabase } from "../lib/firebaseAdapter";
 
 export interface ResellerApiResult {
   status: number;

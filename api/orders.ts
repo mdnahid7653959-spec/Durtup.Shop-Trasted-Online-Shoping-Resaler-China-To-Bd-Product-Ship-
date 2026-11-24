@@ -1,12 +1,15 @@
-import { handleOrderServerRequest } from "../src/server/orderServerEngine";
-
 export default async function handler(req: any, res: any) {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   if (req.method === "OPTIONS") {
     return res.status(200).end();
+  }
+
+  if (req.method === "GET") {
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    return res.status(200).json({ status: "healthy", service: "Durtup Orders API" });
   }
 
   if (req.method !== "POST") {
@@ -15,6 +18,8 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
+    const { handleOrderServerRequest } = await import("../src/server/orderServerEngine");
+
     let body = req.body || {};
     if (typeof body === "string") {
       try {

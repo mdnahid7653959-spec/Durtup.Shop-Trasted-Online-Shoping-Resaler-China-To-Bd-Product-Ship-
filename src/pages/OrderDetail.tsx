@@ -308,7 +308,46 @@ export default function OrderDetail() {
     }
 
     const fetchOrder = async () => {
-      setIsLoading(true);
+      // 0. Instant Cache Check from recent order creation
+      try {
+        const cachedRaw = localStorage.getItem("durtup_recent_order_" + id);
+        if (cachedRaw) {
+          const parsed = JSON.parse(cachedRaw);
+          const rawItems = Array.isArray(parsed?.items) ? parsed.items : (Array.isArray(parsed?.order_items) ? parsed.order_items : []);
+          if (rawItems.length > 0) {
+            const formatted = {
+              id: parsed.id || id,
+              order_number: parsed.order_number || parsed.orderNumber || id,
+              user_id: parsed.user_id || parsed.userId || user?.id || "customer",
+              status: (parsed.status || "pending").toLowerCase(),
+              payment_status: (parsed.payment_status || "pending").toLowerCase(),
+              payment_method: parsed.payment_method || "cod",
+              subtotal: Number(parsed.subtotal || 0),
+              shipping_cost: Number(parsed.shipping_cost || 0),
+              tax_amount: Number(parsed.tax_amount || 0),
+              discount_amount: Number(parsed.discount_amount || 0),
+              total: Number(parsed.total || parsed.totalAmount || 0),
+              shipping_address: parsed.shipping_address || {},
+              tracking_number: parsed.tracking_number,
+              courier_name: parsed.courier_name,
+              created_at: parsed.created_at || new Date().toISOString(),
+              order_items: rawItems.map((it: any, idx: number) => ({
+                id: it.id || `item-${idx}`,
+                product_name: it.product_name || it.name || it.product?.name || "Product",
+                variant_name: it.variant_name || (it.selected_variants ? Object.values(it.selected_variants).join(" / ") : null),
+                quantity: Number(it.quantity || 1),
+                unit_price: Number(it.price || it.unit_price || 0),
+                total_price: Number((it.price || it.unit_price || 0) * (it.quantity || 1)),
+                product_image: it.image || it.product_image || it.product?.image_url || "/durtup-logo.png",
+                product_id: it.product_id || it.id || null
+              }))
+            };
+            setOrder(formatted);
+            setIsUnauthorized(false);
+            setIsLoading(false);
+          }
+        }
+      } catch {}
 
       try {
         // 1. Try Supabase by UUID id or order_number
@@ -400,15 +439,21 @@ export default function OrderDetail() {
         let docSnap = await getDoc(doc(db, "orders", id)).catch(() => null);
         let raw = docSnap && docSnap.exists() ? docSnap.data() : null;
 
-        // If not found by direct doc ID, check by order_number in localStorage
+        // If not found by direct doc ID, check localStorage recent orders and admin orders
         if (!raw) {
           try {
-            const adminOrdersRaw = localStorage.getItem("enterprise_admin_orders") || localStorage.getItem("local_orders");
-            if (adminOrdersRaw) {
-              const adminOrders = JSON.parse(adminOrdersRaw);
-              const found = adminOrders.find((o: any) => o.id === id || o.order_number === id || o.orderNumber === id);
-              if (found) {
-                raw = found;
+            const recentOrderRaw = localStorage.getItem("durtup_recent_order_" + id);
+            if (recentOrderRaw) {
+              raw = JSON.parse(recentOrderRaw);
+            }
+            if (!raw) {
+              const adminOrdersRaw = localStorage.getItem("enterprise_admin_orders") || localStorage.getItem("local_orders");
+              if (adminOrdersRaw) {
+                const adminOrders = JSON.parse(adminOrdersRaw);
+                const found = adminOrders.find((o: any) => o.id === id || o.order_number === id || o.orderNumber === id);
+                if (found) {
+                  raw = found;
+                }
               }
             }
           } catch {}

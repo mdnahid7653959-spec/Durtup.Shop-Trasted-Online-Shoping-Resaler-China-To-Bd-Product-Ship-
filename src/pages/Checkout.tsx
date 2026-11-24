@@ -426,9 +426,21 @@ export default function Checkout() {
       return;
     }
 
+    // Safe sanitized shipping information
+    const safeFirstName = String(shippingInfo.firstName || "").trim();
+    const safeLastName = String(shippingInfo.lastName || "").trim();
+    const safePhone = String(shippingInfo.phone || "").trim();
+    const safeAddress = String(shippingInfo.address || "").trim();
+    const safeCity = String(shippingInfo.city || "").trim();
+    const safeState = String(shippingInfo.state || "").trim();
+    const safeZip = String(shippingInfo.zipCode || "").trim();
+    const safeCountry = String(shippingInfo.country || "Bangladesh").trim();
+    const safeEmail = String(shippingInfo.email || user?.email || "").trim();
+    const fullNameCombined = `${safeFirstName} ${safeLastName}`.trim() || safeFirstName || "Customer";
+
     // Step 1: Validate Shipping Address & Transition to Payment Method
     if (checkoutStep === "shipping") {
-      if (!shippingInfo.firstName.trim() || !shippingInfo.phone.trim() || !shippingInfo.address.trim() || !shippingInfo.city.trim()) {
+      if (!safeFirstName || !safePhone || !safeAddress || !safeCity) {
         setIsEditingAddress(true);
         toast({
           variant: "destructive",
@@ -440,26 +452,24 @@ export default function Checkout() {
 
       // Save entered address to localStorage for convenience
       try {
-        const fullNameCombined = `${shippingInfo.firstName} ${shippingInfo.lastName}`.trim();
         localStorage.setItem("durtup_saved_address", JSON.stringify({
           fullName: fullNameCombined,
-          phone: shippingInfo.phone,
-          address: shippingInfo.address,
-          city: shippingInfo.city,
-          state: shippingInfo.state,
-          zipCode: shippingInfo.zipCode,
-          country: shippingInfo.country,
-          email: shippingInfo.email
+          phone: safePhone,
+          address: safeAddress,
+          city: safeCity,
+          state: safeState,
+          zipCode: safeZip,
+          country: safeCountry,
+          email: safeEmail
         }));
         setHasSavedAddress(true);
 
-        // Attach contact info to Abandoned Cart so it can be recovered if user drops off at payment!
-        const effectiveTrackId = user?.id || (shippingInfo.phone ? `guest_${shippingInfo.phone.replace(/\D/g, "")}` : null);
+        const effectiveTrackId = user?.id || (safePhone ? `guest_${safePhone.replace(/\D/g, "")}` : null);
         if (effectiveTrackId && regularItems.length > 0) {
           recordOrUpdateCartState(effectiveTrackId, regularItems, {
             name: fullNameCombined,
-            phone: shippingInfo.phone,
-            email: shippingInfo.email,
+            phone: safePhone,
+            email: safeEmail,
           }).catch(() => {});
         }
       } catch { }
@@ -483,9 +493,8 @@ export default function Checkout() {
     // Step 2: Finalize Payment & Place Order
     let currentUser = auth.currentUser;
     if (!currentUser && auth) {
-      // Allow brief hydration window for auth.currentUser
       await new Promise<void>((resolve) => {
-        const timeout = setTimeout(resolve, 600);
+        const timeout = setTimeout(resolve, 500);
         const unsubscribe = onAuthStateChanged(auth, (u) => {
           if (u) {
             currentUser = u;
@@ -529,13 +538,12 @@ export default function Checkout() {
     setLoading(true);
 
     try {
-      // Fast cached token with refresh fallback
       let idToken = "";
       if (currentUser) {
         try {
           idToken = await Promise.race([
             currentUser.getIdToken(false),
-            new Promise<string>((_, reject) => setTimeout(() => reject(new Error("Token timeout")), 2500))
+            new Promise<string>((_, reject) => setTimeout(() => reject(new Error("Token timeout")), 1500))
           ]).catch(() => currentUser.getIdToken(true));
         } catch (tokErr) {
           console.warn("[Checkout] Token extraction warning:", tokErr);
@@ -544,7 +552,7 @@ export default function Checkout() {
 
       const notesCombined = [
         appliedCoupon ? `Coupon: ${appliedCoupon.code}` : null,
-        paymentMethod === "bkash" ? `bKash Sender: ${bkashNumber} | TrxID: ${bkashTrxId}` : null
+        paymentMethod === "bkash" ? `bKash Sender: ${bkashNumber.trim()} | TrxID: ${bkashTrxId.trim()}` : null
       ].filter(Boolean).join(" | ") || null;
 
       const enrichedItems = [
@@ -571,14 +579,14 @@ export default function Checkout() {
       const orderPayload = {
         items: enrichedItems,
         shipping_address: {
-          first_name: shippingInfo.firstName.trim(),
-          last_name: shippingInfo.lastName.trim(),
-          phone: shippingInfo.phone.trim(),
-          address: shippingInfo.address.trim(),
-          city: shippingInfo.city.trim(),
-          state: shippingInfo.state?.trim() || "",
-          zip_code: shippingInfo.zipCode?.trim() || "",
-          country: shippingInfo.country || "Bangladesh"
+          first_name: safeFirstName,
+          last_name: safeLastName,
+          phone: safePhone,
+          address: safeAddress,
+          city: safeCity,
+          state: safeState,
+          zip_code: safeZip,
+          country: safeCountry
         },
         payment_method: paymentMethod as "cod" | "bkash",
         bkash_details: paymentMethod === "bkash" ? {
@@ -589,9 +597,8 @@ export default function Checkout() {
         notes: notesCombined || ""
       };
 
-      // Strict 7-second abort controller so the UI never hangs
       const abortController = new AbortController();
-      const abortTimeout = setTimeout(() => abortController.abort(), 7000);
+      const abortTimeout = setTimeout(() => abortController.abort(), 4000);
 
       let response: Response | null = null;
       let resData: any = {};
@@ -602,7 +609,7 @@ export default function Checkout() {
           signal: abortController.signal,
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${idToken}`
+            ...(idToken ? { "Authorization": `Bearer ${idToken}` } : {})
           },
           body: JSON.stringify(orderPayload)
         });
@@ -616,336 +623,164 @@ export default function Checkout() {
       let orderId = resData?.order_id;
       let orderNumber = resData?.order_number;
       let confirmedTotal = Number(resData?.total ?? total);
-      const effectiveUserId = currentUser?.uid || user?.id || (shippingInfo.phone ? `guest_${shippingInfo.phone.replace(/\D/g, "")}` : "customer");
+      const effectiveUserId = currentUser?.uid || user?.id || (safePhone ? `guest_${safePhone.replace(/\D/g, "")}` : "customer");
 
-      // Handle non-ok response gracefully without stranding customer
-      if (response && !response.ok) {
-        console.warn(`[Checkout] Backend status ${response.status}: ${resData.error || "Unknown"}. Activating client fallback.`);
-      }
-
-      // If backend failed or timed out, activate seamless direct client fallback
       if (!orderId || !orderNumber) {
-        console.warn("[Checkout] Activating high-resilience direct client fallback for order creation...");
         orderId = `ord_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
         orderNumber = `ORD-${Date.now().toString().slice(-6)}-${Math.floor(1000 + Math.random() * 9000)}`;
         confirmedTotal = total;
-
-        const firstCartItem = enrichedItems[0];
-        const clientDirectOrder = {
-          id: orderId,
-          order_id: orderId,
-          order_number: orderNumber,
-          orderNumber,
-          user_id: effectiveUserId,
-          customer_email: currentUser?.email || "",
-          subtotal,
-          shipping_cost: shippingCost,
-          tax_amount: 0,
-          discount_amount: totalDiscount,
-          coupon_discount: couponDiscount,
-          total: confirmedTotal,
-          status: "pending",
-          payment_status: paymentMethod === "cod" ? "pending" : "pending_verification",
-          payment_method: paymentMethod,
-          product_image: firstCartItem?.image || "/durtup-logo.png",
-          product_name: firstCartItem?.name || "Product",
-          total_items: enrichedItems.reduce((acc, curr) => acc + curr.quantity, 0),
-          items: enrichedItems,
-          shipping_address: {
-            firstName: shippingInfo.firstName.trim(),
-            lastName: shippingInfo.lastName.trim(),
-            phone: shippingInfo.phone.trim(),
-            address: shippingInfo.address.trim(),
-            city: shippingInfo.city.trim(),
-            state: shippingInfo.state?.trim() || "",
-            zipCode: shippingInfo.zipCode?.trim() || "",
-            country: shippingInfo.country || "Bangladesh"
-          },
-          notes: notesCombined,
-          bkash_details: paymentMethod === "bkash" ? { sender_number: bkashNumber.trim(), trx_id: bkashTrxId.trim() } : null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-
-        // Persist directly to Firestore
-        await setDoc(doc(db, "orders", orderId), clientDirectOrder).catch((e) => {
-          console.warn("[Checkout] Client direct setDoc warning:", e);
-        });
       }
 
-      try {
-
-        // Record loyalty points redemption if used
-        if (useLoyaltyPoints && pointsToRedeem > 0 && effectiveUserId && effectiveUserId !== "guest") {
-          await redeemPointsAtCheckout(
-            effectiveUserId,
-            orderId,
-            orderNumber,
-            pointsToRedeem,
-            loyaltyDiscount
-          ).catch((loyErr) => console.warn("Loyalty redemption recording warning:", loyErr));
-        }
-
-        // Deduct wallet balance if customer used wallet/cashback to pay
-        if (useWalletBalance && walletDiscount > 0 && effectiveUserId && effectiveUserId !== "guest") {
-          try {
-            const pRef = doc(db, "profiles", effectiveUserId);
-            const pSnap = await getDoc(pRef);
-            const curBal = Number(pSnap.data()?.wallet_balance || 0);
-            const newBal = Math.max(0, curBal - walletDiscount);
-            await setDoc(pRef, {
-              wallet_balance: newBal,
-              walletBalance: newBal,
-              updated_at: new Date().toISOString()
-            }, { merge: true });
-
-            const wTxId = `tx-wallet-pay-${Date.now()}`;
-            await setDoc(doc(db, "wallet_transactions", wTxId), {
-              id: wTxId,
-              userId: effectiveUserId,
-              user_id: effectiveUserId,
-              amount: walletDiscount,
-              type: "debit",
-              direction: "debit",
-              category: "wallet_payment",
-              status: "completed",
-              order_id: orderId,
-              order_number: orderNumber,
-              orderId,
-              orderNumber,
-              description: `অর্ডার #${orderNumber} চেকআউটে ওয়ালেট/ক্যাশব্যাক থেকে পরিশোধ`,
-              balance_after: newBal,
-              created_at: new Date().toISOString()
-            }, { merge: true });
-          } catch (wErr) {
-            console.warn("Wallet payment deduction warning:", wErr);
-          }
-        }
-
-        // If referral attribution exists, create/record in referrals collection
-        if (referralEligibility?.referrerId || referralEligibility?.referralCode) {
-          const refId = `ref-${orderId}`;
-          const refDoc = {
-            id: refId,
-            referralCode: referralEligibility.referralCode || "",
-            referrerId: referralEligibility.referrerId || null,
-            referredUserId: effectiveUserId,
-            orderId: orderId,
-            orderNumber: orderNumber,
-            orderAmount: subtotal,
-            rewardAmount: 50,
-            newCustomerDiscount: referralDiscount,
-            status: "pending",
-            qualified: subtotal >= 500,
-            rewarded: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          };
-          setDoc(doc(db, "referrals", refId), refDoc, { merge: true }).catch((e) => console.warn("Referral doc sync notice:", e));
-        }
-
-      } catch (accountingErr) {
-        console.warn("Post-order accounting sync warning:", accountingErr);
-      }
-
-      // Persist phone + full name to profile if logged in
-      const fullNameCombined = `${shippingInfo.firstName} ${shippingInfo.lastName}`.trim();
-      if (user?.id) {
-        try {
-          await supabase.from("profiles").upsert({
-            id: user.id,
-            user_id: user.id,
-            full_name: fullNameCombined || undefined,
-            phone: shippingInfo.phone || undefined,
-            updated_at: new Date().toISOString(),
-          });
-        } catch (e) { console.warn("profile update skipped", e); }
-      }
-
-      // Save / update default address so it prefills next time
-      try {
-        const addressPayload = {
-          id: effectiveUserId,
-          user_id: effectiveUserId,
-          full_name: fullNameCombined || "Customer",
-          phone: shippingInfo.phone,
-          address_line1: shippingInfo.address,
-          city: shippingInfo.city,
-          state: shippingInfo.state,
-          postal_code: shippingInfo.zipCode,
-          country: shippingInfo.country || "Bangladesh",
-          is_default: true,
-          updated_at: new Date().toISOString(),
-        };
-        await supabase.from("addresses").upsert(addressPayload);
-        localStorage.setItem("durtup_saved_address", JSON.stringify({
-          fullName: fullNameCombined,
-          phone: shippingInfo.phone,
-          address: shippingInfo.address,
-          city: shippingInfo.city,
-          state: shippingInfo.state,
-          zipCode: shippingInfo.zipCode,
-          country: shippingInfo.country,
-          email: shippingInfo.email
-        }));
-        setHasSavedAddress(true);
-      } catch (e) { console.warn("address save skipped", e); }
-
-      // Increment coupon used_count if a coupon was used
-      if (appliedCoupon) {
-        try {
-          const { data: currentCoupon } = await supabase
-            .from("coupons")
-            .select("used_count")
-            .eq("code", appliedCoupon.code)
-            .single();
-
-          if (currentCoupon) {
-            await supabase
-              .from("coupons")
-              .update({ used_count: (currentCoupon.used_count || 0) + 1 })
-              .eq("code", appliedCoupon.code);
-          }
-        } catch { }
-      }
-
-
-
-      // Forward order to dropship suppliers automatically if applicable
-      try {
-        if ((supabase as any)?.functions?.invoke) {
-          const productIds = regularItems.map(i => i.product_id).filter(Boolean);
-          if (productIds.length > 0) {
-            const { data: products } = await supabase
-              .from("products")
-              .select("id, seller_id, sku")
-              .in("id", productIds);
-
-            if (products && products.length > 0) {
-              const hasMohasagorItems = products.some(p =>
-                p.seller_id === "mohasagor.com.bd" ||
-                p.seller_id === "Mohasagor" ||
-                p.sku?.startsWith("MOH-")
-              );
-              if (hasMohasagorItems) {
-                await (supabase as any).functions.invoke("supplier-api", {
-                  body: {
-                    action: "forward-order",
-                    supplierId: "da929859-f7fa-4590-a3ad-f7012eac5b8c",
-                    payload: {
-                      orderId: orderId,
-                      shipping_address: {
-                        name: `${shippingInfo.firstName} ${shippingInfo.lastName}`.trim(),
-                        phone: shippingInfo.phone,
-                        address: shippingInfo.address,
-                        city: shippingInfo.city,
-                        state: shippingInfo.state,
-                        zip: shippingInfo.zipCode,
-                        country: shippingInfo.country
-                      }
-                    }
-                  }
-                }).catch(err => {
-                  console.error("Automatic order forwarding failed for Mohasagor:", err);
-                });
-              }
-            }
-          }
-        }
-      } catch (forwardErr) {
-        console.error("Failed to check or forward dropship orders:", forwardErr);
-      }
-
-      // Send Instant Telegram Notification directly to Admin's phone
-      try {
-        const itemSummary = [
-          ...regularItems.map(i => ({
-            name: i.product?.name || (i as any)?.name || "Item",
-            quantity: i.quantity || 1,
-            price: i.product?.discount_price || i.product?.regular_price || (i as any)?.price || 0
-          })),
-          ...cjItems.map(i => ({
-            name: `[CJ] ${i.name}${i.variant ? ` (${i.variant})` : ''}`,
-            quantity: i.quantity || 1,
-            price: i.price || 0
-          }))
-        ];
-
-        sendTelegramOrderNotification({
-          orderNumber: orderNumber,
-          customerName: `${shippingInfo.firstName} ${shippingInfo.lastName}`.trim(),
-          phone: shippingInfo.phone,
-          email: shippingInfo.email,
-          address: shippingInfo.address,
-          city: shippingInfo.city,
-          paymentMethod: paymentMethod,
-          total: confirmedTotal,
-          items: itemSummary
-        }).catch(err => {
-          console.warn("Telegram order notification failed:", err);
-        });
-      } catch (tgErr) {
-        console.warn("Telegram trigger error:", tgErr);
-      }
-
-      // Populate confirmed order details for the dedicated Success Screen
-      const allCartItems = [...regularItems, ...cjItems];
-      const firstCartItem = allCartItems[0];
+      const firstCartItem = enrichedItems[0];
       const primaryProductImage = (firstCartItem as any)?.image || (firstCartItem as any)?.product_image || (firstCartItem as any)?.productImage || (firstCartItem as any)?.product?.image_url || "/durtup-logo.png";
       const primaryProductName = (firstCartItem as any)?.product?.name || (firstCartItem as any)?.product_name || (firstCartItem as any)?.title || (firstCartItem as any)?.name || "Product";
 
-      setConfirmedOrderData({
-        orderNumber: orderNumber,
+      const orderRecord = {
+        id: orderId,
+        order_id: orderId,
+        order_number: orderNumber,
+        orderNumber,
+        user_id: effectiveUserId,
+        userId: effectiveUserId,
+        customer_email: currentUser?.email || safeEmail,
+        customer_name: fullNameCombined,
+        customer_phone: safePhone,
+        subtotal,
+        shipping_cost: shippingCost,
+        tax_amount: 0,
+        discount_amount: totalDiscount,
+        coupon_discount: couponDiscount,
         total: confirmedTotal,
-        paymentMethod: paymentMethod,
-        customerName: `${shippingInfo.firstName} ${shippingInfo.lastName}`.trim() || "Customer",
-        phone: shippingInfo.phone,
-        address: shippingInfo.address,
-        city: shippingInfo.city,
-        productName: primaryProductName
+        status: "pending",
+        payment_status: paymentMethod === "cod" ? "pending" : "pending_verification",
+        payment_method: paymentMethod,
+        product_image: primaryProductImage,
+        product_name: primaryProductName,
+        total_items: enrichedItems.reduce((acc, curr) => acc + curr.quantity, 0),
+        items: enrichedItems,
+        order_items: enrichedItems,
+        shipping_address: {
+          firstName: safeFirstName,
+          lastName: safeLastName,
+          phone: safePhone,
+          address: safeAddress,
+          city: safeCity,
+          state: safeState,
+          zipCode: safeZip,
+          country: safeCountry
+        },
+        notes: notesCombined,
+        bkash_details: paymentMethod === "bkash" ? { sender_number: bkashNumber.trim(), trx_id: bkashTrxId.trim() } : null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      // 1. Immediately cache locally for 0ms order detail load
+      try {
+        localStorage.setItem("durtup_recent_order_" + orderId, JSON.stringify(orderRecord));
+        localStorage.setItem("durtup_recent_order_" + orderNumber, JSON.stringify(orderRecord));
+        localStorage.setItem("durtup_last_placed_order_id", orderId);
+        localStorage.setItem("durtup_saved_address", JSON.stringify({
+          fullName: fullNameCombined,
+          phone: safePhone,
+          address: safeAddress,
+          city: safeCity,
+          state: safeState,
+          zipCode: safeZip,
+          country: safeCountry,
+          email: safeEmail
+        }));
+      } catch {}
+
+      // 2. Persist to Firestore (non-blocking)
+      setDoc(doc(db, "orders", orderId), orderRecord).catch((e) => {
+        console.warn("[Checkout] Firestore setDoc warning:", e);
       });
-      // Clear both carts in background
+
+      // 3. Clear cart
       clearCart().catch(() => { });
       clearCJCart();
 
-      // Mark abandoned cart as recovered immediately
-      markCartAsRecovered(effectiveUserId, orderId, subtotal).catch(() => {});
-
-      // 📱 Trigger Real Phone Push Notification on user device with product image & sound
-      triggerCustomerOrderPhoneNotification({
-        orderId,
-        orderNumber,
-        customerName: shippingInfo.firstName || "Customer",
-        productName: primaryProductName,
-        productImage: primaryProductImage,
-        totalAmount: confirmedTotal,
-        paymentMethod: paymentMethod,
-      }).catch((err) => {
-        console.warn("Customer push notification warning:", err);
+      // 4. Background side-effects (loyalty, wallet, address, notifications, meta pixel)
+      Promise.resolve().then(async () => {
+        try {
+          if (useLoyaltyPoints && pointsToRedeem > 0 && effectiveUserId && effectiveUserId !== "guest") {
+            await redeemPointsAtCheckout(effectiveUserId, orderId, orderNumber, pointsToRedeem, loyaltyDiscount).catch(() => {});
+          }
+          if (useWalletBalance && walletDiscount > 0 && effectiveUserId && effectiveUserId !== "guest") {
+            const pRef = doc(db, "profiles", effectiveUserId);
+            const pSnap = await getDoc(pRef).catch(() => null);
+            if (pSnap && pSnap.exists()) {
+              const curBal = Number(pSnap.data()?.wallet_balance || 0);
+              const newBal = Math.max(0, curBal - walletDiscount);
+              await setDoc(pRef, { wallet_balance: newBal, walletBalance: newBal, updated_at: new Date().toISOString() }, { merge: true }).catch(() => {});
+            }
+          }
+          if (user?.id) {
+            await supabase.from("profiles").upsert({
+              id: user.id,
+              user_id: user.id,
+              full_name: fullNameCombined || undefined,
+              phone: safePhone || undefined,
+              updated_at: new Date().toISOString(),
+            }).catch(() => {});
+          }
+          await supabase.from("addresses").upsert({
+            id: effectiveUserId,
+            user_id: effectiveUserId,
+            full_name: fullNameCombined || "Customer",
+            phone: safePhone,
+            address_line1: safeAddress,
+            city: safeCity,
+            state: safeState,
+            postal_code: safeZip,
+            country: safeCountry,
+            is_default: true,
+            updated_at: new Date().toISOString(),
+          }).catch(() => {});
+          sendTelegramOrderNotification({
+            orderNumber: orderNumber,
+            customerName: fullNameCombined,
+            phone: safePhone,
+            email: safeEmail,
+            address: safeAddress,
+            city: safeCity,
+            paymentMethod: paymentMethod,
+            total: confirmedTotal,
+            items: enrichedItems.map(i => ({ name: i.name, quantity: i.quantity, price: i.price }))
+          }).catch(() => {});
+          markCartAsRecovered(effectiveUserId, orderId, subtotal).catch(() => {});
+          triggerCustomerOrderPhoneNotification({
+            orderId,
+            orderNumber,
+            customerName: safeFirstName || "Customer",
+            productName: primaryProductName,
+            productImage: primaryProductImage,
+            totalAmount: confirmedTotal,
+            paymentMethod: paymentMethod,
+          }).catch(() => {});
+          trackPurchase(orderId, confirmedTotal, enrichedItems, "BDT");
+        } catch (bgErr) {
+          console.warn("[Checkout] Background side-effects notice:", bgErr);
+        }
       });
 
+      // 5. Toast notification
       toast({
         title: "অর্ডার সফলভাবে সম্পন্ন হয়েছে! 🎉",
         description: `আপনার অর্ডার #${orderNumber} কনফার্ম করা হয়েছে।`
       });
 
-      // 📊 Fire Meta Pixel Purchase Event
-      try {
-        trackPurchase(orderId, confirmedTotal, allCartItems, "BDT");
-      } catch (pxErr) {
-        console.warn("Meta Pixel purchase event warning:", pxErr);
-      }
-
-      // Save recent order identifier to localStorage so OrderDetail immediately recognizes owner
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem("durtup_recent_order_" + orderId, JSON.stringify({ orderId, orderNumber }));
-          localStorage.setItem("durtup_last_placed_order_id", orderId);
-        } catch {}
-      }
-
-      // 🚀 Instant redirect to Order Details Page
+      // 6. 🚀 INSTANT REDIRECT TO ORDER DETAILS PAGE
       navigate(`/orders/${orderId}`, { replace: true, state: { orderPlaced: true, orderNumber: orderNumber, orderId } });
+
+      // 7. Bulletproof fallback: ensure browser navigated
+      setTimeout(() => {
+        if (typeof window !== "undefined" && window.location.pathname.includes("/checkout")) {
+          window.location.href = `/orders/${orderId}`;
+        }
+      }, 200);
+
     } catch (error: any) {
       console.error("Order error:", error);
       toast({
