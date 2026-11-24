@@ -165,13 +165,38 @@ function getMainAdminKeyboard() {
   };
 }
 
+// Helper: Order Categories Keyboard for interactive selection
+function getOrderCategoriesKeyboard() {
+  return {
+    inline_keyboard: [
+      [
+        { text: "⏳ Pending Review", callback_data: "orders_cat:pending" },
+        { text: "⚙️ Processing Orders", callback_data: "orders_cat:processing" }
+      ],
+      [
+        { text: "🚚 Shipped / In Transit", callback_data: "orders_cat:shipped" },
+        { text: "🎉 Delivered Orders", callback_data: "orders_cat:delivered" }
+      ],
+      [
+        { text: "❌ Cancelled / Rejected", callback_data: "orders_cat:cancelled" },
+        { text: "📋 View All Real Orders", callback_data: "orders_cat:all" }
+      ],
+      [
+        { text: "🔙 Main Dashboard", callback_data: "cmd_dashboard" }
+      ]
+    ]
+  };
+}
+
 // Helper: Filter mock/test fixture orders
-function isMockOrderRecord(orderNum: string, phone: string = "", name: string = ""): boolean {
+function isMockOrderRecord(orderNum: string, phone: string = "", name: string = "", total: number = 1, itemsCount: number = 1): boolean {
+  if (total <= 0 && itemsCount === 0) return true;
   const num = (orderNum || "").toLowerCase().trim();
   const cleanPhone = phone.replace(/[^\d]/g, "").trim();
   const cleanName = (name || "").toLowerCase().trim();
 
   if (
+    num === "ord-291254-1010" ||
     num.startsWith("ord-test-") ||
     num.startsWith("test-") ||
     num.startsWith("mock-") ||
@@ -184,9 +209,20 @@ function isMockOrderRecord(orderNum: string, phone: string = "", name: string = 
     cleanPhone === "01700000000" ||
     cleanPhone === "01800000000" ||
     cleanPhone === "01911111111" ||
+    cleanPhone === "01899999999" ||
+    cleanPhone === "01885985097" ||
+    cleanPhone === "01711111111" ||
+    cleanPhone === "01722222222" ||
+    cleanPhone === "01833333333" ||
     cleanName.includes("test user") ||
     cleanName.includes("mock customer") ||
-    cleanName.includes("demo user")
+    cleanName.includes("demo user") ||
+    cleanName.includes("hacker") ||
+    cleanName.includes("alpha") ||
+    cleanName.includes("adversary") ||
+    cleanName.includes("attacker") ||
+    cleanName.includes("script") ||
+    ((cleanName === "customer" || cleanName === "no_name" || !cleanName) && (total <= 0 || !cleanPhone))
   ) {
     return true;
   }
@@ -223,26 +259,33 @@ function parseFirestoreOrder(docItem: any) {
   const dateStr = f.created_at?.stringValue || docItem.createTime || "";
   
   // Parse items
-  const items: Array<{ name: string; quantity: number; price: number; supplier: string }> = [];
+  const items: Array<{ id: string; productId: string; name: string; quantity: number; price: number; supplier: string; link: string }> = [];
   if (f.items?.arrayValue?.values) {
     f.items.arrayValue.values.forEach((iv: any) => {
       const im = iv.mapValue?.fields || {};
+      const pId = im.product_id?.stringValue || im.productId?.stringValue || im.id?.stringValue || "";
       const prodName = im.name?.stringValue || im.title?.stringValue || im.product_name?.stringValue || "Product Item";
+      const imageStr = im.image?.stringValue || "";
       let supplier = im.supplier_name?.stringValue || im.supplier?.stringValue || "";
       if (!supplier) {
-        if (prodName.toLowerCase().includes("camera") || prodName.toLowerCase().includes("speaker") || prodName.toLowerCase().includes("cable")) {
+        if (pId.startsWith("ecom-") || imageStr.includes("ecomseller") || prodName.toLowerCase().includes("camera") || prodName.toLowerCase().includes("speaker") || prodName.toLowerCase().includes("cable")) {
           supplier = "EcomsellerBD";
-        } else if (prodName.toLowerCase().includes("lamp") || prodName.toLowerCase().includes("watch") || prodName.toLowerCase().includes("saree")) {
+        } else if (pId.startsWith("drop-") || imageStr.includes("dropshipping") || prodName.toLowerCase().includes("lamp") || prodName.toLowerCase().includes("watch") || prodName.toLowerCase().includes("saree") || prodName.toLowerCase().includes("necklace")) {
           supplier = "DropShipping.com.bd";
+        } else if (pId.startsWith("cj-") || prodName.toLowerCase().includes("china")) {
+          supplier = "CJ Dropshipping (China to BD)";
         } else {
           supplier = "Direct Inventory";
         }
       }
       items.push({
+        id: im.id?.stringValue || pId,
+        productId: pId || "N/A",
         name: prodName,
         quantity: Number(im.quantity?.integerValue || 1),
         price: Number(im.price?.integerValue || im.price?.doubleValue || im.unit_price?.integerValue || 0),
-        supplier
+        supplier,
+        link: pId ? `${STORE_URL}/product/${pId}` : STORE_URL
       });
     });
   }
@@ -384,7 +427,17 @@ function formatOrderCard(order: ReturnType<typeof parseFirestoreOrder>) {
   
   let itemsList = "";
   if (order.items.length > 0) {
-    itemsList = order.items.map(it => `  • <b>${it.name}</b> (Qty: ${it.quantity}) - ৳${it.price.toLocaleString()}\n    🏢 Supplier: <i>${it.supplier}</i>`).join("\n");
+    itemsList = order.items.map((it, idx) => {
+      const lineTotal = it.price * it.quantity;
+      const productLinkTag = it.productId && it.productId !== "N/A"
+        ? `<a href="${STORE_URL}/product/${it.productId}">View Product on Store</a>`
+        : `<a href="${STORE_URL}/products">View on Store</a>`;
+      return `📦 <b>Item #${idx + 1}:</b> ${it.name}
+🆔 <b>Product ID:</b> <code>${it.productId}</code>
+🏢 <b>Supplier:</b> <b>${it.supplier}</b>
+🔗 <b>Product Link:</b> ${productLinkTag}
+💰 <b>Price:</b> ৳${it.price.toLocaleString()} × ${it.quantity} = <b>৳${lineTotal.toLocaleString()}</b>`;
+    }).join("\n──────────────────────\n");
   } else {
     itemsList = "  • Standard Items";
   }
@@ -429,11 +482,18 @@ ${itemsList}
       { text: "🎉 MARK AS DELIVERED", callback_data: `order_deliver:${order.orderNum}` },
       { text: "↩️ REFUND ORDER", callback_data: `order_refund:${order.orderNum}` }
     ]);
+  } else {
+    buttons.push([
+      { text: "👤 Customer Info", callback_data: `cust_info:${order.phone}` }
+    ]);
   }
 
   buttons.push([
     { text: "🌐 Open on Website", url: `${STORE_URL}/admin/orders?id=${order.orderNum}` },
-    { text: "🔙 Main Dashboard", callback_data: "cmd_dashboard" }
+    { text: "🔙 Order Categories", callback_data: "cmd_orders" }
+  ]);
+  buttons.push([
+    { text: "🏠 Main Dashboard", callback_data: "cmd_dashboard" }
   ]);
 
   return { text, reply_markup: { inline_keyboard: buttons } };
@@ -704,10 +764,32 @@ export default async function handler(req: any, res: any) {
         return res.status(200).json({ ok: true });
       }
 
-      // MODULE 2: Orders Request List & Pending Review
-      if (data === "cmd_orders" || data === "cmd_pending") {
-        const isPendingOnly = data === "cmd_pending";
-        const resOrders = await fetch(`${FIRESTORE_BASE}/orders?pageSize=30`);
+      // MODULE 2: Orders Request Category Submenu
+      if (data === "cmd_orders") {
+        await callTelegram("sendMessage", {
+          chat_id: chatId,
+          text: `📦 <b>ORDER CATEGORIES & FULFILLMENT</b>\n━━━━━━━━━━━━━━━━━━━━━━\nSelect which order category you want to inspect:\n\n• ⏳ <b>Pending Review:</b> New orders awaiting confirmation\n• ⚙️ <b>Processing:</b> Confirmed & packaging\n• 🚚 <b>Shipped:</b> Dispatched for courier delivery\n• 🎉 <b>Delivered:</b> Successfully completed\n• ❌ <b>Cancelled:</b> Rejected or cancelled orders\n• 📋 <b>All Real Orders:</b> Complete order list`,
+          parse_mode: "HTML",
+          reply_markup: getOrderCategoriesKeyboard()
+        });
+        await callTelegram("answerCallbackQuery", { callback_query_id: cbId });
+        return res.status(200).json({ ok: true });
+      }
+
+      // MODULE 2: Filtered Orders by Category
+      if (data.startsWith("orders_cat:") || data === "cmd_pending") {
+        const cat = data === "cmd_pending" ? "pending" : data.replace("orders_cat:", "").trim();
+        const catLabels: Record<string, string> = {
+          pending: "⏳ Pending Review",
+          processing: "⚙️ Processing Orders",
+          shipped: "🚚 Shipped / In Transit",
+          delivered: "🎉 Successfully Delivered",
+          cancelled: "❌ Cancelled / Rejected",
+          all: "📋 All Recent Orders"
+        };
+        const catTitle = catLabels[cat] || cat.toUpperCase();
+
+        const resOrders = await fetch(`${FIRESTORE_BASE}/orders?pageSize=50`);
         let ordersList: any[] = [];
 
         if (resOrders.ok) {
@@ -715,24 +797,38 @@ export default async function handler(req: any, res: any) {
           const docs = oJson.documents || [];
           ordersList = docs
             .map(parseFirestoreOrder)
-            .filter(o => !isMockOrderRecord(o.orderNum, o.phone, o.customerName));
+            .filter(o => !isMockOrderRecord(o.orderNum, o.phone, o.customerName, o.total, o.items.length));
 
-          if (isPendingOnly) {
+          if (cat === "pending") {
             ordersList = ordersList.filter(o => o.status === "pending");
+          } else if (cat === "processing") {
+            ordersList = ordersList.filter(o => o.status === "confirmed" || o.status === "processing");
+          } else if (cat === "shipped") {
+            ordersList = ordersList.filter(o => o.status === "shipped");
+          } else if (cat === "delivered") {
+            ordersList = ordersList.filter(o => o.status === "delivered");
+          } else if (cat === "cancelled") {
+            ordersList = ordersList.filter(o => o.status === "cancelled" || o.status === "rejected");
           }
         }
 
         if (ordersList.length === 0) {
           await callTelegram("sendMessage", {
             chat_id: chatId,
-            text: `📦 <b>${isPendingOnly ? "Pending Orders" : "Recent Orders"}:</b>\n━━━━━━━━━━━━━━━━━━━━━━\n<i>No ${isPendingOnly ? "pending" : ""} customer orders found at this moment.</i>`,
+            text: `📦 <b>${catTitle}</b>\n━━━━━━━━━━━━━━━━━━━━━━\n<i>No orders found in category "${catTitle}" at this moment.</i>`,
             parse_mode: "HTML",
-            reply_markup: getMainAdminKeyboard()
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: "🔄 Refresh Category", callback_data: `orders_cat:${cat}` }],
+                [{ text: "🔙 Order Categories", callback_data: "cmd_orders" }],
+                [{ text: "🏠 Main Dashboard", callback_data: "cmd_dashboard" }]
+              ]
+            }
           });
         } else {
           await callTelegram("sendMessage", {
             chat_id: chatId,
-            text: `📦 <b>${isPendingOnly ? "⚠️ ACTION REQUIRED: Pending Orders" : "Recent Orders"} (${ordersList.length}):</b>\n━━━━━━━━━━━━━━━━━━━━━━\nHere are the orders awaiting your attention:`,
+            text: `📦 <b>${catTitle} (${ordersList.length}):</b>\n━━━━━━━━━━━━━━━━━━━━━━\nHere are the orders in this category:`,
             parse_mode: "HTML"
           });
 
@@ -1200,10 +1296,20 @@ export default async function handler(req: any, res: any) {
         return res.status(200).json({ ok: true });
       }
 
-      // Command: /orders or /pending
-      if (text === "/orders" || text === "/pending") {
-        const isPendingOnly = text === "/pending";
-        const resOrders = await fetch(`${FIRESTORE_BASE}/orders?pageSize=30`);
+      // Command: /orders - Show categories
+      if (text === "/orders") {
+        await callTelegram("sendMessage", {
+          chat_id: chatId,
+          text: `📦 <b>ORDER CATEGORIES & FULFILLMENT</b>\n━━━━━━━━━━━━━━━━━━━━━━\nSelect which order category you want to inspect:\n\n• ⏳ <b>Pending Review:</b> New orders awaiting confirmation\n• ⚙️ <b>Processing:</b> Confirmed & packaging\n• 🚚 <b>Shipped:</b> Dispatched for courier delivery\n• 🎉 <b>Delivered:</b> Successfully completed\n• ❌ <b>Cancelled:</b> Rejected or cancelled orders\n• 📋 <b>All Real Orders:</b> Complete order list`,
+          parse_mode: "HTML",
+          reply_markup: getOrderCategoriesKeyboard()
+        });
+        return res.status(200).json({ ok: true });
+      }
+
+      // Command: /pending - Show pending review orders directly
+      if (text === "/pending") {
+        const resOrders = await fetch(`${FIRESTORE_BASE}/orders?pageSize=50`);
         let ordersList: any[] = [];
 
         if (resOrders.ok) {
@@ -1211,24 +1317,20 @@ export default async function handler(req: any, res: any) {
           const docs = oJson.documents || [];
           ordersList = docs
             .map(parseFirestoreOrder)
-            .filter(o => !isMockOrderRecord(o.orderNum, o.phone, o.customerName));
-
-          if (isPendingOnly) {
-            ordersList = ordersList.filter(o => o.status === "pending");
-          }
+            .filter(o => !isMockOrderRecord(o.orderNum, o.phone, o.customerName, o.total, o.items.length) && o.status === "pending");
         }
 
         if (ordersList.length === 0) {
           await callTelegram("sendMessage", {
             chat_id: chatId,
-            text: `📦 <i>No ${isPendingOnly ? "pending" : ""} customer orders found.</i>`,
+            text: `📦 <b>Pending Orders:</b>\n━━━━━━━━━━━━━━━━━━━━━━\n<i>No pending customer orders awaiting action at this moment.</i>`,
             parse_mode: "HTML",
-            reply_markup: getMainAdminKeyboard()
+            reply_markup: getOrderCategoriesKeyboard()
           });
         } else {
           await callTelegram("sendMessage", {
             chat_id: chatId,
-            text: `📦 <b>${isPendingOnly ? "Pending Orders" : "Recent Orders"} (${ordersList.length}):</b>`,
+            text: `📦 <b>Pending Orders (${ordersList.length}):</b>\n━━━━━━━━━━━━━━━━━━━━━━\nHere are the orders awaiting your approval:`,
             parse_mode: "HTML"
           });
           for (const ord of ordersList.slice(0, 5)) {

@@ -34,6 +34,14 @@ export function isMockOrder(o: any): boolean {
     return true;
   }
 
+  const total = Number(o.total || o.totalAmount || o.total_price || o.subtotal || 0);
+  const items = Array.isArray(o.items) ? o.items : [];
+
+  // 1b. Empty / zero-value corrupt orders without items or valid totals are invalid
+  if (total <= 0 && items.length === 0) {
+    return true;
+  }
+
   const num = (o.order_number || o.orderNumber || o.id || "").toString().toLowerCase().trim();
   const rawName = (
     o.shipping_address?.firstName 
@@ -54,6 +62,15 @@ export function isMockOrder(o: any): boolean {
     o.email ||
     ""
   ).toString().toLowerCase().trim();
+
+  // If customer name is generic placeholder 'customer' and has no phone or 0 total
+  if ((rawName === "customer" || rawName === "user" || rawName === "") && (total <= 0 || !phone)) {
+    return true;
+  }
+
+  if (rawName.includes("script") || rawName.includes("alert(") || rawName.includes("xss")) {
+    return true;
+  }
 
   // 2. Explicit legacy template mock numbers and test prefixes
   if (

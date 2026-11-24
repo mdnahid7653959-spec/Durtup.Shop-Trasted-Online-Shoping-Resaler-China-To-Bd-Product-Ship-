@@ -130,18 +130,48 @@ export async function sendTelegramOrderNotification(order: {
   city: string;
   paymentMethod: string;
   total: number;
-  items: Array<{ name: string; quantity: number; price: number }>;
+  items: Array<{
+    name: string;
+    quantity: number;
+    price: number;
+    id?: string;
+    productId?: string;
+    product_id?: string;
+    supplier?: string;
+    supplier_name?: string;
+  }>;
 }) {
   const config = await getTelegramConfig();
   if (!config.enabled && !config.bot_token) return;
 
+  const baseUrl = typeof window !== "undefined" && window.location.origin
+    ? window.location.origin
+    : "https://www.durtup.shop";
+
   const itemsList = order.items && order.items.length > 0
-    ? order.items.map(item => `  ▫️ <b>${item.name}</b> (x${item.quantity}) - ৳${(item.price * item.quantity).toLocaleString()}`).join("\n")
+    ? order.items.map((item, idx) => {
+        const pId = item.productId || item.product_id || item.id || "";
+        let supplier = item.supplier || item.supplier_name || "";
+        if (!supplier) {
+          if (pId.startsWith("ecom-") || item.name.toLowerCase().includes("camera") || item.name.toLowerCase().includes("speaker") || item.name.toLowerCase().includes("cable")) {
+            supplier = "EcomsellerBD";
+          } else if (pId.startsWith("drop-") || item.name.toLowerCase().includes("lamp") || item.name.toLowerCase().includes("watch") || item.name.toLowerCase().includes("saree") || item.name.toLowerCase().includes("necklace")) {
+            supplier = "DropShipping.com.bd";
+          } else if (pId.startsWith("cj-") || item.name.toLowerCase().includes("china")) {
+            supplier = "CJ Dropshipping (China to BD)";
+          } else {
+            supplier = "Direct Inventory";
+          }
+        }
+        const lineTotal = item.price * item.quantity;
+        const linkTag = pId ? `<a href="${baseUrl}/product/${pId}">Store Link</a>` : "";
+        return `  ▫️ <b>Item #${idx + 1}:</b> ${item.name}
+     🆔 ID: <code>${pId || "N/A"}</code> | 🏢 Supplier: <b>${supplier}</b>
+     💰 ৳${item.price.toLocaleString()} × ${item.quantity} = <b>৳${lineTotal.toLocaleString()}</b>${linkTag ? `\n     🔗 ${linkTag}` : ""}`;
+      }).join("\n──────────────────────\n")
     : "  ▫️ Details in Admin Panel";
 
-  const adminUrl = typeof window !== "undefined" && window.location.origin
-    ? `${window.location.origin}/admin/orders`
-    : "https://www.durtup.shop/admin/orders";
+  const adminUrl = `${baseUrl}/admin/orders?id=${order.orderNumber}`;
 
   const timeString = new Date().toLocaleTimeString("en-BD", { hour: "2-digit", minute: "2-digit", hour12: true });
   const dateString = new Date().toLocaleDateString("en-BD", { day: "numeric", month: "short", year: "numeric" });
