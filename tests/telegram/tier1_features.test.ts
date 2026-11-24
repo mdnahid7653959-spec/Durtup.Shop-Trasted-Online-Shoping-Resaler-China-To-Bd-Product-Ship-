@@ -89,6 +89,7 @@ function createTier1Test(
     tier: 1,
     run: async (ctx: TestContext) => {
       // 1. Setup clean isolated state
+      process.env.TELEGRAM_WEBHOOK_SECRET = 'durtup_tg_admin_sec_2026';
       ctx.mockDb.restoreSnapshot();
       ctx.mockTelegramApi.clear();
       resetRateLimits();

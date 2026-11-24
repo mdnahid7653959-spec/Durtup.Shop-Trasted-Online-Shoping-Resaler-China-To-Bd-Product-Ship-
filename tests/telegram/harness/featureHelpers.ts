@@ -19,7 +19,7 @@ import {
   InlineKeyboardMarkup,
   OrderNotificationData
 } from './types';
-import { recordTelegramAudit } from '../../src/server/telegram/auditHelper';
+import { recordTelegramAudit } from '../../../src/server/telegram/auditHelper';
 
 // ==========================================
 // F06: Rich Order Notifications & Supplier Attribution

@@ -47,7 +47,7 @@ export class MockDatabase {
 
     // 1. Settings Fixtures (including Master Admin ID 8204855335)
     const telegramSettings: MockTelegramSettings = {
-      bot_token: '9052891455:AAGrB4DfvjuXqmTwnRKmKubC7vCmgaO0QcM',
+      bot_token: 'MOCK_BOT_TOKEN_123',
       admin_chat_ids: ['8204855335'],
       chat_id: '8204855335',
       enabled: true,

@@ -535,7 +535,7 @@ export async function loadAllSuites(): Promise<TestSuite[]> {
       suites.push(tier1);
     }
   } catch (err: any) {
-    // Module not created yet (normal in M_E2E_1)
+    console.error('[Error loading Tier 1 Suite]:', err);
   }
 
   // Try loading Tier 2
