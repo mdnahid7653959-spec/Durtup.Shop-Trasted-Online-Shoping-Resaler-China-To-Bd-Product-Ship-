@@ -1,6 +1,6 @@
 import { memo, useMemo, useRef, useState, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Star, ChevronLeft, ChevronRight } from "lucide-react";
+import { Star, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { MINI_CARD_SIZES } from "@/utils/productImageHelper";
 import { type Product } from "@/components/products/ProductCard";
 import { SafeProductImage } from "@/components/products/SafeProductImage";
@@ -123,23 +123,81 @@ function ProductDealCard({
 interface DealRowProps {
   items: Product[];
   rowId: string;
+  speed?: number;
 }
 
-function DealRow({ items, rowId }: DealRowProps) {
+function DealRow({ items, rowId, speed = 0.65 }: DealRowProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const isDraggingRef = useRef<boolean>(false);
   const startXRef = useRef<number>(0);
   const scrollLeftRef = useRef<number>(0);
+  const isPausedRef = useRef<boolean>(false);
+  const resumeTimerRef = useRef<any>(null);
+
   const [isMouseDown, setIsMouseDown] = useState(false);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
+  // Ensure sufficient items for smooth 2-half wrap loop
+  const displayItems = useMemo(() => {
+    if (!items || items.length === 0) return [];
+    let base = [...items];
+    while (base.length < 14) {
+      base = [...base, ...items];
+    }
+    // Duplicate for seamless infinite loop
+    return [...base, ...base];
+  }, [items]);
+
+  const pauseAutoScroll = useCallback(() => {
+    isPausedRef.current = true;
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+  }, []);
+
+  const resumeAutoScroll = useCallback((delay = 800) => {
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+    if (delay > 0) {
+      resumeTimerRef.current = setTimeout(() => {
+        isPausedRef.current = false;
+      }, delay);
+    } else {
+      isPausedRef.current = false;
+    }
+  }, []);
+
   const updateScrollButtons = useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
-    setCanScrollLeft(el.scrollLeft > 15);
-    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 15);
+    setCanScrollLeft(el.scrollLeft > 20);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 20);
   }, []);
+
+  // Continuous silky smooth auto-scroll with seamless wrap
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    let animId: number;
+
+    const tick = () => {
+      if (!isPausedRef.current && el) {
+        el.scrollLeft += speed;
+
+        const halfWidth = el.scrollWidth / 2;
+        if (halfWidth > 0 && el.scrollLeft >= halfWidth) {
+          el.scrollLeft -= halfWidth;
+        }
+      }
+      animId = requestAnimationFrame(tick);
+    };
+
+    animId = requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(animId);
+      if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+    };
+  }, [speed]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -151,21 +209,24 @@ function DealRow({ items, rowId }: DealRowProps) {
       el.removeEventListener("scroll", updateScrollButtons);
       window.removeEventListener("resize", updateScrollButtons);
     };
-  }, [updateScrollButtons, items]);
+  }, [updateScrollButtons]);
 
   const handleScroll = (direction: "left" | "right") => {
     const el = containerRef.current;
     if (!el) return;
+    pauseAutoScroll();
     const scrollAmount = Math.max(280, Math.round(el.clientWidth * 0.7));
     el.scrollBy({
       left: direction === "left" ? -scrollAmount : scrollAmount,
       behavior: "smooth",
     });
+    resumeAutoScroll(1800);
   };
 
   const onMouseDown = (e: React.MouseEvent) => {
     const el = containerRef.current;
     if (!el) return;
+    pauseAutoScroll();
     setIsMouseDown(true);
     isDraggingRef.current = false;
     startXRef.current = e.pageX - el.offsetLeft;
@@ -183,19 +244,34 @@ function DealRow({ items, rowId }: DealRowProps) {
       isDraggingRef.current = true;
     }
     el.scrollLeft = scrollLeftRef.current - walk;
+
+    const halfWidth = el.scrollWidth / 2;
+    if (halfWidth > 0) {
+      if (el.scrollLeft >= halfWidth) el.scrollLeft -= halfWidth;
+      else if (el.scrollLeft <= 0) el.scrollLeft += halfWidth;
+    }
   };
 
   const onMouseUpOrLeave = () => {
-    setIsMouseDown(false);
-    setTimeout(() => {
-      isDraggingRef.current = false;
-    }, 60);
+    if (isMouseDown) {
+      setIsMouseDown(false);
+      resumeAutoScroll(1200);
+      setTimeout(() => {
+        isDraggingRef.current = false;
+      }, 80);
+    }
   };
 
-  if (!items || items.length === 0) return null;
+  if (!displayItems || displayItems.length === 0) return null;
 
   return (
-    <div className="relative group/row w-full">
+    <div 
+      className="relative group/row w-full"
+      onMouseEnter={pauseAutoScroll}
+      onMouseLeave={() => resumeAutoScroll(400)}
+      onTouchStart={pauseAutoScroll}
+      onTouchEnd={() => resumeAutoScroll(1500)}
+    >
       {/* Left Scroll Navigation Button */}
       {canScrollLeft && (
         <button
@@ -228,8 +304,8 @@ function DealRow({ items, rowId }: DealRowProps) {
         onMouseUp={onMouseUpOrLeave}
         onMouseLeave={onMouseUpOrLeave}
         className={cn(
-          "flex gap-2 sm:gap-3 overflow-x-auto py-1 no-scrollbar select-none transition-[scroll]",
-          isMouseDown ? "cursor-grabbing scroll-auto" : "cursor-grab scroll-smooth"
+          "flex gap-2 sm:gap-3 overflow-x-auto py-1 no-scrollbar select-none",
+          isMouseDown ? "cursor-grabbing scroll-auto" : "cursor-grab"
         )}
         style={{
           WebkitOverflowScrolling: "touch",
@@ -237,7 +313,7 @@ function DealRow({ items, rowId }: DealRowProps) {
           overscrollBehaviorX: "contain",
         }}
       >
-        {items.map((product, idx) => (
+        {displayItems.map((product, idx) => (
           <ProductDealCard
             key={`${rowId}-${product.id || idx}-${idx}`}
             product={product}
@@ -312,8 +388,12 @@ function DealOfTheDayComponent({ products = [] }: DealOfTheDayProps) {
                 Deal of the Day
               </h2>
             </div>
-            <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 pl-3.5 mt-0.5 font-medium">
-              Exclusive daily discounts & special offers • সোয়াইপ বা টেনে ডিলগুলো দেখুন
+            <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 pl-3.5 mt-0.5 font-medium flex items-center gap-1.5">
+              <span>Exclusive daily discounts & special offers</span>
+              <span className="hidden sm:inline">•</span>
+              <span className="hidden sm:inline-flex items-center gap-1 text-orange-600 dark:text-orange-400 font-bold">
+                <Sparkles className="w-3 h-3" /> অটো-স্ক্রোলিং লাইভ ডিলস (টেনেও দেখতে পারেন)
+              </span>
             </p>
           </div>
 
@@ -328,18 +408,20 @@ function DealOfTheDayComponent({ products = [] }: DealOfTheDayProps) {
           </div>
         </div>
 
-        {/* 2 Interactive Free-Scroll & Draggable Rows Container */}
+        {/* 2 Interactive Auto-Scrolling & Draggable Rows Container */}
         <div className="deal-marquee-wrapper relative overflow-hidden py-1 space-y-2 sm:space-y-3 rounded-2xl bg-gradient-to-b from-slate-50/50 to-transparent dark:from-slate-900/40 p-1.5 sm:p-2.5 border border-slate-100 dark:border-slate-800/80">
           {/* Row 1 */}
           <DealRow
             rowId="row1"
             items={row1}
+            speed={0.65}
           />
 
           {/* Row 2 */}
           <DealRow
             rowId="row2"
             items={row2}
+            speed={0.55}
           />
         </div>
       </div>
