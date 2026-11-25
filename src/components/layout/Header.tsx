@@ -477,84 +477,238 @@ export function Header() {
             <div className="hidden lg:block ml-1">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex flex-col items-center justify-center p-1 sm:px-2 rounded-xl text-slate-700 dark:text-slate-300 hover:text-orange-600 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
-                    <User className="h-5 w-5" />
-                    <span className="text-[10px] font-medium leading-none mt-1 truncate max-w-[60px]">
+                  <button className="flex flex-col items-center justify-center p-1 sm:px-2 rounded-xl text-slate-700 dark:text-slate-300 hover:text-orange-600 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all group">
+                    {user ? (
+                      <div className="relative">
+                        <div className="w-5 h-5 rounded-full overflow-hidden bg-orange-100 dark:bg-orange-950/60 text-orange-600 font-bold flex items-center justify-center text-[10px] ring-1 ring-orange-500/30">
+                          {avatarUrl ? (
+                            <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                          ) : (
+                            <span>{profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : "U")}</span>
+                          )}
+                        </div>
+                        <span className="absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-500 ring-1 ring-white dark:ring-slate-900" />
+                      </div>
+                    ) : (
+                      <User className="h-5 w-5 group-hover:scale-105 transition-transform" />
+                    )}
+                    <span className="text-[10px] font-medium leading-none mt-1 truncate max-w-[68px]">
                       {user ? profile?.full_name?.split(' ')[0] || 'Account' : 'Account'}
                     </span>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-popover">
+                <DropdownMenuContent align="end" className="w-72 p-2 rounded-2xl bg-popover/95 backdrop-blur-md border border-border/80 shadow-xl space-y-1 z-50">
                   {user ? (
                     <>
-                      <div className="p-3 border-b">
-                        <p className="text-sm font-bold text-foreground">{profile?.full_name || 'Welcome!'}</p>
-                        <p className="text-xs text-muted-foreground truncate">{profile?.phone || (user.email?.endsWith("@durtup.shop") ? user.email.split("@")[0] : user.email)}</p>
-                      </div>
-                      <DropdownMenuItem asChild>
-                        <Link to="/orders" className="cursor-pointer flex items-center gap-2 font-medium">
-                          <Package className="h-4 w-4 text-orange-600" />
-                          <span>আমার অর্ডারসমূহ (My Orders)</span>
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to="/account" className="cursor-pointer flex items-center gap-2">
-                          <User className="h-4 w-4" />
-                          <span>একাউন্ট সেটিংস (Account)</span>
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to="/wishlist" className="cursor-pointer flex items-center gap-2">
-                          <Heart className="h-4 w-4" />
-                          <span>উইশলিস্ট (Wishlist)</span>
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to="/referrals" className="cursor-pointer flex items-center justify-between">
-                          <span className="flex items-center gap-2">
-                            <Sparkles className="h-4 w-4 text-primary" />
-                            <span>Refer & Earn</span>
+                      {/* User Identity Header Card */}
+                      <div className="p-2.5 rounded-xl bg-muted/40 border border-border/60 mb-1">
+                        <div className="flex items-center gap-3">
+                          <div className="relative shrink-0">
+                            <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-tr from-orange-500 to-amber-500 text-white font-bold flex items-center justify-center text-sm shadow-xs ring-2 ring-background">
+                              {avatarUrl ? (
+                                <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                              ) : (
+                                <span>{profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : "U")}</span>
+                              )}
+                            </div>
+                            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-background" title="Active" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-xs font-bold text-foreground truncate">
+                                {profile?.full_name || "Valued Customer"}
+                              </p>
+                              <span className="text-[9px] font-semibold bg-orange-100 dark:bg-orange-950/60 text-orange-700 dark:text-orange-400 px-1.5 py-0.2 rounded-full border border-orange-200/60 dark:border-orange-800/50">
+                                Verified
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-muted-foreground truncate font-mono">
+                              {profile?.phone || (user.email?.endsWith("@durtup.shop") ? user.email.split("@")[0] : user.email)}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Reseller Program Banner */}
+                        <Link 
+                          to="/reseller" 
+                          className="mt-2.5 flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-orange-500/10 hover:bg-orange-500/15 border border-orange-500/20 text-orange-700 dark:text-orange-400 transition-colors group"
+                        >
+                          <span className="flex items-center gap-1.5 text-[11px] font-bold">
+                            <Store className="w-3.5 h-3.5 text-orange-600" />
+                            <span>রিসেলার প্যানেল</span>
                           </span>
-                          <span className="text-[10px] bg-primary/10 text-primary font-bold px-1.5 py-0.5 rounded">৳৫০ বোনাস</span>
+                          <span className="text-[9px] font-bold bg-orange-600 text-white px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                            <span>আয় করুন</span>
+                            <ChevronRight className="w-2.5 h-2.5 group-hover:translate-x-0.5 transition-transform" />
+                          </span>
                         </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to="/wallet" className="cursor-pointer flex items-center gap-2">
-                          <Wallet className="h-4 w-4" />
-                          <span>মাই ওয়ালেট (My Wallet)</span>
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild className="text-muted-foreground text-xs">
-                        <Link to="/reseller" className="cursor-pointer flex items-center justify-between w-full">
-                          <span className="flex items-center gap-1.5"><Store className="h-4 w-4" /> রিসেলার প্রোগ্রাম</span>
-                          <span className="text-[9px] bg-muted px-1.5 py-0.5 rounded font-bold">আয় করুন</span>
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive">
-                        <LogOut className="h-4 w-4 mr-2" /> Logout
+                      </div>
+
+                      {/* Shopping & Orders Group */}
+                      <div className="space-y-0.5">
+                        <DropdownMenuItem asChild>
+                          <Link to="/orders" className="cursor-pointer flex items-center justify-between p-2 rounded-lg hover:bg-muted/80 transition-colors group">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-7 h-7 rounded-lg bg-orange-50 dark:bg-orange-950/40 text-orange-600 flex items-center justify-center shrink-0">
+                                <Package className="h-4 w-4" />
+                              </div>
+                              <div>
+                                <p className="text-xs font-semibold text-foreground leading-tight">আমার অর্ডারসমূহ</p>
+                                <p className="text-[10px] text-muted-foreground leading-tight">ট্র্যাকিং ও অর্ডার হিস্টোরি</p>
+                              </div>
+                            </div>
+                            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-transform" />
+                          </Link>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem asChild>
+                          <Link to="/wishlist" className="cursor-pointer flex items-center justify-between p-2 rounded-lg hover:bg-muted/80 transition-colors group">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 flex items-center justify-center shrink-0">
+                                <Heart className="h-4 w-4" />
+                              </div>
+                              <div>
+                                <p className="text-xs font-semibold text-foreground leading-tight">উইশলিস্ট</p>
+                                <p className="text-[10px] text-muted-foreground leading-tight">পছন্দের পণ্যের তালিকা</p>
+                              </div>
+                            </div>
+                            {wishlistCount > 0 ? (
+                              <span className="text-[10px] font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-600 px-1.5 py-0.5 rounded-full">
+                                {wishlistCount}
+                              </span>
+                            ) : (
+                              <ChevronRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-transform" />
+                            )}
+                          </Link>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem asChild>
+                          <Link to="/wallet" className="cursor-pointer flex items-center justify-between p-2 rounded-lg hover:bg-muted/80 transition-colors group">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center shrink-0">
+                                <Wallet className="h-4 w-4" />
+                              </div>
+                              <div>
+                                <p className="text-xs font-semibold text-foreground leading-tight">মাই ওয়ালেট</p>
+                                <p className="text-[10px] text-muted-foreground leading-tight">ব্যালেন্স ও রিফান্ড ওয়ালেট</p>
+                              </div>
+                            </div>
+                            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-transform" />
+                          </Link>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem asChild>
+                          <Link to="/referrals" className="cursor-pointer flex items-center justify-between p-2 rounded-lg hover:bg-muted/80 transition-colors group">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 flex items-center justify-center shrink-0">
+                                <Sparkles className="h-4 w-4" />
+                              </div>
+                              <div>
+                                <p className="text-xs font-semibold text-foreground leading-tight">রেফার ও আর্ন</p>
+                                <p className="text-[10px] text-muted-foreground leading-tight">বন্ধুদের রেফার করুন</p>
+                              </div>
+                            </div>
+                            <span className="text-[10px] bg-amber-500/10 text-amber-600 font-bold px-1.5 py-0.5 rounded-md">
+                              ৳৫০ বোনাস
+                            </span>
+                          </Link>
+                        </DropdownMenuItem>
+                      </div>
+
+                      <DropdownMenuSeparator className="my-1 bg-border/60" />
+
+                      {/* Settings & Profile */}
+                      <div className="space-y-0.5">
+                        <DropdownMenuItem asChild>
+                          <Link to="/account" className="cursor-pointer flex items-center justify-between p-2 rounded-lg hover:bg-muted/80 transition-colors group">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center text-foreground shrink-0">
+                                <Settings className="h-4 w-4 text-slate-700 dark:text-slate-300" />
+                              </div>
+                              <div>
+                                <p className="text-xs font-semibold text-foreground leading-tight">একাউন্ট সেটিংস</p>
+                                <p className="text-[10px] text-muted-foreground leading-tight">প্রোফাইল, ঠিকানা ও সিকিউরিটি</p>
+                              </div>
+                            </div>
+                            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-transform" />
+                          </Link>
+                        </DropdownMenuItem>
+                      </div>
+
+                      <DropdownMenuSeparator className="my-1 bg-border/60" />
+
+                      {/* Logout */}
+                      <DropdownMenuItem 
+                        onClick={handleLogout} 
+                        className="cursor-pointer flex items-center gap-2.5 p-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-700 focus:bg-red-50 focus:text-red-700 transition-colors"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-red-100/60 dark:bg-red-950/40 text-red-600 flex items-center justify-center shrink-0">
+                          <LogOut className="h-4 w-4" />
+                        </div>
+                        <span className="text-xs font-semibold">লগআউট (Logout)</span>
                       </DropdownMenuItem>
                     </>
                   ) : (
                     <>
-                      <div className="p-3 border-b">
-                        <p className="text-sm font-bold text-foreground">Welcome to Durtup.shop!</p>
-                        <div className="flex gap-2 mt-2">
-                          <Button asChild size="sm" className="flex-1"><Link to="/login">Sign In</Link></Button>
-                          <Button asChild variant="outline" size="sm" className="flex-1"><Link to="/register">Register</Link></Button>
+                      {/* Logged Out State */}
+                      <div className="p-3 rounded-xl bg-muted/40 border border-border/60 mb-1 space-y-2.5">
+                        <div>
+                          <p className="text-xs font-bold text-foreground">Durtup.shop এ স্বাগতম</p>
+                          <p className="text-[11px] text-muted-foreground">অর্ডার ট্র্যাক ও প্রোফাইল অ্যাক্সেস করতে লগইন করুন</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button asChild size="sm" className="flex-1 rounded-xl text-xs font-semibold h-8 bg-orange-600 hover:bg-orange-700 text-white shadow-xs">
+                            <Link to="/login">লগইন (Sign In)</Link>
+                          </Button>
+                          <Button asChild variant="outline" size="sm" className="flex-1 rounded-xl text-xs font-semibold h-8 border-border">
+                            <Link to="/register">রেজিস্টার</Link>
+                          </Button>
                         </div>
                       </div>
-                      <DropdownMenuItem asChild className="bg-orange-500/10 text-orange-600 font-bold focus:bg-orange-500/20 focus:text-orange-600">
-                        <Link to="/reseller" className="cursor-pointer flex items-center justify-between w-full">
-                          <span className="flex items-center gap-1.5"><Store className="h-4 w-4" /> রিসেলার প্রোগ্রাম</span>
-                          <span className="text-[9px] bg-orange-600 text-white font-black px-1.5 py-0.5 rounded">আয় করুন</span>
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild><Link to="/referrals" className="cursor-pointer flex items-center justify-between"><span>Refer & Earn</span><span className="text-[10px] bg-primary/10 text-primary font-bold px-1.5 py-0.5 rounded">৳৫০ বোনাস</span></Link></DropdownMenuItem>
-                      <DropdownMenuItem asChild><Link to="/orders" className="cursor-pointer">My Orders</Link></DropdownMenuItem>
-                      <DropdownMenuItem asChild><Link to="/wishlist" className="cursor-pointer">Wishlist</Link></DropdownMenuItem>
-                      <DropdownMenuItem asChild><Link to="/account" className="cursor-pointer">Account Settings</Link></DropdownMenuItem>
+
+                      {/* Reseller Banner for Guest */}
+                      <Link 
+                        to="/reseller" 
+                        className="flex items-center justify-between px-2.5 py-2 rounded-lg bg-orange-500/10 hover:bg-orange-500/15 border border-orange-500/20 text-orange-700 dark:text-orange-400 transition-colors group mb-1"
+                      >
+                        <span className="flex items-center gap-1.5 text-xs font-bold">
+                          <Store className="w-4 h-4 text-orange-600" />
+                          <span>রিসেলার প্রোগ্রাম</span>
+                        </span>
+                        <span className="text-[9px] font-bold bg-orange-600 text-white px-2 py-0.5 rounded-full">
+                          আয় করুন
+                        </span>
+                      </Link>
+
+                      <div className="space-y-0.5">
+                        <DropdownMenuItem asChild>
+                          <Link to="/orders" className="cursor-pointer flex items-center gap-2.5 p-2 rounded-lg hover:bg-muted/80 text-xs font-semibold">
+                            <Package className="h-4 w-4 text-muted-foreground" />
+                            <span>My Orders (অর্ডারসমূহ)</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link to="/wishlist" className="cursor-pointer flex items-center gap-2.5 p-2 rounded-lg hover:bg-muted/80 text-xs font-semibold">
+                            <Heart className="h-4 w-4 text-muted-foreground" />
+                            <span>Wishlist (উইশলিস্ট)</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link to="/referrals" className="cursor-pointer flex items-center justify-between p-2 rounded-lg hover:bg-muted/80 text-xs font-semibold">
+                            <span className="flex items-center gap-2.5">
+                              <Sparkles className="h-4 w-4 text-primary" />
+                              <span>Refer & Earn</span>
+                            </span>
+                            <span className="text-[10px] bg-primary/10 text-primary font-bold px-1.5 py-0.5 rounded">৳৫০ বোনাস</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link to="/account" className="cursor-pointer flex items-center gap-2.5 p-2 rounded-lg hover:bg-muted/80 text-xs font-semibold">
+                            <Settings className="h-4 w-4 text-muted-foreground" />
+                            <span>Account Settings</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      </div>
                     </>
                   )}
                 </DropdownMenuContent>
