@@ -1,6 +1,6 @@
 import { memo, useMemo, useRef, useState, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Star, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { Star, ChevronLeft, ChevronRight } from "lucide-react";
 import { MINI_CARD_SIZES } from "@/utils/productImageHelper";
 import { type Product } from "@/components/products/ProductCard";
 import { SafeProductImage } from "@/components/products/SafeProductImage";
@@ -133,8 +133,9 @@ function DealRow({ items, rowId, pxPerSecond = 58, direction = "left" }: DealRow
   const startPosRef = useRef<number>(0);
   const posRef = useRef<number>(0);
   const isPausedRef = useRef<boolean>(false);
-  const resumeTimerRef = useRef<any>(null);
+  const isHoveredRef = useRef<boolean>(false);
   const isMouseDownRef = useRef<boolean>(false);
+  const resumeTimerRef = useRef<any>(null);
 
   // Repeat items to ensure sufficient width for an endless 2-half loop
   const displayItems = useMemo(() => {
@@ -148,20 +149,48 @@ function DealRow({ items, rowId, pxPerSecond = 58, direction = "left" }: DealRow
   }, [items]);
 
   const pauseAutoScroll = useCallback(() => {
+    if (resumeTimerRef.current) {
+      clearTimeout(resumeTimerRef.current);
+      resumeTimerRef.current = null;
+    }
     isPausedRef.current = true;
-    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
   }, []);
 
-  const resumeAutoScroll = useCallback((delay = 800) => {
-    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
-    if (delay > 0) {
-      resumeTimerRef.current = setTimeout(() => {
+  const resumeAutoScroll = useCallback((delay = 200) => {
+    if (resumeTimerRef.current) {
+      clearTimeout(resumeTimerRef.current);
+      resumeTimerRef.current = null;
+    }
+    const executeResume = () => {
+      // Only resume if user is truly not interacting and not hovering
+      if (!isMouseDownRef.current && !isHoveredRef.current) {
         isPausedRef.current = false;
-      }, delay);
+      }
+    };
+
+    if (delay > 0) {
+      resumeTimerRef.current = setTimeout(executeResume, delay);
     } else {
-      isPausedRef.current = false;
+      executeResume();
     }
   }, []);
+
+  // Global mouseup listener to catch drag releases outside component bounds
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (isMouseDownRef.current) {
+        isMouseDownRef.current = false;
+        setTimeout(() => {
+          isDraggingRef.current = false;
+        }, 60);
+        if (!isHoveredRef.current) {
+          resumeAutoScroll(200);
+        }
+      }
+    };
+    window.addEventListener("mouseup", handleGlobalMouseUp);
+    return () => window.removeEventListener("mouseup", handleGlobalMouseUp);
+  }, [resumeAutoScroll]);
 
   // Initialize initial offset on mount
   useEffect(() => {
@@ -242,29 +271,46 @@ function DealRow({ items, rowId, pxPerSecond = 58, direction = "left" }: DealRow
       if (halfWidth > 0 && posRef.current >= halfWidth) posRef.current -= halfWidth;
     }
 
-    el.style.transition = "transform 0.35s ease-out";
+    el.style.transition = "transform 0.35s cubic-bezier(0.25, 1, 0.5, 1)";
     el.style.transform = `translate3d(-${posRef.current.toFixed(2)}px, 0, 0)`;
 
     setTimeout(() => {
       if (el) el.style.transition = "";
-      resumeAutoScroll(1600);
+      if (!isHoveredRef.current) {
+        resumeAutoScroll(800);
+      }
     }, 360);
   };
 
+  // Mouse hover event handlers
+  const handleMouseEnter = () => {
+    isHoveredRef.current = true;
+    pauseAutoScroll();
+  };
+
+  const handleMouseLeave = () => {
+    isHoveredRef.current = false;
+    isMouseDownRef.current = false;
+    setTimeout(() => {
+      isDraggingRef.current = false;
+    }, 60);
+    resumeAutoScroll(200);
+  };
+
   // Drag interaction handlers
-  const handleDragStart = (clientX: number) => {
+  const handleMouseDown = (e: React.MouseEvent) => {
     pauseAutoScroll();
     isMouseDownRef.current = true;
     isDraggingRef.current = false;
-    startXRef.current = clientX;
+    startXRef.current = e.clientX;
     startPosRef.current = posRef.current;
     if (trackRef.current) trackRef.current.style.transition = "";
   };
 
-  const handleDragMove = (clientX: number) => {
+  const handleMouseMove = (e: React.MouseEvent) => {
     if (!isMouseDownRef.current || !trackRef.current) return;
-    const dx = clientX - startXRef.current;
-    if (Math.abs(dx) > 5) {
+    const dx = e.clientX - startXRef.current;
+    if (Math.abs(dx) > 4) {
       isDraggingRef.current = true;
     }
 
@@ -280,14 +326,51 @@ function DealRow({ items, rowId, pxPerSecond = 58, direction = "left" }: DealRow
     trackRef.current.style.transform = `translate3d(-${newPos.toFixed(2)}px, 0, 0)`;
   };
 
-  const handleDragEnd = () => {
-    if (isMouseDownRef.current) {
-      isMouseDownRef.current = false;
-      resumeAutoScroll(1000);
-      setTimeout(() => {
-        isDraggingRef.current = false;
-      }, 60);
+  const handleMouseUp = () => {
+    isMouseDownRef.current = false;
+    setTimeout(() => {
+      isDraggingRef.current = false;
+    }, 60);
+    if (!isHoveredRef.current) {
+      resumeAutoScroll(250);
     }
+  };
+
+  // Touch event handlers for mobile devices
+  const handleTouchStart = (e: React.TouchEvent) => {
+    pauseAutoScroll();
+    isMouseDownRef.current = true;
+    isDraggingRef.current = false;
+    startXRef.current = e.touches[0].clientX;
+    startPosRef.current = posRef.current;
+    if (trackRef.current) trackRef.current.style.transition = "";
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isMouseDownRef.current || !trackRef.current) return;
+    const dx = e.touches[0].clientX - startXRef.current;
+    if (Math.abs(dx) > 4) {
+      isDraggingRef.current = true;
+    }
+
+    const halfWidth = trackRef.current.scrollWidth / 2;
+    let newPos = startPosRef.current - dx;
+
+    if (halfWidth > 0) {
+      while (newPos >= halfWidth) newPos -= halfWidth;
+      while (newPos < 0) newPos += halfWidth;
+    }
+
+    posRef.current = newPos;
+    trackRef.current.style.transform = `translate3d(-${newPos.toFixed(2)}px, 0, 0)`;
+  };
+
+  const handleTouchEnd = () => {
+    isMouseDownRef.current = false;
+    setTimeout(() => {
+      isDraggingRef.current = false;
+    }, 60);
+    resumeAutoScroll(800);
   };
 
   if (!displayItems || displayItems.length === 0) return null;
@@ -295,15 +378,14 @@ function DealRow({ items, rowId, pxPerSecond = 58, direction = "left" }: DealRow
   return (
     <div 
       className="relative group/row w-full overflow-hidden select-none"
-      onMouseEnter={pauseAutoScroll}
-      onMouseLeave={() => resumeAutoScroll(400)}
-      onTouchStart={(e) => handleDragStart(e.touches[0].clientX)}
-      onTouchMove={(e) => handleDragMove(e.touches[0].clientX)}
-      onTouchEnd={handleDragEnd}
-      onMouseDown={(e) => handleDragStart(e.clientX)}
-      onMouseMove={(e) => handleDragMove(e.clientX)}
-      onMouseUp={handleDragEnd}
-      onMouseLeave={handleDragEnd}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
       {/* Left Navigation Arrow */}
       <button
@@ -400,12 +482,8 @@ function DealOfTheDayComponent({ products = [] }: DealOfTheDayProps) {
                 Deal of the Day
               </h2>
             </div>
-            <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 pl-3.5 mt-0.5 font-medium flex items-center gap-1.5">
-              <span>Exclusive daily discounts & special offers</span>
-              <span className="hidden sm:inline">•</span>
-              <span className="hidden sm:inline-flex items-center gap-1 text-orange-600 dark:text-orange-400 font-bold">
-                <Sparkles className="w-3 h-3" /> ডুয়াল-ডিরেকশন অটো-স্ক্রোল (টেনেও দেখতে পারেন)
-              </span>
+            <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 pl-3.5 mt-0.5 font-medium">
+              Exclusive daily discounts & special offers
             </p>
           </div>
 
