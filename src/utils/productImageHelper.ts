@@ -250,6 +250,12 @@ export const CATEGORY_IMAGES = {
     "https://images.unsplash.com/photo-1593618998160-e34014e67546?w=600&h=600&fit=crop",
     "https://images.unsplash.com/photo-1589365278144-c9e705f843ba?w=600&h=600&fit=crop",
   ],
+  bag_sealer: [
+    "/products/mini_bag_sealer_1.webp",
+    "/products/mini_bag_sealer_2.webp",
+    "/products/mini_bag_sealer_3.webp",
+    "/products/mini_bag_sealer_4.webp",
+  ],
   neckband: [
     "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&h=600&fit=crop",
     "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&h=600&fit=crop",
@@ -857,7 +863,12 @@ export function detectCategoryKey(name: any = "", category: any = ""): keyof typ
     return "electronics";
   }
 
-  // 40. Home & living
+  // 40. Bag Sealer & Heat Sealer
+  if (combined.match(/bag.*sealer|heat.*sealer|sealer.*cutter|মিনি.*সিলার|ব্যাগ.*সিলার|হ্যান্ডহেল্ড.*সিলার/i)) {
+    return "bag_sealer";
+  }
+
+  // 41. Home & living
   if (combined.match(/\b(home\s*(decor|appliances?|living|kitchen)?|mug|lamp|dispenser|bottle|flask|pillow|cushion|shelf|rack|mop)\b|লাইট|মগ|বোতল|বালিশ/i)) {
     return "home";
   }
@@ -970,6 +981,9 @@ export function getSmartProductImage(
   if (lowerName.includes("cotton shirt") && lowerName.includes("purple")) {
     return "/products/shirt_cotton_purple.webp";
   }
+  if (lowerName.includes("bag sealer") || lowerName.includes("heat sealer")) {
+    return "/products/mini_bag_sealer_1.webp";
+  }
 
   // If currentImageUrl is a genuine uploaded/supplier image URL, return the direct clean URL
   if (currentImageUrl && typeof currentImageUrl === "string" && currentImageUrl.trim() !== "") {
@@ -991,6 +1005,7 @@ export function getSmartProductImage(
 
 // Known dead origin URLs on supplier servers (returns 404 or text/html instead of image binary)
 export const KNOWN_DEAD_ORIGIN_URLS = new Set<string>([
+  "https://mohasagor.com.bd/public/storage/images/products/ajwNIkIz1JO9dOZKAYW5WslAIGe9laGWB7ctIllQ.jpg",
   "https://mohasagor.com.bd/public/storage/images/products/9jmg46R758uR1Ku8UpbB2fEjuLh1i8PJmX5ve9zb.jpg",
   "https://mohasagor.com.bd/public/storage/images/products/obrg8iSsSHWoqpXuoRzuSYdSRnelkhB2qgsMM3Iw.jpg",
   "https://mohasagor.com.bd/public/storage/images/products/06B4jK73bvMIABaFuuXtW2NirWrSpYRM1yLaMumJ.jpg",
@@ -1060,6 +1075,12 @@ export function getProductImageCandidates(product: any, width: number = 400): st
   }
   if (prodName.includes("cotton shirt") && prodName.includes("purple")) {
     addCandidate("/products/shirt_cotton_purple.webp");
+  }
+  if (prodName.includes("bag sealer") || prodName.includes("heat sealer")) {
+    addCandidate("/products/mini_bag_sealer_1.webp");
+    addCandidate("/products/mini_bag_sealer_2.webp");
+    addCandidate("/products/mini_bag_sealer_3.webp");
+    addCandidate("/products/mini_bag_sealer_4.webp");
   }
 
   // Collect ALL genuine product images from any schema format

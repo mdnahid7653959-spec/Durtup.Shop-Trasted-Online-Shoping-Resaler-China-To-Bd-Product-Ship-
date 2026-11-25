@@ -97336,16 +97336,37 @@
     "slug": "handheld-mini-bag-sealer-and-cutter-10061",
     "product_code": "13061",
     "category": "Home & Lifestyle",
-    "image": "https://mohasagor.com.bd/public/storage/images/products/ajwNIkIz1JO9dOZKAYW5WslAIGe9laGWB7ctIllQ.jpg",
+    "image": "/products/mini_bag_sealer_1.webp",
     "images": [
-      "https://mohasagor.com.bd/public/storage/images/products/ajwNIkIz1JO9dOZKAYW5WslAIGe9laGWB7ctIllQ.jpg"
+      "/products/mini_bag_sealer_1.webp",
+      "/products/mini_bag_sealer_2.webp",
+      "/products/mini_bag_sealer_3.webp",
+      "/products/mini_bag_sealer_4.webp"
     ],
     "product_images": [
       {
         "id": "img-0",
-        "image_url": "https://mohasagor.com.bd/public/storage/images/products/ajwNIkIz1JO9dOZKAYW5WslAIGe9laGWB7ctIllQ.jpg",
+        "image_url": "/products/mini_bag_sealer_1.webp",
         "is_primary": true,
         "sort_order": 0
+      },
+      {
+        "id": "img-1",
+        "image_url": "/products/mini_bag_sealer_2.webp",
+        "is_primary": false,
+        "sort_order": 1
+      },
+      {
+        "id": "img-2",
+        "image_url": "/products/mini_bag_sealer_3.webp",
+        "is_primary": false,
+        "sort_order": 2
+      },
+      {
+        "id": "img-3",
+        "image_url": "/products/mini_bag_sealer_4.webp",
+        "is_primary": false,
+        "sort_order": 3
       }
     ],
     "price": 390,
@@ -104453,15 +104474,37 @@
     "category_slug": "gadgets-electronics",
     "categorySlug": "gadgets-electronics",
     "categoryName": "Gadgets & Electronics",
-    "image": "https://ecomsellerbd.com/uploads/product-images/master/9e88699e-ab3a-410f-8d24-f6b34db3146b.webp",
+    "image": "/products/mini_bag_sealer_1.webp",
     "images": [
-      "https://ecomsellerbd.com/uploads/product-images/master/9e88699e-ab3a-410f-8d24-f6b34db3146b.webp"
+      "/products/mini_bag_sealer_1.webp",
+      "/products/mini_bag_sealer_2.webp",
+      "/products/mini_bag_sealer_3.webp",
+      "/products/mini_bag_sealer_4.webp"
     ],
     "product_images": [
       {
-        "id": "img-e761acec-0bde-4901-9cfd-47106773f90d-0",
-        "image_url": "https://ecomsellerbd.com/uploads/product-images/master/9e88699e-ab3a-410f-8d24-f6b34db3146b.webp",
-        "is_primary": true
+        "id": "img-0",
+        "image_url": "/products/mini_bag_sealer_1.webp",
+        "is_primary": true,
+        "sort_order": 0
+      },
+      {
+        "id": "img-1",
+        "image_url": "/products/mini_bag_sealer_2.webp",
+        "is_primary": false,
+        "sort_order": 1
+      },
+      {
+        "id": "img-2",
+        "image_url": "/products/mini_bag_sealer_3.webp",
+        "is_primary": false,
+        "sort_order": 2
+      },
+      {
+        "id": "img-3",
+        "image_url": "/products/mini_bag_sealer_4.webp",
+        "is_primary": false,
+        "sort_order": 3
       }
     ],
     "price": 490,
