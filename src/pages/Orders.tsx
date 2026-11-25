@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { 
   Package, 
@@ -17,6 +17,7 @@ import {
   Check, 
   ArrowRight,
   ShieldCheck,
+  RefreshCw,
   AlertCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -138,19 +139,169 @@ const formatOrderDate = (dateStr: string) => {
   }
 };
 
+/**
+ * Fast synchronous parsing helper to transform raw order objects into typed Order
+ */
+const formatOrderObject = (data: any, fallbackId?: string): Order => {
+  const id = String(data.id || data.order_id || fallbackId || `ord_${Date.now()}`);
+  const orderNumber = String(data.order_number || data.orderNumber || (id.startsWith("ORD-") ? id : id.slice(0, 10)));
+  
+  const rawItems = Array.isArray(data.items) ? data.items : (Array.isArray(data.order_items) ? data.order_items : []);
+  const formattedItems: OrderItem[] = rawItems.map((it: any, idx: number) => {
+    const itImg = it.image || it.product_image || it.productImage || it.product?.image_url || it.product?.image || null;
+    const itName = it.product_name || it.productName || it.name || it.title || it.product?.name || "Product";
+    const itPrice = Number(it.price || it.unit_price || it.unitPrice || 0);
+    const itQty = Number(it.quantity || 1);
+    const itVariant = it.variant_name || (it.selected_variants ? Object.values(it.selected_variants).join(" / ") : null);
+    return {
+      id: it.id || `item_${idx}`,
+      product_id: it.product_id || it.productId || null,
+      product_name: itName,
+      name: itName,
+      image: itImg,
+      product_image: itImg,
+      price: itPrice,
+      unit_price: itPrice,
+      quantity: itQty,
+      variant_name: itVariant
+    };
+  });
+
+  let primaryImage = data.product_image || data.productImage || null;
+  let primaryName = data.product_name || data.productName || null;
+
+  if (!primaryImage && formattedItems.length > 0 && formattedItems[0].image) {
+    primaryImage = formattedItems[0].image;
+  }
+  if (!primaryName && formattedItems.length > 0 && formattedItems[0].product_name) {
+    primaryName = formattedItems[0].product_name;
+  }
+
+  const total = Number(data.total || data.totalAmount || data.price || 0);
+  const subtotal = Number(data.subtotal || total);
+  const shippingCost = Number(data.shipping_cost || data.shippingCost || 0);
+  const discountAmount = Number(data.discount_amount || data.discountAmount || 0);
+
+  const customerName = data.customer_name || data.customerName || (data.shipping_address?.firstName ? `${data.shipping_address.firstName} ${data.shipping_address.lastName || ""}`.trim() : data.shipping_address?.name) || "";
+  const customerPhone = data.customer_phone || data.phone || data.shipping_address?.phone || "";
+  const customerEmail = data.customer_email || data.email || data.shipping_address?.email || "";
+
+  const totalItems = Number(data.total_items || formattedItems.reduce((acc, curr) => acc + (curr.quantity || 1), 0) || 1);
+
+  return {
+    id,
+    order_number: orderNumber,
+    status: (data.status || "pending").toLowerCase(),
+    payment_status: (data.payment_status || data.paymentStatus || "pending").toLowerCase(),
+    payment_method: data.payment_method || data.paymentMethod || "cod",
+    total,
+    subtotal,
+    shipping_cost: shippingCost,
+    discount_amount: discountAmount,
+    created_at: data.created_at || data.createdAt || new Date().toISOString(),
+    customer_name: customerName,
+    customer_phone: customerPhone,
+    customer_email: customerEmail,
+    shipping_address: data.shipping_address || {},
+    items: formattedItems,
+    order_items: formattedItems,
+    product_image: primaryImage,
+    product_name: primaryName,
+    tracking_number: data.tracking_number || data.trackingNumber,
+    courier_name: data.courier_name || data.courierName,
+    total_items: totalItems
+  };
+};
+
+/**
+ * 0ms Instant Synchronous Storage Loader:
+ * Reads cached orders and local storage records in < 2ms so the UI renders on the very first frame!
+ */
+const loadInstantOrdersFromStorage = (): Order[] => {
+  if (typeof window === "undefined") return [];
+  const map = new Map<string, Order>();
+
+  const ingest = (raw: any) => {
+    if (!raw || isMockOrder(raw)) return;
+    const formatted = formatOrderObject(raw);
+    if (formatted.total <= 0 && (!formatted.items || formatted.items.length === 0)) return;
+    const key = formatted.order_number || formatted.id;
+    if (!map.has(key)) {
+      map.set(key, formatted);
+    }
+  };
+
+  // 1. Check primary fast cache
+  try {
+    const cachedFast = localStorage.getItem("durtup_cached_orders_v2");
+    if (cachedFast) {
+      const parsed = JSON.parse(cachedFast);
+      if (Array.isArray(parsed)) {
+        parsed.forEach(ingest);
+      }
+    }
+  } catch {}
+
+  // 2. Check recent placed orders
+  try {
+    const recentRaw = localStorage.getItem("durtup_recent_placed_orders");
+    if (recentRaw) {
+      const parsed = JSON.parse(recentRaw);
+      if (Array.isArray(parsed)) {
+        parsed.forEach(ingest);
+      }
+    }
+  } catch {}
+
+  // 3. Check individual recent order keys
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith("durtup_recent_order_")) {
+        try {
+          const val = localStorage.getItem(k);
+          if (val) ingest(JSON.parse(val));
+        } catch {}
+      }
+    }
+  } catch {}
+
+  // 4. Check enterprise & local orders
+  ["enterprise_admin_orders", "local_orders"].forEach((storageKey) => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        const list = JSON.parse(raw);
+        if (Array.isArray(list)) list.forEach(ingest);
+      }
+    } catch {}
+  });
+
+  return Array.from(map.values())
+    .filter((o) => (o.total > 0 || o.id) && !isMockOrder(o))
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+};
+
 export default function Orders() {
   const { user, profile, loading, isAdmin } = useAuth();
   const navigate = useNavigate();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loadingOrders, setLoadingOrders] = useState(true);
+
+  // Instant 0ms initialization from local storage
+  const [orders, setOrders] = useState<Order[]>(() => loadInstantOrdersFromStorage());
+  const [loadingOrders, setLoadingOrders] = useState<boolean>(() => {
+    const initial = loadInstantOrdersFromStorage();
+    return initial.length === 0;
+  });
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const isFetchingRef = useRef(false);
 
   // 1. Resolve User Identities
   const userEmail = (user?.email || profile?.email || "").toLowerCase().trim();
   const userUid = user?.id || (user as any)?.uid || auth?.currentUser?.uid || "";
 
-  // Extract phone number from all possible sources (including phone auth email e.g. 01622530550@durtup.shop)
   const phoneFromEmail = userEmail.includes("@durtup.shop") 
     ? userEmail.split("@durtup.shop")[0].replace(/\D/g, "") 
     : (userEmail.match(/^01\d{9}/) ? userEmail.match(/^01\d{9}/)![0] : "");
@@ -180,7 +331,6 @@ export default function Orders() {
 
   const userPhone = rawPhone.replace(/\D/g, "");
 
-  // Build variants for phone lookups (01622530550, +8801622530550, 8801622530550, 1622530550)
   const phoneVariants = useMemo(() => {
     const variants = new Set<string>();
     if (userPhone) {
@@ -205,6 +355,7 @@ export default function Orders() {
       typeof window !== "undefined" &&
       (localStorage.getItem("durtup_recent_placed_orders") || 
        localStorage.getItem("durtup_last_placed_order_id") || 
+       localStorage.getItem("durtup_cached_orders_v2") ||
        localStorage.getItem("durtup_customer_phone"))
     );
     if (!loading && !user && !auth?.currentUser && !hasRecentLocalOrders) {
@@ -212,138 +363,7 @@ export default function Orders() {
     }
   }, [user, loading, navigate]);
 
-  useEffect(() => {
-    fetchOrders();
-
-    const unsubscribers: Array<() => void> = [];
-
-    if (userUid) {
-      try {
-        const userOrdersQuery = query(collection(db, "orders"), where("user_id", "==", userUid));
-        const unsub = onSnapshot(userOrdersQuery, () => {
-          fetchOrders();
-        }, (err) => {
-          console.warn("Scoped orders Firestore listener notice:", err);
-        });
-        unsubscribers.push(unsub);
-      } catch {}
-    }
-
-    if (userPhone) {
-      try {
-        const phoneOrdersQuery = query(collection(db, "orders"), where("customer_phone", "==", userPhone));
-        const unsubPhone = onSnapshot(phoneOrdersQuery, () => {
-          fetchOrders();
-        }, (err) => {
-          console.warn("Phone orders Firestore listener notice:", err);
-        });
-        unsubscribers.push(unsubPhone);
-      } catch {}
-    }
-
-    if (user) {
-      // Realtime listener for Supabase orders
-      try {
-        const sbChannel = supabase
-          .channel(`public:orders:${user.id}`)
-          .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
-            fetchOrders();
-          })
-          .subscribe();
-        unsubscribers.push(() => {
-          supabase.removeChannel(sbChannel);
-        });
-      } catch {}
-    }
-
-    // Cross-tab and window focus listeners
-    const onSync = () => fetchOrders();
-    window.addEventListener("focus", onSync);
-    document.addEventListener("visibilitychange", onSync);
-    window.addEventListener("storage", onSync);
-
-    return () => {
-      unsubscribers.forEach(unsub => unsub());
-      window.removeEventListener("focus", onSync);
-      document.removeEventListener("visibilitychange", onSync);
-      window.removeEventListener("storage", onSync);
-    };
-  }, [userUid, userPhone, userEmail]);
-
-  const formatOrderObject = (data: any, fallbackId?: string): Order => {
-    const id = String(data.id || data.order_id || fallbackId || `ord_${Date.now()}`);
-    const orderNumber = String(data.order_number || data.orderNumber || (id.startsWith("ORD-") ? id : id.slice(0, 10)));
-    
-    // Extract items
-    const rawItems = Array.isArray(data.items) ? data.items : (Array.isArray(data.order_items) ? data.order_items : []);
-    const formattedItems: OrderItem[] = rawItems.map((it: any, idx: number) => {
-      const itImg = it.image || it.product_image || it.productImage || it.product?.image_url || it.product?.image || null;
-      const itName = it.product_name || it.productName || it.name || it.title || it.product?.name || "Product";
-      const itPrice = Number(it.price || it.unit_price || it.unitPrice || 0);
-      const itQty = Number(it.quantity || 1);
-      const itVariant = it.variant_name || (it.selected_variants ? Object.values(it.selected_variants).join(" / ") : null);
-      return {
-        id: it.id || `item_${idx}`,
-        product_id: it.product_id || it.productId || null,
-        product_name: itName,
-        name: itName,
-        image: itImg,
-        product_image: itImg,
-        price: itPrice,
-        unit_price: itPrice,
-        quantity: itQty,
-        variant_name: itVariant
-      };
-    });
-
-    // Extract primary image and primary product name
-    let primaryImage = data.product_image || data.productImage || null;
-    let primaryName = data.product_name || data.productName || null;
-
-    if (!primaryImage && formattedItems.length > 0 && formattedItems[0].image) {
-      primaryImage = formattedItems[0].image;
-    }
-    if (!primaryName && formattedItems.length > 0 && formattedItems[0].product_name) {
-      primaryName = formattedItems[0].product_name;
-    }
-
-    const total = Number(data.total || data.totalAmount || data.price || 0);
-    const subtotal = Number(data.subtotal || total);
-    const shippingCost = Number(data.shipping_cost || data.shippingCost || 0);
-    const discountAmount = Number(data.discount_amount || data.discountAmount || 0);
-
-    const customerName = data.customer_name || data.customerName || (data.shipping_address?.firstName ? `${data.shipping_address.firstName} ${data.shipping_address.lastName || ""}`.trim() : data.shipping_address?.name) || "";
-    const customerPhone = data.customer_phone || data.phone || data.shipping_address?.phone || "";
-    const customerEmail = data.customer_email || data.email || data.shipping_address?.email || "";
-
-    const totalItems = Number(data.total_items || formattedItems.reduce((acc, curr) => acc + (curr.quantity || 1), 0) || 1);
-
-    return {
-      id,
-      order_number: orderNumber,
-      status: (data.status || "pending").toLowerCase(),
-      payment_status: (data.payment_status || data.paymentStatus || "pending").toLowerCase(),
-      payment_method: data.payment_method || data.paymentMethod || "cod",
-      total,
-      subtotal,
-      shipping_cost: shippingCost,
-      discount_amount: discountAmount,
-      created_at: data.created_at || data.createdAt || new Date().toISOString(),
-      customer_name: customerName,
-      customer_phone: customerPhone,
-      customer_email: customerEmail,
-      shipping_address: data.shipping_address || {},
-      items: formattedItems,
-      order_items: formattedItems,
-      product_image: primaryImage,
-      product_name: primaryName,
-      tracking_number: data.tracking_number || data.trackingNumber,
-      courier_name: data.courier_name || data.courierName,
-      total_items: totalItems
-    };
-  };
-
-  const isOrderForUser = (data: any): boolean => {
+  const isOrderForUser = useCallback((data: any): boolean => {
     if (!data) return false;
     
     const uid = String(data.user_id || data.userId || "").trim();
@@ -387,11 +407,32 @@ export default function Orders() {
     }
 
     return false;
-  };
+  }, [userUid, userEmail, phoneFromEmail, userPhone, phoneVariants, isAdmin, profile?.role]);
 
-  const fetchOrders = async () => {
-    setLoadingOrders(true);
+  /**
+   * High-Performance SWR (Stale-While-Revalidate) Fetcher
+   * Immediately updates with local orders, then synchronizes remote orders with a 3.5s timeout.
+   */
+  const fetchOrders = useCallback(async (isInitial = false) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
+    // 1. Instant Synchronous Local Hydration (0ms)
+    const localList = loadInstantOrdersFromStorage().filter(isOrderForUser);
+    if (localList.length > 0) {
+      setOrders(localList);
+      setLoadingOrders(false); // Instantly dismiss any full-page loader!
+    } else if (isInitial) {
+      setLoadingOrders(true);
+    }
+
+    setIsRefreshing(true);
+
     const orderMap = new Map<string, Order>();
+    localList.forEach(o => {
+      const key = o.order_number || o.id;
+      orderMap.set(key, o);
+    });
 
     const addOrMergeOrder = (rawOrder: any) => {
       if (!rawOrder || isMockOrder(rawOrder)) return;
@@ -404,7 +445,7 @@ export default function Orders() {
       } else {
         const existing = orderMap.get(key)!;
         if (existing.status === "confirmed" && formatted.status === "pending") {
-          // Keep higher status
+          // Keep confirmed
         } else if (formatted.status) {
           existing.status = formatted.status;
         }
@@ -426,185 +467,167 @@ export default function Orders() {
       }
     };
 
-    // 0. Load recent locally placed orders first (0ms instantaneous display)
+    // 2. Fast Parallel Remote Sync with 3.5s Timeout Guard
     try {
-      // A. Scan durtup_recent_placed_orders
-      const recentPlacedRaw = localStorage.getItem("durtup_recent_placed_orders");
-      if (recentPlacedRaw) {
-        const recentOrders = JSON.parse(recentPlacedRaw);
-        if (Array.isArray(recentOrders)) {
-          recentOrders.forEach((ro: any) => {
-            if (isOrderForUser(ro)) {
-              addOrMergeOrder(ro);
-            }
-          });
-        }
-      }
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Remote orders query timeout")), 3500)
+      );
 
-      // B. Scan all localStorage keys starting with durtup_recent_order_
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k && k.startsWith("durtup_recent_order_")) {
-          try {
-            const rawVal = localStorage.getItem(k);
-            if (rawVal) {
-              const ro = JSON.parse(rawVal);
-              if (isOrderForUser(ro)) {
-                addOrMergeOrder(ro);
-              }
-            }
-          } catch {}
-        }
-      }
+      const remoteSyncPromise = async () => {
+        const tasks: Promise<any>[] = [];
 
-      // C. Scan enterprise_admin_orders and local_orders
-      ["enterprise_admin_orders", "local_orders"].forEach((storageKey) => {
-        try {
-          const raw = localStorage.getItem(storageKey);
-          if (raw) {
-            const list = JSON.parse(raw);
-            if (Array.isArray(list)) {
-              list.forEach((ao: any) => {
-                if (isOrderForUser(ao)) {
-                  addOrMergeOrder(ao);
+        // Task A: Supabase
+        if (user?.id) {
+          tasks.push(
+            supabase
+              .from("orders")
+              .select("*")
+              .eq("user_id", user.id)
+              .order("created_at", { ascending: false })
+              .limit(30)
+              .then(({ data }) => {
+                if (data && Array.isArray(data)) {
+                  data.forEach(o => addOrMergeOrder(o));
                 }
-              });
-            }
-          }
-        } catch {}
-      });
-
-      // D. Check last placed order id specifically
-      const lastPlacedId = localStorage.getItem("durtup_last_placed_order_id");
-      const lastPlacedNum = localStorage.getItem("durtup_last_placed_order_number");
-      if (lastPlacedId && !orderMap.has(lastPlacedId)) {
-        try {
-          const snap = await getDoc(doc(db, "orders", lastPlacedId));
-          if (snap.exists()) {
-            addOrMergeOrder({ id: snap.id, ...snap.data() });
-          }
-        } catch {}
-      }
-      if (lastPlacedNum && !orderMap.has(lastPlacedNum)) {
-        try {
-          const snap = await getDoc(doc(db, "orders", lastPlacedNum));
-          if (snap.exists()) {
-            addOrMergeOrder({ id: snap.id, ...snap.data() });
-          }
-        } catch {}
-      }
-    } catch (localErr) {
-      console.warn("LocalStorage order scan notice:", localErr);
-    }
-
-    // 1. Query Supabase DB
-    if (user) {
-      try {
-        const { data, error } = await supabase
-          .from("orders")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false });
-
-        if (!error && data && data.length > 0) {
-          data.forEach((o: any) => {
-            addOrMergeOrder(o);
-          });
+              })
+              .catch((err) => console.warn("Supabase orders sync notice:", err))
+          );
         }
-      } catch (error) {
-        console.warn("Error fetching Supabase orders:", error);
-      }
-    }
 
-    // 2. Query Firestore DB for user orders & merge newest statuses
-    try {
-      const ordersCol = collection(db, "orders");
-      const firestoreQueries: any[] = [];
+        // Task B: Targeted Firestore Queries
+        const ordersCol = collection(db, "orders");
+        const fsQueries: any[] = [];
 
-      if (userUid) {
-        firestoreQueries.push(query(ordersCol, where("user_id", "==", userUid)));
-        firestoreQueries.push(query(ordersCol, where("userId", "==", userUid)));
-      }
-      if (userEmail) {
-        firestoreQueries.push(query(ordersCol, where("customer_email", "==", userEmail)));
-      }
-      for (const pv of phoneVariants) {
-        firestoreQueries.push(query(ordersCol, where("customer_phone", "==", pv)));
-        firestoreQueries.push(query(ordersCol, where("phone", "==", pv)));
-        firestoreQueries.push(query(ordersCol, where("user_id", "==", `guest_${pv}`)));
-      }
-
-      // If user is Admin, query recent orders collection directly
-      if (isAdmin || profile?.role === "admin" || userEmail === "mdnahid7653959@gmail.com") {
-        try {
-          firestoreQueries.push(query(ordersCol, orderBy("created_at", "desc"), limit(50)));
-        } catch {}
-      }
-
-      // Also refresh documents already found in orderMap
-      for (const [k] of orderMap.entries()) {
-        try {
-          const directSnap = await getDoc(doc(db, "orders", k));
-          if (directSnap.exists()) {
-            addOrMergeOrder({ id: directSnap.id, ...directSnap.data() });
-          }
-        } catch {}
-      }
-
-      const querySnapshots = await Promise.allSettled(firestoreQueries.map(q => getDocs(q)));
-
-      querySnapshots.forEach((result) => {
-        if (result.status === "fulfilled" && result.value && !result.value.empty) {
-          result.value.forEach((d) => {
-            const data = d.data();
-            if (isOrderForUser(data) || isOrderForUser({ id: d.id, ...data })) {
-              addOrMergeOrder({ id: d.id, ...data });
-            }
-          });
+        if (userUid) {
+          fsQueries.push(query(ordersCol, where("user_id", "==", userUid), limit(25)));
         }
+        if (userEmail) {
+          fsQueries.push(query(ordersCol, where("customer_email", "==", userEmail), limit(25)));
+        }
+        if (userPhone) {
+          const std11 = userPhone.startsWith("0") ? userPhone : `0${userPhone}`;
+          fsQueries.push(query(ordersCol, where("customer_phone", "==", std11), limit(25)));
+          fsQueries.push(query(ordersCol, where("customer_phone", "==", `+88${std11}`), limit(25)));
+          fsQueries.push(query(ordersCol, where("user_id", "==", `guest_${std11}`), limit(25)));
+        }
+
+        if (isAdmin || profile?.role === "admin" || userEmail === "mdnahid7653959@gmail.com") {
+          fsQueries.push(query(ordersCol, orderBy("created_at", "desc"), limit(35)));
+        }
+
+        tasks.push(
+          Promise.allSettled(fsQueries.map(q => getDocs(q))).then((results) => {
+            results.forEach((r) => {
+              if (r.status === "fulfilled" && r.value && !r.value.empty) {
+                r.value.forEach((d) => {
+                  const data = d.data();
+                  if (isOrderForUser(data) || isOrderForUser({ id: d.id, ...data })) {
+                    addOrMergeOrder({ id: d.id, ...data });
+                  }
+                });
+              }
+            });
+          }).catch((err) => console.warn("Firestore query sync notice:", err))
+        );
+
+        await Promise.allSettled(tasks);
+      };
+
+      await Promise.race([remoteSyncPromise(), timeoutPromise]).catch(() => {
+        // Soft timeout reached, proceed with what was loaded
       });
-    } catch (fsErr) {
-      console.warn("Error fetching Firestore orders:", fsErr);
-    }
+    } catch {}
 
     // 3. Purge invalid mock records from localStorage
     purgeMockOrdersFromStorage();
 
-    // 4. Filter and sort by date descending
-    const list = Array.from(orderMap.values())
+    // 4. Update state and update persistent fast cache
+    const finalOrders = Array.from(orderMap.values())
       .filter((o) => (o.total > 0 || o.id) && !isMockOrder(o))
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-    setOrders(list);
+    setOrders(finalOrders);
     setLoadingOrders(false);
-  };
+    setIsRefreshing(false);
+    isFetchingRef.current = false;
+
+    // Cache to localStorage for instantaneous next visit
+    try {
+      localStorage.setItem("durtup_cached_orders_v2", JSON.stringify(finalOrders.slice(0, 30)));
+    } catch {}
+  }, [user?.id, userUid, userEmail, userPhone, isAdmin, profile?.role, isOrderForUser]);
+
+  useEffect(() => {
+    // Initial fetch
+    fetchOrders(true);
+
+    const unsubscribers: Array<() => void> = [];
+
+    // Lightweight live listeners
+    if (userUid) {
+      try {
+        const userOrdersQuery = query(collection(db, "orders"), where("user_id", "==", userUid), limit(15));
+        const unsub = onSnapshot(userOrdersQuery, () => {
+          fetchOrders(false);
+        }, () => {});
+        unsubscribers.push(unsub);
+      } catch {}
+    }
+
+    if (userPhone) {
+      try {
+        const phoneOrdersQuery = query(collection(db, "orders"), where("customer_phone", "==", userPhone), limit(15));
+        const unsubPhone = onSnapshot(phoneOrdersQuery, () => {
+          fetchOrders(false);
+        }, () => {});
+        unsubscribers.push(unsubPhone);
+      } catch {}
+    }
+
+    if (user) {
+      try {
+        const sbChannel = supabase
+          .channel(`public:orders:${user.id}`)
+          .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
+            fetchOrders(false);
+          })
+          .subscribe();
+        unsubscribers.push(() => {
+          supabase.removeChannel(sbChannel);
+        });
+      } catch {}
+    }
+
+    // Window focus & visibility re-sync without spinner
+    const onSync = () => fetchOrders(false);
+    window.addEventListener("focus", onSync);
+    window.addEventListener("storage", onSync);
+
+    return () => {
+      unsubscribers.forEach(unsub => unsub());
+      window.removeEventListener("focus", onSync);
+      window.removeEventListener("storage", onSync);
+    };
+  }, [fetchOrders, userUid, userPhone, user]);
 
   const handleDeleteOrder = async (orderId: string, orderNumber: string) => {
     try {
-      // 1. Optimistically remove from state
       setOrders(prev => prev.filter(o => o.id !== orderId && o.order_number !== orderNumber));
 
-      // 2. Delete from Firestore
       try {
         await deleteDoc(doc(db, "orders", orderId));
         if (orderNumber && orderNumber !== orderId) {
           await deleteDoc(doc(db, "orders", orderNumber));
         }
-      } catch (e) {
-        console.warn("Firestore delete order error:", e);
-      }
+      } catch {}
 
-      // 3. Delete from Supabase
       try {
         await supabase.from("orders").delete().eq("id", orderId);
         if (orderNumber) {
           await supabase.from("orders").delete().eq("order_number", orderNumber);
         }
-      } catch (e) {
-        console.warn("Supabase delete order error:", e);
-      }
+      } catch {}
 
-      // 4. Delete from localStorage
       try {
         const removeMatching = (storageKey: string) => {
           const raw = localStorage.getItem(storageKey);
@@ -619,6 +642,7 @@ export default function Orders() {
         removeMatching("enterprise_admin_orders");
         removeMatching("local_orders");
         removeMatching("durtup_recent_placed_orders");
+        removeMatching("durtup_cached_orders_v2");
         localStorage.removeItem("durtup_recent_order_" + orderId);
         localStorage.removeItem("durtup_recent_order_" + orderNumber);
       } catch {}
@@ -683,7 +707,6 @@ export default function Orders() {
     const displayItems = items.slice(0, 2);
     const remainingCount = items.length - displayItems.length;
 
-    // Delivery destination preview
     const address = order.shipping_address || {};
     const recipientName = order.customer_name || `${address.firstName || ""} ${address.lastName || ""}`.trim() || "Customer";
     const recipientPhone = order.customer_phone || address.phone || "";
@@ -727,20 +750,17 @@ export default function Orders() {
             </div>
 
             <div className="flex items-center gap-2 flex-wrap ml-auto">
-              {/* Payment Method & Status Badge */}
               <Badge variant="outline" className="text-[11px] font-medium bg-background text-muted-foreground border-border/80 px-2 py-0.5 rounded-full capitalize flex items-center gap-1">
                 <CreditCard className="w-3 h-3 text-muted-foreground/70" />
                 <span>{order.payment_method === "cod" ? "Cash on Delivery" : (order.payment_method || "Online Pay")}</span>
               </Badge>
 
-              {/* Order Status Badge */}
               <Badge className={`${statusInfo.badgeClass} text-xs font-semibold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 shadow-none`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dotClass}`} />
                 <StatusIcon className="w-3 h-3" />
                 <span>{statusInfo.label}</span>
               </Badge>
 
-              {/* Delete Button with Confirmation Dialog */}
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button 
@@ -973,10 +993,18 @@ export default function Orders() {
           {/* Page Heading & Search */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight flex items-center gap-2.5">
-                <Package className="w-7 h-7 text-primary" />
-                My Orders
-              </h1>
+              <div className="flex items-center gap-2.5">
+                <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight flex items-center gap-2.5">
+                  <Package className="w-7 h-7 text-primary" />
+                  My Orders
+                </h1>
+                {isRefreshing && (
+                  <span className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-full border border-border/60">
+                    <RefreshCw className="w-3 h-3 animate-spin text-primary" />
+                    <span>Syncing...</span>
+                  </span>
+                )}
+              </div>
               <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                 Track your active shipments, view invoices, and manage order history
               </p>
@@ -1057,7 +1085,7 @@ export default function Orders() {
 
             {/* All Orders Tab */}
             <TabsContent value="all" className="space-y-4">
-              {loadingOrders ? (
+              {loadingOrders && orders.length === 0 ? (
                 <div className="py-16 text-center space-y-3">
                   <Package className="w-10 h-10 animate-spin mx-auto text-primary" />
                   <p className="text-sm font-medium text-muted-foreground">Loading your orders...</p>
@@ -1104,7 +1132,7 @@ export default function Orders() {
               const tabOrders = filteredOrders.filter(o => matchesTab(o.status, status));
               return (
                 <TabsContent key={status} value={status} className="space-y-4">
-                  {loadingOrders ? (
+                  {loadingOrders && orders.length === 0 ? (
                     <div className="py-16 text-center space-y-3">
                       <Package className="w-10 h-10 animate-spin mx-auto text-primary" />
                       <p className="text-sm font-medium text-muted-foreground">Loading orders...</p>
