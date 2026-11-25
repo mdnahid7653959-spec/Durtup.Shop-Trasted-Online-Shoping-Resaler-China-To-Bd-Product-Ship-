@@ -342,7 +342,7 @@ export default function Account() {
                     </div>
                     <div className="text-center sm:text-left">
                       <h3 className="font-semibold text-sm sm:text-base">{fullName || "Your Name"}</h3>
-                      <p className="text-xs sm:text-sm text-muted-foreground">{user.email}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">{profile?.phone || (user.email?.endsWith("@durtup.shop") ? user.email.split("@")[0] : user.email)}</p>
                     </div>
                   </div>
 
@@ -787,7 +787,7 @@ export default function Account() {
           <div className="mt-4 p-4 rounded-2xl bg-card border border-border/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="text-center sm:text-left">
               <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">বর্তমানে লগইন আছেন</p>
-              <p className="text-xs sm:text-sm font-bold text-foreground truncate max-w-xs">{user.email}</p>
+              <p className="text-xs sm:text-sm font-bold text-foreground truncate max-w-xs">{profile?.phone || (user.email?.endsWith("@durtup.shop") ? user.email.split("@")[0] : user.email)}</p>
             </div>
             <Button
               variant="destructive"

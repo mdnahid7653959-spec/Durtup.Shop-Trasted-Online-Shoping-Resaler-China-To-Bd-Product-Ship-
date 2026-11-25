@@ -147,19 +147,6 @@ export function CustomerAuthModal({
 
           <Button
             type="button"
-            variant="outline"
-            onClick={() => {
-              onClose();
-              if (onSuccess) onSuccess();
-            }}
-            disabled={loading}
-            className="w-full h-10 text-xs font-semibold border-orange-500/30 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20 rounded-xl transition-colors"
-          >
-            মোবাইল নম্বর ও নাম দিয়ে সরাসরি অর্ডার করুন
-          </Button>
-
-          <Button
-            type="button"
             variant="ghost"
             onClick={onClose}
             disabled={loading}

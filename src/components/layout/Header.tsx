@@ -489,19 +489,48 @@ export function Header() {
                     <>
                       <div className="p-3 border-b">
                         <p className="text-sm font-bold text-foreground">{profile?.full_name || 'Welcome!'}</p>
-                        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                        <p className="text-xs text-muted-foreground truncate">{profile?.phone || (user.email?.endsWith("@durtup.shop") ? user.email.split("@")[0] : user.email)}</p>
                       </div>
-                      <DropdownMenuItem asChild className="bg-orange-500/10 text-orange-600 font-bold focus:bg-orange-500/20 focus:text-orange-600">
-                        <Link to="/reseller/dashboard" className="cursor-pointer flex items-center justify-between w-full">
-                          <span className="flex items-center gap-1.5"><Store className="h-4 w-4" /> রিসেলার প্যানেল</span>
-                          <span className="text-[9px] bg-orange-600 text-white font-black px-1.5 py-0.5 rounded">লাইভ</span>
+                      <DropdownMenuItem asChild>
+                        <Link to="/orders" className="cursor-pointer flex items-center gap-2 font-medium">
+                          <Package className="h-4 w-4 text-orange-600" />
+                          <span>আমার অর্ডারসমূহ (My Orders)</span>
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem asChild><Link to="/orders" className="cursor-pointer">My Orders</Link></DropdownMenuItem>
-                      <DropdownMenuItem asChild><Link to="/wishlist" className="cursor-pointer">Wishlist</Link></DropdownMenuItem>
-                      <DropdownMenuItem asChild><Link to="/referrals" className="cursor-pointer flex items-center justify-between"><span>Refer & Earn</span><span className="text-[10px] bg-primary/10 text-primary font-bold px-1.5 py-0.5 rounded">৳৫০ বোনাস</span></Link></DropdownMenuItem>
-                      <DropdownMenuItem asChild><Link to="/wallet" className="cursor-pointer">My Wallet</Link></DropdownMenuItem>
-                      <DropdownMenuItem asChild><Link to="/account" className="cursor-pointer">Account Settings</Link></DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/account" className="cursor-pointer flex items-center gap-2">
+                          <User className="h-4 w-4" />
+                          <span>একাউন্ট সেটিংস (Account)</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/wishlist" className="cursor-pointer flex items-center gap-2">
+                          <Heart className="h-4 w-4" />
+                          <span>উইশলিস্ট (Wishlist)</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/referrals" className="cursor-pointer flex items-center justify-between">
+                          <span className="flex items-center gap-2">
+                            <Sparkles className="h-4 w-4 text-primary" />
+                            <span>Refer & Earn</span>
+                          </span>
+                          <span className="text-[10px] bg-primary/10 text-primary font-bold px-1.5 py-0.5 rounded">৳৫০ বোনাস</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/wallet" className="cursor-pointer flex items-center gap-2">
+                          <Wallet className="h-4 w-4" />
+                          <span>মাই ওয়ালেট (My Wallet)</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild className="text-muted-foreground text-xs">
+                        <Link to="/reseller" className="cursor-pointer flex items-center justify-between w-full">
+                          <span className="flex items-center gap-1.5"><Store className="h-4 w-4" /> রিসেলার প্রোগ্রাম</span>
+                          <span className="text-[9px] bg-muted px-1.5 py-0.5 rounded font-bold">আয় করুন</span>
+                        </Link>
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive">
                         <LogOut className="h-4 w-4 mr-2" /> Logout
@@ -617,7 +646,7 @@ export function Header() {
                         </span>
                       </div>
                       <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-                        {user.email || (profile as any)?.phone || "Durtup Member"}
+                        {profile?.phone || (user.email?.endsWith("@durtup.shop") ? user.email.split("@")[0] : user.email) || "Durtup Member"}
                       </p>
                     </div>
                   </Link>
@@ -674,7 +703,7 @@ export function Header() {
 
               {/* Official Reseller & Dropshipping Hub Banner Card */}
               <Link
-                to={user ? "/reseller/dashboard" : "/reseller"}
+                to="/reseller"
                 onClick={() => setMenuDrawerOpen(false)}
                 className="block group relative"
               >

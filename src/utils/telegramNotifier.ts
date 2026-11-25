@@ -8,7 +8,7 @@ export interface TelegramConfig {
   chat_id: string;
 }
 
-export const DEFAULT_TELEGRAM_BOT_TOKEN = "9052891455:AAFjL5lmNWIgTBgrk-KN8gN3pY1ZNZYQhEI";
+export const DEFAULT_TELEGRAM_BOT_TOKEN = "9052891455:AAEABwgEKbLVeCw1ZogwnUI_3LrPWGPuJGY";
 export const DEFAULT_TELEGRAM_CHAT_ID = "8204855335";
 
 const LOCAL_STORAGE_KEY = "durtup_telegram_config";
@@ -151,9 +151,8 @@ export async function sendTelegramOrderNotification(order: {
   const chatId = config.chat_id || DEFAULT_TELEGRAM_CHAT_ID;
   const activeConfig = { ...config, bot_token: botToken, chat_id: chatId };
 
-  const baseUrl = typeof window !== "undefined" && window.location.origin
-    ? window.location.origin
-    : "https://www.durtup.shop";
+  const origin = typeof window !== "undefined" && window.location.origin ? window.location.origin : "";
+  const baseUrl = origin.startsWith("https://") ? origin : "https://durtup.shop";
 
   const itemsList = order.items && order.items.length > 0
     ? order.items.map((item, idx) => {

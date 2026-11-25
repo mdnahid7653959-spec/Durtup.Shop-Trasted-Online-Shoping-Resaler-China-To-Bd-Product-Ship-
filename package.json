@@ -6,7 +6,9 @@
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently -k \"vite\" \"node scripts/telegram_bot_daemon.cjs\"",
+    "dev:vite": "vite",
+    "bot": "node scripts/telegram_bot_daemon.cjs",
     "build": "tsc --noEmit && vite build && node scripts/generate_sitemaps.cjs && node scripts/prerender_products.cjs",
     "build:dev": "vite build --mode development",
     "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:8080 && electron .\"",

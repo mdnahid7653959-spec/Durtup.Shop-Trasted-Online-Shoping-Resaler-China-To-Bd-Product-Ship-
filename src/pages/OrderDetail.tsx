@@ -395,18 +395,33 @@ export default function OrderDetail() {
             .select("*")
             .eq("order_id", orderData.id);
             
-          const formattedItems = await Promise.all((itemsData || []).map(async (it: any) => {
+          const rawItems = (Array.isArray(itemsData) && itemsData.length > 0)
+            ? itemsData
+            : (Array.isArray(orderData.items) && orderData.items.length > 0)
+            ? orderData.items
+            : (Array.isArray(orderData.order_items) && orderData.order_items.length > 0)
+            ? orderData.order_items
+            : (orderData.product_name ? [{
+                id: orderData.id || "item-0",
+                product_name: orderData.product_name,
+                name: orderData.product_name,
+                price: orderData.subtotal || orderData.total,
+                quantity: orderData.total_items || 1,
+                image: orderData.product_image
+              }] : []);
+
+          const formattedItems = await Promise.all(rawItems.map(async (it: any, idx: number) => {
             const product_image = await resolveOrderItemImage(it);
 
             return {
-              id: it.id,
-              product_name: it.product_name || "Product",
-              variant_name: it.variant_name || null,
+              id: it.id || `item-${idx}`,
+              product_name: it.product_name || it.name || it.product?.name || orderData.product_name || "Product",
+              variant_name: it.variant_name || (it.selected_variants ? Object.values(it.selected_variants).join(" / ") : null),
               quantity: Number(it.quantity || 1),
               unit_price: Number(it.price || it.unit_price || 0),
-              total_price: Number(it.total || (it.price || it.unit_price || 0) * (it.quantity || 1)),
-              product_image: product_image,
-              product_id: it.product_id || null
+              total_price: Number(it.total || (Number(it.price || it.unit_price || 0) * Number(it.quantity || 1))),
+              product_image: product_image || it.image || it.product_image || orderData.product_image || "/durtup-logo.png",
+              product_id: it.product_id || it.id || null
             };
           }));
 
@@ -414,12 +429,34 @@ export default function OrderDetail() {
           let latestPaymentStatus = (orderData.payment_status || "pending").toLowerCase();
 
           try {
-            const docRef = doc(db, "orders", orderData.id);
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {
-              const raw = docSnap.data();
-              if (raw.status) latestStatus = raw.status.toLowerCase();
-              if (raw.payment_status) latestPaymentStatus = raw.payment_status.toLowerCase();
+            const checkIds = [orderData.id, orderData.order_number, id].filter(Boolean);
+            for (const cId of checkIds) {
+              const docRef = doc(db, "orders", cId);
+              const docSnap = await getDoc(docRef);
+              if (docSnap.exists()) {
+                const raw = docSnap.data();
+                if (raw.status) latestStatus = raw.status.toLowerCase();
+                if (raw.payment_status) latestPaymentStatus = raw.payment_status.toLowerCase();
+                if (formattedItems.length === 0) {
+                  const snapItems = Array.isArray(raw.items) ? raw.items : (Array.isArray(raw.order_items) ? raw.order_items : []);
+                  if (snapItems.length > 0) {
+                    for (let i = 0; i < snapItems.length; i++) {
+                      const si = snapItems[i];
+                      formattedItems.push({
+                        id: si.id || `item-${i}`,
+                        product_name: si.product_name || si.name || "Product",
+                        variant_name: si.variant_name || null,
+                        quantity: Number(si.quantity || 1),
+                        unit_price: Number(si.price || si.unit_price || 0),
+                        total_price: Number(si.total || (Number(si.price || 0) * Number(si.quantity || 1))),
+                        product_image: si.image || si.product_image || "/durtup-logo.png",
+                        product_id: si.product_id || null
+                      });
+                    }
+                  }
+                }
+                break;
+              }
             }
           } catch {}
 
@@ -497,7 +534,18 @@ export default function OrderDetail() {
           let latestStatus = (raw.status || "pending").toLowerCase();
           let latestPaymentStatus = (raw.payment_status || raw.paymentStatus || "pending").toLowerCase();
 
-          const rawItemList = Array.isArray(raw.items) ? raw.items : (Array.isArray(raw.order_items) ? raw.order_items : []);
+          const rawItemList = (Array.isArray(raw.items) && raw.items.length > 0)
+            ? raw.items
+            : (Array.isArray(raw.order_items) && raw.order_items.length > 0)
+            ? raw.order_items
+            : (raw.product_name ? [{
+                id: raw.id || "item-0",
+                product_name: raw.product_name,
+                name: raw.product_name,
+                price: raw.subtotal || raw.total,
+                quantity: raw.total_items || 1,
+                image: raw.product_image
+              }] : []);
           const formattedItems = await Promise.all(rawItemList.map(async (it: any, idx: number) => {
             const product_image = await resolveOrderItemImage(it);
             return {

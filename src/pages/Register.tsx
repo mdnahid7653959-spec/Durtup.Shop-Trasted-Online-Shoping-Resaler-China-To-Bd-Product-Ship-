@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Eye, EyeOff, Mail, Lock, User } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +13,7 @@ import { signInWithGoogle } from "@/integrations/firebase/client";
 
 export default function Register() {
   const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
+  const [emailOrPhone, setEmailOrPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -26,10 +26,41 @@ export default function Register() {
   const params = new URLSearchParams(location.search);
   const rawNext = params.get("next") || params.get("redirect");
   const nextPath = rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : null;
+  const stateFrom = (location.state as any)?.from?.pathname;
+  const safeStateFrom = stateFrom && !stateFrom.startsWith("/login") && !stateFrom.startsWith("/register") ? stateFrom : null;
+  // Default to home page "/", keeping checkout if user was in checkout
+  let targetPath = "/";
+  if (nextPath && nextPath.startsWith("/checkout")) {
+    targetPath = nextPath;
+  } else if (safeStateFrom && safeStateFrom.startsWith("/checkout")) {
+    targetPath = safeStateFrom;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    const trimmedInput = emailOrPhone.trim();
+    if (!trimmedInput) {
+      toast({
+        variant: "destructive",
+        title: "মোবাইল নম্বর বা ইমেইল দিন",
+        description: "অ্যাকাউন্ট তৈরি করতে আপনার মোবাইল নম্বর অথবা ইমেইল এড্রেস লিখুন।"
+      });
+      return;
+    }
+
+    if (!trimmedInput.includes("@")) {
+      const digits = trimmedInput.replace(/\D/g, "");
+      if (digits.length < 10) {
+        toast({
+          variant: "destructive",
+          title: "সঠিক মোবাইল নম্বর দিন",
+          description: "অনুগ্রহ করে কমপক্ষে ১১ ডিজিটের একটি সঠিক মোবাইল নম্বর লিখুন (যেমন: 017XXXXXXXX)।"
+        });
+        return;
+      }
+    }
+
     if (password !== confirmPassword) {
       toast({
         variant: "destructive",
@@ -50,12 +81,12 @@ export default function Register() {
 
     setLoading(true);
     try {
-      await signUp(email, password, fullName);
+      await signUp(trimmedInput, password, fullName);
       toast({
         title: "🎉 অভিনন্দন! একাউন্ট সফলভাবে তৈরি হয়েছে!",
-        description: "আপনার রিসেলার প্যানেল সক্রিয় করা হয়েছে। ড্যাশবোর্ডে প্রবেশ করছেন..."
+        description: "Durtup.shop-এ স্বাগতম! কেনাকাটা শুরু করুন।"
       });
-      navigate(nextPath || "/reseller/dashboard");
+      navigate(targetPath, { replace: true });
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -73,9 +104,9 @@ export default function Register() {
       await signInWithGoogle();
       toast({
         title: "🎉 গুগল সাইনআপ সফল হয়েছে!",
-        description: "স্বাগতম! আপনার রিসেলার ড্যাশবোর্ডে নিয়ে যাওয়া হচ্ছে..."
+        description: "স্বাগতম! হোম পেজে প্রবেশ করছেন..."
       });
-      navigate(nextPath || "/reseller/dashboard");
+      navigate(targetPath, { replace: true });
     } catch (error: any) {
       const isUnauthDomain = error?.code === "auth/unauthorized-domain" || error?.message?.includes("unauthorized-domain");
       toast({
@@ -136,7 +167,7 @@ export default function Register() {
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">Or continue with email</span>
+                <span className="bg-card px-2 text-muted-foreground">Or continue with email / phone</span>
               </div>
             </div>
 
@@ -158,19 +189,32 @@ export default function Register() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="emailOrPhone" className="text-sm font-semibold flex items-center justify-between">
+                  <span>ইমেইল অথবা মোবাইল নম্বর</span>
+                  <span className="text-xs text-muted-foreground font-normal">Email or Phone</span>
+                </Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  {emailOrPhone.includes("@") ? (
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-orange-600 transition-colors" />
+                  ) : emailOrPhone.replace(/\D/g, "").length >= 3 ? (
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-orange-600 transition-colors" />
+                  ) : (
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors" />
+                  )}
                   <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    id="emailOrPhone"
+                    type="text"
+                    placeholder="01XXXXXXXXX অথবা you@example.com"
+                    value={emailOrPhone}
+                    onChange={(e) => setEmailOrPhone(e.target.value)}
                     className="pl-10"
                     required
+                    autoComplete="username"
                   />
                 </div>
+                <p className="text-[11px] text-muted-foreground">
+                  ১১ ডিজিটের মোবাইল নম্বর অথবা বৈধ ইমেইল দিয়ে একাউন্ট তৈরি করুন।
+                </p>
               </div>
 
               <div className="space-y-2">

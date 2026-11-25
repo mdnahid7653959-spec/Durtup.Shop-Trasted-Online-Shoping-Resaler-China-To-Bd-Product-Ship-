@@ -266,7 +266,16 @@ export default function AdminOrders() {
             total_items: data.total_items,
           };
           const key = item.order_number || item.id;
-          ordersMap.set(key, item);
+          if (ordersMap.has(key)) {
+            const existing = ordersMap.get(key)!;
+            // Never let a duplicate pending doc overwrite an already confirmed order
+            const finalStatus = (existing.status === "confirmed" || existing.status === "processing" || existing.status === "delivered") && item.status === "pending"
+              ? existing.status
+              : item.status;
+            ordersMap.set(key, { ...existing, ...item, status: finalStatus });
+          } else {
+            ordersMap.set(key, item);
+          }
         }
       });
     } catch (fsErr) {

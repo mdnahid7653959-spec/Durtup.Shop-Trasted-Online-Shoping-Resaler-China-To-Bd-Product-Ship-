@@ -43,18 +43,25 @@ const statusConfig: Record<string, { label: string; color: string; icon: any }> 
 };
 
 export default function Orders() {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
+  const userEmail = (user?.email || profile?.email || "").toLowerCase().trim();
+  const rawPhone = profile?.phone || (typeof window !== "undefined" ? localStorage.getItem("durtup_customer_phone") : "") || "";
+  const userPhone = rawPhone.replace(/\D/g, "");
+  const userUid = user?.id || (user as any)?.uid || auth?.currentUser?.uid || "";
+
   useEffect(() => {
     const hasRecentLocalOrders = Boolean(
       typeof window !== "undefined" &&
-      (localStorage.getItem("durtup_recent_placed_orders") || localStorage.getItem("durtup_last_placed_order_id"))
+      (localStorage.getItem("durtup_recent_placed_orders") || 
+       localStorage.getItem("durtup_last_placed_order_id") || 
+       localStorage.getItem("durtup_customer_phone"))
     );
-    if (!loading && !user && !auth.currentUser && !hasRecentLocalOrders) {
+    if (!loading && !user && !auth?.currentUser && !hasRecentLocalOrders) {
       navigate("/login");
     }
   }, [user, loading, navigate]);
@@ -62,38 +69,60 @@ export default function Orders() {
   useEffect(() => {
     fetchOrders();
 
-    if (user) {
-      // Realtime listener for Firestore orders scoped strictly to authenticated user
-      const userOrdersQuery = query(collection(db, "orders"), where("user_id", "==", user.id));
-      const unsub = onSnapshot(userOrdersQuery, () => {
-        fetchOrders();
-      }, (err) => {
-        console.warn("Scoped orders Firestore listener notice:", err);
-      });
+    const unsubscribers: Array<() => void> = [];
 
-      // Realtime listener for Supabase orders
-      const sbChannel = supabase
-        .channel(`public:orders:${user.id}`)
-        .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
+    if (userUid) {
+      try {
+        const userOrdersQuery = query(collection(db, "orders"), where("user_id", "==", userUid));
+        const unsub = onSnapshot(userOrdersQuery, () => {
           fetchOrders();
-        })
-        .subscribe();
-
-      // Cross-tab and window focus listeners
-      const onSync = () => fetchOrders();
-      window.addEventListener("focus", onSync);
-      document.addEventListener("visibilitychange", onSync);
-      window.addEventListener("storage", onSync);
-
-      return () => {
-        unsub();
-        supabase.removeChannel(sbChannel);
-        window.removeEventListener("focus", onSync);
-        document.removeEventListener("visibilitychange", onSync);
-        window.removeEventListener("storage", onSync);
-      };
+        }, (err) => {
+          console.warn("Scoped orders Firestore listener notice:", err);
+        });
+        unsubscribers.push(unsub);
+      } catch {}
     }
-  }, [user]);
+
+    if (userPhone) {
+      try {
+        const phoneOrdersQuery = query(collection(db, "orders"), where("customer_phone", "==", userPhone));
+        const unsubPhone = onSnapshot(phoneOrdersQuery, () => {
+          fetchOrders();
+        }, (err) => {
+          console.warn("Phone orders Firestore listener notice:", err);
+        });
+        unsubscribers.push(unsubPhone);
+      } catch {}
+    }
+
+    if (user) {
+      // Realtime listener for Supabase orders
+      try {
+        const sbChannel = supabase
+          .channel(`public:orders:${user.id}`)
+          .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
+            fetchOrders();
+          })
+          .subscribe();
+        unsubscribers.push(() => {
+          supabase.removeChannel(sbChannel);
+        });
+      } catch {}
+    }
+
+    // Cross-tab and window focus listeners
+    const onSync = () => fetchOrders();
+    window.addEventListener("focus", onSync);
+    document.addEventListener("visibilitychange", onSync);
+    window.addEventListener("storage", onSync);
+
+    return () => {
+      unsubscribers.forEach(unsub => unsub());
+      window.removeEventListener("focus", onSync);
+      document.removeEventListener("visibilitychange", onSync);
+      window.removeEventListener("storage", onSync);
+    };
+  }, [userUid, userPhone, userEmail]);
 
   const fetchOrders = async () => {
     setLoadingOrders(true);
@@ -123,6 +152,28 @@ export default function Orders() {
           });
         }
       }
+
+      // Check last placed order id specifically
+      const lastPlacedId = localStorage.getItem("durtup_last_placed_order_id");
+      if (lastPlacedId && !orderMap.has(lastPlacedId)) {
+        try {
+          const snap = await getDoc(doc(db, "orders", lastPlacedId));
+          if (snap.exists()) {
+            const data = snap.data();
+            const total = Number(data.total || data.totalAmount || 0);
+            if (total > 0) {
+              orderMap.set(lastPlacedId, {
+                id: snap.id,
+                order_number: data.order_number || data.orderNumber || snap.id,
+                status: (data.status || "pending").toLowerCase(),
+                total: total,
+                created_at: data.created_at || new Date().toISOString(),
+                payment_status: (data.payment_status || "pending").toLowerCase()
+              });
+            }
+          }
+        } catch {}
+      }
     } catch {}
 
     if (user) {
@@ -150,24 +201,58 @@ export default function Orders() {
       } catch (error) {
         console.warn("Error fetching Supabase orders:", error);
       }
+    }
 
-      // 2. Query Firestore DB for user orders & merge newest statuses
-      try {
-        const ordersCol = collection(db, "orders");
-        let snap;
+    // 2. Query Firestore DB for user orders & merge newest statuses
+    try {
+      const ordersCol = collection(db, "orders");
+      const firestoreQueries: any[] = [];
+
+      if (userUid) {
+        firestoreQueries.push(query(ordersCol, where("user_id", "==", userUid)));
+      }
+      if (userEmail) {
+        firestoreQueries.push(query(ordersCol, where("customer_email", "==", userEmail)));
+      }
+      if (userPhone) {
+        firestoreQueries.push(query(ordersCol, where("customer_phone", "==", userPhone)));
+        firestoreQueries.push(query(ordersCol, where("user_id", "==", `guest_${userPhone}`)));
+      }
+
+      // If user is guest but has placed recent order numbers
+      for (const [k] of orderMap.entries()) {
         try {
-          const qWithOrder = query(ordersCol, where("user_id", "==", user.id), orderBy("created_at", "desc"));
-          snap = await getDocs(qWithOrder);
-        } catch {
-          const qSimple = query(ordersCol, where("user_id", "==", user.id));
-          snap = await getDocs(qSimple);
-        }
+          const directSnap = await getDoc(doc(db, "orders", k));
+          if (directSnap.exists()) {
+            const data = directSnap.data();
+            const existing = orderMap.get(k);
+            if (existing) {
+              if (data.status) existing.status = (data.status || "pending").toLowerCase();
+              if (data.payment_status) existing.payment_status = (data.payment_status || "pending").toLowerCase();
+              const total = Number(data.totalAmount || data.price || data.total || 0);
+              if (total > 0) existing.total = total;
+            }
+          }
+        } catch {}
+      }
 
-        if (snap && !snap.empty) {
-          snap.forEach((d) => {
+      const querySnapshots = await Promise.allSettled(firestoreQueries.map(q => getDocs(q)));
+
+      querySnapshots.forEach((result) => {
+        if (result.status === "fulfilled" && result.value && !result.value.empty) {
+          result.value.forEach((d) => {
             const data = d.data();
-            const uid = data.user_id || data.userId;
-            const isUserMatch = uid === user.id || (user.email && uid === user.email);
+            const uid = data.user_id || data.userId || "";
+            const orderEmail = (data.customer_email || data.shipping_address?.email || "").toLowerCase().trim();
+            const orderPhone = (data.customer_phone || data.phone || data.shipping_address?.phone || "").replace(/\D/g, "");
+
+            const isUserMatch = 
+              (userUid && (uid === userUid || uid === `guest_${userUid}`)) ||
+              (userEmail && (orderEmail === userEmail || uid === userEmail)) ||
+              (userPhone && (orderPhone === userPhone || uid === `guest_${userPhone}`)) ||
+              orderMap.has(d.id) ||
+              orderMap.has(data.order_number || data.orderNumber);
+
             const pid = d.id;
             const orderNum = data.order_number || data.orderNumber || (pid.startsWith("ORD-") ? pid : pid.slice(0, 10));
             const status = (data.status || "pending").toLowerCase();
@@ -186,11 +271,15 @@ export default function Orders() {
 
             if (existingKey) {
               const existing = orderMap.get(existingKey)!;
-              if (data.status) existing.status = status;
+              // Never revert a confirmed order back to pending
+              if (existing.status === "confirmed" && status === "pending") {
+                // keep confirmed
+              } else if (data.status) {
+                existing.status = status;
+              }
               if (data.payment_status) existing.payment_status = paymentStatus;
               if (total > 0) existing.total = total;
             } else if (isUserMatch && total > 0 && !isMockOrder(data) && !isMockOrder({ id: pid, ...data })) {
-              // Only add new entry if user strictly matches and total > 0 (prevents 0-taka ghost duplicates)
               orderMap.set(orderNum || pid, {
                 id: pid,
                 order_number: orderNum,
@@ -202,9 +291,9 @@ export default function Orders() {
             }
           });
         }
-      } catch (fsErr) {
-        console.warn("Error fetching Firestore orders:", fsErr);
-      }
+      });
+    } catch (fsErr) {
+      console.warn("Error fetching Firestore orders:", fsErr);
     }
 
     // 3. Merge latest statuses from LocalStorage (enterprise_admin_orders & local_orders)
@@ -216,8 +305,12 @@ export default function Orders() {
         if (Array.isArray(adminOrders)) {
           adminOrders.filter((ao: any) => !isMockOrder(ao)).forEach((ao: any) => {
             const aoUid = ao.user_id || ao.userId;
-            // Privacy check: if cached order belongs to a different user, ignore it
-            if (user && aoUid && aoUid !== user.id && (!user.email || aoUid !== user.email)) {
+            const isAoMatch = 
+              !aoUid || 
+              aoUid === user.id || 
+              (user.email && aoUid === user.email) ||
+              (userPhone && (aoUid === `guest_${userPhone}` || ao.customer_phone === userPhone || ao.phone === userPhone));
+            if (user && !isAoMatch) {
               return;
             }
             for (const [k, v] of orderMap.entries()) {

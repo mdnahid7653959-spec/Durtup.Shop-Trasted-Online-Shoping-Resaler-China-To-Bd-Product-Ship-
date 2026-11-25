@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Eye, EyeOff, Mail, Lock } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,7 @@ import { SEOHead } from "@/components/SEOHead";
 import { signInWithGoogle } from "@/integrations/firebase/client";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
+  const [emailOrPhone, setEmailOrPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -25,24 +25,48 @@ export default function Login() {
   const params = new URLSearchParams(location.search);
   const rawNext = params.get("next") || params.get("redirect");
   const nextPath = rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : null;
-  const from = nextPath || (location.state as any)?.from?.pathname || "/";
+  const stateFrom = (location.state as any)?.from?.pathname;
+  const safeStateFrom = stateFrom && !stateFrom.startsWith("/login") && !stateFrom.startsWith("/register") ? stateFrom : null;
+  // Default to home page "/", keeping checkout if user was in checkout
+  let targetPath = "/";
+  if (nextPath && nextPath.startsWith("/checkout")) {
+    targetPath = nextPath;
+  } else if (safeStateFrom && safeStateFrom.startsWith("/checkout")) {
+    targetPath = safeStateFrom;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const trimmedInput = emailOrPhone.trim();
+    if (!trimmedInput) {
+      toast({
+        variant: "destructive",
+        title: "মোবাইল নম্বর বা ইমেইল দিন",
+        description: "সাইন ইন করতে আপনার মোবাইল নম্বর অথবা ইমেইল এড্রেস লিখুন।"
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await signIn(email, password);
+      await signIn(trimmedInput, password);
       toast({
         title: "Welcome back!",
-        description: "You've successfully signed in."
+        description: "সফলভাবে লগইন সম্পন্ন হয়েছে।"
       });
-      navigate(from, { replace: true });
+      navigate(targetPath, { replace: true });
     } catch (error: any) {
+      let errMsg = error.message;
+      if (error?.code === "auth/invalid-credential" || error?.code === "auth/wrong-password") {
+        errMsg = "পাসওয়ার্ড সঠিক নয়। দয়া করে আবার চেষ্টা করুন।";
+      } else if (error?.code === "auth/user-not-found") {
+        errMsg = "কোনো একাউন্ট খুঁজে পাওয়া যায়নি। মোবাইল নম্বর বা ইমেইল চেক করুন অথবা নতুন একাউন্ট তৈরি করুন।";
+      }
       toast({
         variant: "destructive",
         title: "Login failed",
-        description: error.message
+        description: errMsg
       });
     } finally {
       setLoading(false);
@@ -55,9 +79,9 @@ export default function Login() {
       await signInWithGoogle();
       toast({
         title: "Signed in with Google!",
-        description: "Welcome back!"
+        description: "স্বাগতম! সফলভাবে লগইন হয়েছে।"
       });
-      navigate(from, { replace: true });
+      navigate(targetPath, { replace: true });
     } catch (error: any) {
       const isUnauthDomain = error?.code === "auth/unauthorized-domain" || error?.message?.includes("unauthorized-domain");
       toast({
@@ -118,23 +142,33 @@ export default function Login() {
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">Or continue with email</span>
+                <span className="bg-card px-2 text-muted-foreground">Or continue with email / phone</span>
               </div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="emailOrPhone" className="text-sm font-semibold flex items-center justify-between">
+                  <span>ইমেইল অথবা মোবাইল নম্বর</span>
+                  <span className="text-xs text-muted-foreground font-normal">Email or Phone</span>
+                </Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  {emailOrPhone.includes("@") ? (
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-orange-600 transition-colors" />
+                  ) : emailOrPhone.replace(/\D/g, "").length >= 3 ? (
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-orange-600 transition-colors" />
+                  ) : (
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors" />
+                  )}
                   <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10"
+                    id="emailOrPhone"
+                    type="text"
+                    placeholder="01XXXXXXXXX অথবা you@example.com"
+                    value={emailOrPhone}
+                    onChange={(e) => setEmailOrPhone(e.target.value)}
+                    className="pl-10 h-11"
                     required
+                    autoComplete="username"
                   />
                 </div>
               </div>

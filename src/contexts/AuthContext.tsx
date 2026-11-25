@@ -14,6 +14,7 @@ interface Profile {
   id: string;
   user_id: string;
   email: string;
+  phone?: string | null;
   full_name: string | null;
   role: string;
   avatar_url: string | null;
@@ -24,8 +25,8 @@ interface AuthContextType {
   session: any | null;
   profile: Profile | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<void>;
-  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (emailOrPhone: string, password: string, fullName: string) => Promise<void>;
+  signIn: (emailOrPhone: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   isAdmin: boolean;
@@ -104,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       id: userId,
       user_id: userId,
       email: targetUser?.email || "",
+      phone: (targetUser as any)?.phoneNumber || null,
       full_name: targetUser?.displayName || "User",
       role: "customer",
       avatar_url: targetUser?.photoURL || null
@@ -167,15 +169,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, [fetchProfile]);
 
-  const signUp = useCallback(async (email: string, password: string, fullName: string) => {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+  const signUp = useCallback(async (emailOrPhone: string, password: string, fullName: string) => {
+    const isEmail = emailOrPhone.includes("@");
+    let cleanPhone: string | null = null;
+    let effectiveEmail = emailOrPhone.trim().toLowerCase();
+
+    if (!isEmail) {
+      const rawDigits = emailOrPhone.replace(/\D/g, "");
+      cleanPhone = rawDigits;
+      if (cleanPhone.startsWith("880") && cleanPhone.length === 13) {
+        cleanPhone = "0" + cleanPhone.slice(3);
+      } else if (cleanPhone.startsWith("88") && cleanPhone.length === 13) {
+        cleanPhone = cleanPhone.slice(2);
+      }
+
+      if (cleanPhone.length < 10) {
+        throw new Error("অনুগ্রহ করে একটি সঠিক মোবাইল নম্বর লিখুন (যেমন: 017XXXXXXXX) অথবা বৈধ ইমেইল দিন।");
+      }
+      effectiveEmail = `${cleanPhone}@durtup.shop`;
+    }
+
+    const userCredential = await createUserWithEmailAndPassword(auth, effectiveEmail, password);
     const firebaseUser = userCredential.user;
     
     if (firebaseUser) {
       const newProf: Profile = {
         id: firebaseUser.uid,
         user_id: firebaseUser.uid,
-        email: email,
+        email: effectiveEmail,
+        phone: cleanPhone || null,
         full_name: fullName,
         role: "customer",
         avatar_url: null
@@ -193,6 +215,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             id: firebaseUser.uid,
             uid: firebaseUser.uid,
             email: firebaseUser.email,
+            phone: cleanPhone || null,
             displayName: fullName,
             photoURL: null
           }));
@@ -207,33 +230,86 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       updateProfile(firebaseUser, { displayName: fullName }).catch(() => {});
       setDoc(doc(db, "profiles", firebaseUser.uid), {
         ...newProf,
+        phone: cleanPhone || null,
         created_at: new Date().toISOString()
       }, { merge: true }).then(async () => {
         const { ensureUserReferralProfile } = await import("@/services/referralService");
-        ensureUserReferralProfile(firebaseUser.uid, email, fullName).catch(() => {});
+        ensureUserReferralProfile(firebaseUser.uid, effectiveEmail, fullName).catch(() => {});
       }).catch((err) => {
         console.warn("Background profile doc create notice:", err);
       });
     }
   }, []);
 
-  const signIn = useCallback(async (email: string, password: string) => {
-    const cred = await signInWithEmailAndPassword(auth, email, password);
-    if (cred.user) {
-      const userWithId = Object.assign(cred.user, { id: cred.user.uid });
-      setUser(userWithId as any);
+  const signIn = useCallback(async (emailOrPhone: string, password: string) => {
+    const isEmail = emailOrPhone.includes("@");
+    let effectiveEmail = emailOrPhone.trim().toLowerCase();
+    let cleanPhone: string | null = null;
+
+    if (!isEmail) {
+      cleanPhone = emailOrPhone.replace(/\D/g, "");
+      if (cleanPhone.startsWith("880") && cleanPhone.length === 13) {
+        cleanPhone = "0" + cleanPhone.slice(3);
+      } else if (cleanPhone.startsWith("88") && cleanPhone.length === 13) {
+        cleanPhone = cleanPhone.slice(2);
+      }
+
+      // Check local cache of registered users
       if (typeof window !== "undefined") {
         try {
-          localStorage.setItem("durtup_active_user", JSON.stringify({
-            id: cred.user.uid,
-            uid: cred.user.uid,
-            email: cred.user.email,
-            displayName: cred.user.displayName,
-            photoURL: cred.user.photoURL
-          }));
+          const registeredUsersRaw = localStorage.getItem("durtup_registered_users");
+          if (registeredUsersRaw) {
+            const registeredUsers = JSON.parse(registeredUsersRaw);
+            if (Array.isArray(registeredUsers)) {
+              const matched = registeredUsers.find((u: any) => 
+                (u.phone && u.phone.replace(/\D/g, "") === cleanPhone) ||
+                (u.email && u.email.startsWith(cleanPhone!))
+              );
+              if (matched && matched.email) {
+                effectiveEmail = matched.email;
+              }
+            }
+          }
         } catch {}
       }
-      fetchProfile(cred.user.uid, cred.user);
+
+      // Default synthetic email if not mapped
+      if (!effectiveEmail.includes("@")) {
+        effectiveEmail = `${cleanPhone}@durtup.shop`;
+      }
+    }
+
+    try {
+      const cred = await signInWithEmailAndPassword(auth, effectiveEmail, password);
+      if (cred.user) {
+        const userWithId = Object.assign(cred.user, { id: cred.user.uid });
+        setUser(userWithId as any);
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem("durtup_active_user", JSON.stringify({
+              id: cred.user.uid,
+              uid: cred.user.uid,
+              email: cred.user.email,
+              phone: cleanPhone,
+              displayName: cred.user.displayName,
+              photoURL: cred.user.photoURL
+            }));
+          } catch {}
+        }
+        fetchProfile(cred.user.uid, cred.user);
+      }
+    } catch (err: any) {
+      // If signin failed and it was a phone number that had a mapped custom email, retry with synthetic email
+      if (!isEmail && cleanPhone && effectiveEmail !== `${cleanPhone}@durtup.shop`) {
+        const fallbackCred = await signInWithEmailAndPassword(auth, `${cleanPhone}@durtup.shop`, password);
+        if (fallbackCred.user) {
+          const userWithId = Object.assign(fallbackCred.user, { id: fallbackCred.user.uid });
+          setUser(userWithId as any);
+          fetchProfile(fallbackCred.user.uid, fallbackCred.user);
+          return;
+        }
+      }
+      throw err;
     }
   }, [fetchProfile]);
 

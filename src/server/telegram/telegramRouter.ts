@@ -13,6 +13,7 @@ import {
 import { TelegramStateManager } from "./telegramState";
 import {
   sendTelegramMessage,
+  editTelegramMessageText,
   answerCallbackQuery,
   escapeHtml
 } from "./telegramApi";
@@ -271,8 +272,68 @@ export async function handleTelegramWebhookUpdate(
       return { handled: true, authorized: true, action: "m4_stub" };
     }
 
+    // Handle Order Approval from Inline Keyboard
+    if (data.startsWith("order_approve:")) {
+      const orderNum = data.replace("order_approve:", "").replace(/^#/, "").trim();
+      await updateOrderStatusInFirestore(orderNum, "confirmed", String(userId), userName);
+      await answerCallbackQuery(cbId, `✅ অর্ডার #${orderNum} সফলভাবে অ্যাপ্রুভ হয়েছে!`, false);
+
+      if (chatId && messageId) {
+        const originalText = cb.message?.text || "";
+        const updatedText = originalText
+          ? originalText.replace(/⚡ Status:.*\n?/i, `⚡ <b>Status:</b> ✅ <b>APPROVED / CONFIRMED</b>\n👤 <b>Approved By:</b> ${userName} (Telegram Admin)\n`)
+          : `✅ <b>Order #${orderNum} Approved!</b>\nApproved by ${userName}`;
+
+        await editTelegramMessageText({
+          chat_id: chatId,
+          message_id: messageId,
+          text: updatedText,
+          parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: "✅ APPROVED", callback_data: "none" },
+                { text: "🌐 Open in Admin", url: `https://durtup.shop/admin/orders?id=${orderNum}` }
+              ]
+            ]
+          }
+        });
+      }
+      return { handled: true, authorized: true, action: "order_approved" };
+    }
+
+    // Handle Order Rejection from Inline Keyboard
+    if (data.startsWith("order_reject:")) {
+      const orderNum = data.replace("order_reject:", "").replace(/^#/, "").trim();
+      await updateOrderStatusInFirestore(orderNum, "cancelled", String(userId), userName);
+      await answerCallbackQuery(cbId, `❌ অর্ডার #${orderNum} বাতিল করা হয়েছে!`, false);
+
+      if (chatId && messageId) {
+        const originalText = cb.message?.text || "";
+        const updatedText = originalText
+          ? originalText.replace(/⚡ Status:.*\n?/i, `⚡ <b>Status:</b> ❌ <b>REJECTED / CANCELLED</b>\n👤 <b>Rejected By:</b> ${userName} (Telegram Admin)\n`)
+          : `❌ <b>Order #${orderNum} Rejected</b>`;
+
+        await editTelegramMessageText({
+          chat_id: chatId,
+          message_id: messageId,
+          text: updatedText,
+          parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: "❌ REJECTED", callback_data: "none" },
+                { text: "🌐 Open in Admin", url: `https://durtup.shop/admin/orders?id=${orderNum}` }
+              ]
+            ]
+          }
+        });
+      }
+      return { handled: true, authorized: true, action: "order_rejected" };
+    }
+
     // Legacy callback aliases support
-    if (data === "cmd_orders" || data.startsWith("order_approve:") || data.startsWith("order_reject:") || data.startsWith("order_view:")) {
+    if (data === "cmd_orders" || data.startsWith("order_view:")) {
       await answerCallbackQuery(cbId, "Order actions handled by Orders Engine.");
       return { handled: true, authorized: true, action: "legacy_order_callback" };
     }
@@ -341,3 +402,73 @@ export async function handleTelegramWebhookUpdate(
 
   return { handled: true, authorized: true, action: "ignored_update" };
 }
+
+const FIRESTORE_BASE = "https://firestore.googleapis.com/v1/projects/eshop-app-6119d/databases/(default)/documents";
+
+async function updateOrderStatusInFirestore(
+  orderIdentifier: string,
+  status: "confirmed" | "cancelled",
+  adminId: string,
+  adminName: string
+): Promise<void> {
+  const cleanId = orderIdentifier.replace(/^#/, "").trim();
+  const nowIso = new Date().toISOString();
+  const statusFields: Record<string, any> = {
+    status: { stringValue: status },
+    approved_by_telegram: { stringValue: adminId },
+    approved_by_name: { stringValue: adminName },
+    updated_at: { stringValue: nowIso }
+  };
+  if (status === "confirmed") {
+    statusFields.confirmed_at = { stringValue: nowIso };
+  } else {
+    statusFields.cancelled_at = { stringValue: nowIso };
+  }
+  const mask = Object.keys(statusFields).map((k) => `updateMask.fieldPaths=${k}`).join("&");
+
+  // 1. Direct REST PATCH by cleanId
+  try {
+    await fetch(`${FIRESTORE_BASE}/orders/${cleanId}?${mask}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fields: statusFields })
+    });
+  } catch (err) {
+    console.warn("[Telegram Router] Direct Firestore PATCH error:", err);
+  }
+
+  // 2. Query Firestore by order_number
+  try {
+    const qRes = await fetch(`${FIRESTORE_BASE}:runQuery`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: "orders" }],
+          where: {
+            fieldFilter: {
+              field: { fieldPath: "order_number" },
+              op: "EQUAL",
+              value: { stringValue: cleanId }
+            }
+          },
+          limit: 1
+        }
+      })
+    });
+    if (qRes.ok) {
+      const qDocs = await qRes.json();
+      if (Array.isArray(qDocs) && qDocs[0]?.document?.name) {
+        const docPath = qDocs[0].document.name;
+        await fetch(`https://firestore.googleapis.com/v1/${docPath}?${mask}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fields: statusFields })
+        });
+      }
+    }
+  } catch (err) {
+    console.warn("[Telegram Router] Firestore runQuery order update notice:", err);
+  }
+}
+
