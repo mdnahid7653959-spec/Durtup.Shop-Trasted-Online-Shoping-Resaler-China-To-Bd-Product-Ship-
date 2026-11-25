@@ -123,11 +123,11 @@ function ProductDealCard({
 interface DealRowProps {
   items: Product[];
   rowId: string;
-  speed?: number;
+  pxPerSecond?: number;
   direction?: "left" | "right";
 }
 
-function DealRow({ items, rowId, speed = 0.65, direction = "left" }: DealRowProps) {
+function DealRow({ items, rowId, pxPerSecond = 85, direction = "left" }: DealRowProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const isDraggingRef = useRef<boolean>(false);
   const startXRef = useRef<number>(0);
@@ -197,26 +197,31 @@ function DealRow({ items, rowId, speed = 0.65, direction = "left" }: DealRowProp
     return () => clearTimeout(timer);
   }, [direction, displayItems, updateScrollButtons]);
 
-  // Silky-smooth requestAnimationFrame continuous dual-direction auto-scroll
+  // Silky-smooth delta-time normalized continuous dual-direction auto-scroll
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
     let animId: number;
+    let lastTime = performance.now();
 
-    const tick = () => {
+    const tick = (now: number) => {
+      const dt = Math.min((now - lastTime) / 1000, 0.1);
+      lastTime = now;
+
       if (!isPausedRef.current && el) {
         const halfWidth = el.scrollWidth / 2;
+        const delta = pxPerSecond * dt;
 
         if (direction === "left") {
           // Content scrolls to the left (←)
-          posRef.current += speed;
+          posRef.current += delta;
           if (halfWidth > 0 && posRef.current >= halfWidth) {
             posRef.current -= halfWidth;
           }
         } else {
           // Content scrolls to the right (→) in opposite direction!
-          posRef.current -= speed;
+          posRef.current -= delta;
           if (halfWidth > 0 && posRef.current <= 0) {
             posRef.current += halfWidth;
           }
@@ -233,7 +238,7 @@ function DealRow({ items, rowId, speed = 0.65, direction = "left" }: DealRowProp
       cancelAnimationFrame(animId);
       if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
     };
-  }, [speed, direction]);
+  }, [pxPerSecond, direction]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -471,7 +476,7 @@ function DealOfTheDayComponent({ products = [] }: DealOfTheDayProps) {
           <DealRow
             rowId="row1"
             items={row1}
-            speed={0.65}
+            pxPerSecond={88}
             direction="left"
           />
 
@@ -479,7 +484,7 @@ function DealOfTheDayComponent({ products = [] }: DealOfTheDayProps) {
           <DealRow
             rowId="row2"
             items={row2}
-            speed={0.65}
+            pxPerSecond={82}
             direction="right"
           />
         </div>
