@@ -2650,15 +2650,15 @@ export const FAST_SEED_PRODUCTS: Product[] = [
     "slug": "mens-solid-colour-ban-color-shirt-purple-3112",
     "product_code": "3112",
     "category": "Men's Fashion",
-    "image": "https://mohasagor.com.bd/public/storage/images/products/UnbeWO88PiX9HzHLMWpUMNX8VPB1siiYEoYvwbIJ.png",
+    "image": "/products/shirt_ban_purple.webp",
     "images": [
-      "https://mohasagor.com.bd/public/storage/images/products/UnbeWO88PiX9HzHLMWpUMNX8VPB1siiYEoYvwbIJ.png",
+      "/products/shirt_ban_purple.webp",
       "https://mohasagor.com.bd/public/storage/images/products/iSLgEncPPBhT4SXtAUD8EE4V5MFbd3eM8K2sgA68.jpg"
     ],
     "product_images": [
       {
         "id": "img-0",
-        "image_url": "https://mohasagor.com.bd/public/storage/images/products/UnbeWO88PiX9HzHLMWpUMNX8VPB1siiYEoYvwbIJ.png",
+        "image_url": "/products/shirt_ban_purple.webp",
         "is_primary": true,
         "sort_order": 0
       },
@@ -2816,15 +2816,15 @@ export const FAST_SEED_PRODUCTS: Product[] = [
     "slug": "mens-solid-colour-cotton-shirt-purple-3115",
     "product_code": "3115",
     "category": "Men's Fashion",
-    "image": "https://mohasagor.com.bd/public/storage/images/products/P44YWhKubDnCu9WSWmDPlhHKxPx1udfFGOaycKZn.png",
+    "image": "/products/shirt_cotton_purple.webp",
     "images": [
-      "https://mohasagor.com.bd/public/storage/images/products/P44YWhKubDnCu9WSWmDPlhHKxPx1udfFGOaycKZn.png",
+      "/products/shirt_cotton_purple.webp",
       "https://mohasagor.com.bd/public/storage/images/products/UvKhSHiMRxIG41KP5UX0MKSKZLTIFlC1RfI90tH8.jpg"
     ],
     "product_images": [
       {
         "id": "img-0",
-        "image_url": "https://mohasagor.com.bd/public/storage/images/products/P44YWhKubDnCu9WSWmDPlhHKxPx1udfFGOaycKZn.png",
+        "image_url": "/products/shirt_cotton_purple.webp",
         "is_primary": true,
         "sort_order": 0
       },

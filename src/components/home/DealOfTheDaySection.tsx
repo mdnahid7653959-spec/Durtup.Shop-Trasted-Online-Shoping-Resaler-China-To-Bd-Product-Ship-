@@ -4,7 +4,6 @@ import { Star, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { MINI_CARD_SIZES } from "@/utils/productImageHelper";
 import { type Product } from "@/components/products/ProductCard";
 import { SafeProductImage } from "@/components/products/SafeProductImage";
-import { cn } from "@/lib/utils";
 
 interface DealOfTheDayProps {
   products?: Product[];
@@ -55,7 +54,7 @@ function ProductDealCard({
         state={{ preloadedProduct: product }}
         onClick={handleClick}
         draggable={false}
-        className="block w-full flex flex-col flex-1 cursor-pointer"
+        className="block w-full flex flex-col flex-1 cursor-pointer select-none"
       >
         {/* Discount Badge */}
         <div className="absolute top-1.5 left-1.5 z-10 pointer-events-none">
@@ -73,7 +72,7 @@ function ProductDealCard({
             sizes={MINI_CARD_SIZES}
             priority={idx < 4}
             fit="contain"
-            className="group-hover/card:scale-108 transition-transform duration-300 filter drop-shadow-xs"
+            className="group-hover/card:scale-108 transition-transform duration-300 filter drop-shadow-xs pointer-events-none"
           />
         </div>
 
@@ -127,20 +126,17 @@ interface DealRowProps {
   direction?: "left" | "right";
 }
 
-function DealRow({ items, rowId, pxPerSecond = 85, direction = "left" }: DealRowProps) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
+function DealRow({ items, rowId, pxPerSecond = 58, direction = "left" }: DealRowProps) {
+  const trackRef = useRef<HTMLDivElement | null>(null);
   const isDraggingRef = useRef<boolean>(false);
   const startXRef = useRef<number>(0);
-  const scrollLeftRef = useRef<number>(0);
+  const startPosRef = useRef<number>(0);
   const posRef = useRef<number>(0);
   const isPausedRef = useRef<boolean>(false);
   const resumeTimerRef = useRef<any>(null);
+  const isMouseDownRef = useRef<boolean>(false);
 
-  const [isMouseDown, setIsMouseDown] = useState(false);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(true);
-
-  // Repeat items so there's always ample width for an endless 2-half loop
+  // Repeat items to ensure sufficient width for an endless 2-half loop
   const displayItems = useMemo(() => {
     if (!items || items.length === 0) return [];
     let base = [...items];
@@ -167,46 +163,35 @@ function DealRow({ items, rowId, pxPerSecond = 85, direction = "left" }: DealRow
     }
   }, []);
 
-  const updateScrollButtons = useCallback(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    setCanScrollLeft(el.scrollLeft > 20);
-    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 20);
-  }, []);
-
-  // Initialize starting position based on direction
+  // Initialize initial offset on mount
   useEffect(() => {
-    const el = containerRef.current;
+    const el = trackRef.current;
     if (!el) return;
 
-    // Wait for layout calculation
     const timer = setTimeout(() => {
       if (!el) return;
       const halfWidth = el.scrollWidth / 2;
       if (direction === "right" && halfWidth > 0) {
-        // Start from middle so it can smoothly scroll leftwards (content moving right)
-        el.scrollLeft = halfWidth;
         posRef.current = halfWidth;
       } else {
-        el.scrollLeft = 0;
         posRef.current = 0;
       }
-      updateScrollButtons();
-    }, 100);
+      el.style.transform = `translate3d(-${posRef.current.toFixed(2)}px, 0, 0)`;
+    }, 60);
 
     return () => clearTimeout(timer);
-  }, [direction, displayItems, updateScrollButtons]);
+  }, [direction, displayItems]);
 
-  // Silky-smooth delta-time normalized continuous dual-direction auto-scroll
+  // GPU-accelerated 60/120fps translate3d ticker (zero layout reflow, pure compositor)
   useEffect(() => {
-    const el = containerRef.current;
+    const el = trackRef.current;
     if (!el) return;
 
     let animId: number;
     let lastTime = performance.now();
 
     const tick = (now: number) => {
-      const dt = Math.min((now - lastTime) / 1000, 0.1);
+      const dt = Math.min((now - lastTime) / 1000, 0.05); // Smooth clamp
       lastTime = now;
 
       if (!isPausedRef.current && el) {
@@ -220,15 +205,16 @@ function DealRow({ items, rowId, pxPerSecond = 85, direction = "left" }: DealRow
             posRef.current -= halfWidth;
           }
         } else {
-          // Content scrolls to the right (→) in opposite direction!
+          // Content scrolls to the right (→) in opposite direction
           posRef.current -= delta;
           if (halfWidth > 0 && posRef.current <= 0) {
             posRef.current += halfWidth;
           }
         }
 
-        el.scrollLeft = posRef.current;
+        el.style.transform = `translate3d(-${posRef.current.toFixed(2)}px, 0, 0)`;
       }
+
       animId = requestAnimationFrame(tick);
     };
 
@@ -240,83 +226,67 @@ function DealRow({ items, rowId, pxPerSecond = 85, direction = "left" }: DealRow
     };
   }, [pxPerSecond, direction]);
 
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    updateScrollButtons();
-    el.addEventListener("scroll", updateScrollButtons, { passive: true });
-    window.addEventListener("resize", updateScrollButtons);
-    return () => {
-      el.removeEventListener("scroll", updateScrollButtons);
-      window.removeEventListener("resize", updateScrollButtons);
-    };
-  }, [updateScrollButtons]);
-
-  const handleScroll = (scrollDir: "left" | "right") => {
-    const el = containerRef.current;
+  // Arrow button click handling
+  const handleNudge = (nudgeDir: "left" | "right") => {
+    const el = trackRef.current;
     if (!el) return;
     pauseAutoScroll();
-    const scrollAmount = Math.max(280, Math.round(el.clientWidth * 0.7));
-    el.scrollBy({
-      left: scrollDir === "left" ? -scrollAmount : scrollAmount,
-      behavior: "smooth",
-    });
+    const halfWidth = el.scrollWidth / 2;
+    const shift = 320;
+
+    if (nudgeDir === "left") {
+      posRef.current -= shift;
+      if (halfWidth > 0 && posRef.current < 0) posRef.current += halfWidth;
+    } else {
+      posRef.current += shift;
+      if (halfWidth > 0 && posRef.current >= halfWidth) posRef.current -= halfWidth;
+    }
+
+    el.style.transition = "transform 0.35s ease-out";
+    el.style.transform = `translate3d(-${posRef.current.toFixed(2)}px, 0, 0)`;
+
     setTimeout(() => {
-      if (el) posRef.current = el.scrollLeft;
-    }, 300);
-    resumeAutoScroll(1800);
+      if (el) el.style.transition = "";
+      resumeAutoScroll(1600);
+    }, 360);
   };
 
-  const onMouseDown = (e: React.MouseEvent) => {
-    const el = containerRef.current;
-    if (!el) return;
+  // Drag interaction handlers
+  const handleDragStart = (clientX: number) => {
     pauseAutoScroll();
-    setIsMouseDown(true);
+    isMouseDownRef.current = true;
     isDraggingRef.current = false;
-    startXRef.current = e.pageX - el.offsetLeft;
-    scrollLeftRef.current = el.scrollLeft;
-    posRef.current = el.scrollLeft;
+    startXRef.current = clientX;
+    startPosRef.current = posRef.current;
+    if (trackRef.current) trackRef.current.style.transition = "";
   };
 
-  const onMouseMove = (e: React.MouseEvent) => {
-    if (!isMouseDown) return;
-    const el = containerRef.current;
-    if (!el) return;
-    e.preventDefault();
-    const x = e.pageX - el.offsetLeft;
-    const walk = (x - startXRef.current) * 1.5;
-    if (Math.abs(walk) > 5) {
+  const handleDragMove = (clientX: number) => {
+    if (!isMouseDownRef.current || !trackRef.current) return;
+    const dx = clientX - startXRef.current;
+    if (Math.abs(dx) > 5) {
       isDraggingRef.current = true;
     }
-    const newPos = scrollLeftRef.current - walk;
-    const halfWidth = el.scrollWidth / 2;
+
+    const halfWidth = trackRef.current.scrollWidth / 2;
+    let newPos = startPosRef.current - dx;
 
     if (halfWidth > 0) {
-      if (newPos >= halfWidth) {
-        posRef.current = newPos - halfWidth;
-        scrollLeftRef.current -= halfWidth;
-      } else if (newPos <= 0) {
-        posRef.current = newPos + halfWidth;
-        scrollLeftRef.current += halfWidth;
-      } else {
-        posRef.current = newPos;
-      }
-    } else {
-      posRef.current = newPos;
+      while (newPos >= halfWidth) newPos -= halfWidth;
+      while (newPos < 0) newPos += halfWidth;
     }
 
-    el.scrollLeft = posRef.current;
+    posRef.current = newPos;
+    trackRef.current.style.transform = `translate3d(-${newPos.toFixed(2)}px, 0, 0)`;
   };
 
-  const onMouseUpOrLeave = () => {
-    if (isMouseDown) {
-      setIsMouseDown(false);
-      const el = containerRef.current;
-      if (el) posRef.current = el.scrollLeft;
-      resumeAutoScroll(1200);
+  const handleDragEnd = () => {
+    if (isMouseDownRef.current) {
+      isMouseDownRef.current = false;
+      resumeAutoScroll(1000);
       setTimeout(() => {
         isDraggingRef.current = false;
-      }, 80);
+      }, 60);
     }
   };
 
@@ -324,55 +294,45 @@ function DealRow({ items, rowId, pxPerSecond = 85, direction = "left" }: DealRow
 
   return (
     <div 
-      className="relative group/row w-full"
+      className="relative group/row w-full overflow-hidden select-none"
       onMouseEnter={pauseAutoScroll}
       onMouseLeave={() => resumeAutoScroll(400)}
-      onTouchStart={pauseAutoScroll}
-      onTouchEnd={() => {
-        const el = containerRef.current;
-        if (el) posRef.current = el.scrollLeft;
-        resumeAutoScroll(1500);
-      }}
+      onTouchStart={(e) => handleDragStart(e.touches[0].clientX)}
+      onTouchMove={(e) => handleDragMove(e.touches[0].clientX)}
+      onTouchEnd={handleDragEnd}
+      onMouseDown={(e) => handleDragStart(e.clientX)}
+      onMouseMove={(e) => handleDragMove(e.clientX)}
+      onMouseUp={handleDragEnd}
+      onMouseLeave={handleDragEnd}
     >
-      {/* Left Scroll Navigation Button */}
-      {canScrollLeft && (
-        <button
-          type="button"
-          onClick={() => handleScroll("left")}
-          aria-label="Scroll products left"
-          className="absolute -left-1 sm:-left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/95 dark:bg-slate-900/95 text-slate-700 dark:text-slate-200 shadow-lg border border-slate-200/90 dark:border-slate-700/80 flex items-center justify-center hover:bg-orange-600 hover:text-white dark:hover:bg-orange-600 hover:scale-105 active:scale-95 transition-all opacity-95 sm:opacity-0 sm:group-hover/row:opacity-100"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-      )}
+      {/* Left Navigation Arrow */}
+      <button
+        type="button"
+        onClick={() => handleNudge("left")}
+        aria-label="Scroll products left"
+        className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/95 dark:bg-slate-900/95 text-slate-700 dark:text-slate-200 shadow-lg border border-slate-200/90 dark:border-slate-700/80 flex items-center justify-center hover:bg-orange-600 hover:text-white dark:hover:bg-orange-600 hover:scale-105 active:scale-95 transition-all opacity-0 group-hover/row:opacity-100 cursor-pointer"
+      >
+        <ChevronLeft className="w-5 h-5" />
+      </button>
 
-      {/* Right Scroll Navigation Button */}
-      {canScrollRight && (
-        <button
-          type="button"
-          onClick={() => handleScroll("right")}
-          aria-label="Scroll products right"
-          className="absolute -right-1 sm:-right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/95 dark:bg-slate-900/95 text-slate-700 dark:text-slate-200 shadow-lg border border-slate-200/90 dark:border-slate-700/80 flex items-center justify-center hover:bg-orange-600 hover:text-white dark:hover:bg-orange-600 hover:scale-105 active:scale-95 transition-all opacity-95 sm:opacity-0 sm:group-hover/row:opacity-100"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
-      )}
+      {/* Right Navigation Arrow */}
+      <button
+        type="button"
+        onClick={() => handleNudge("right")}
+        aria-label="Scroll products right"
+        className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/95 dark:bg-slate-900/95 text-slate-700 dark:text-slate-200 shadow-lg border border-slate-200/90 dark:border-slate-700/80 flex items-center justify-center hover:bg-orange-600 hover:text-white dark:hover:bg-orange-600 hover:scale-105 active:scale-95 transition-all opacity-0 group-hover/row:opacity-100 cursor-pointer"
+      >
+        <ChevronRight className="w-5 h-5" />
+      </button>
 
-      {/* Interactive Free-Drag & Native Swipe Scroll Track */}
+      {/* GPU Accelerated Buttery-Smooth Track (Hardware Composite) */}
       <div
-        ref={containerRef}
-        onMouseDown={onMouseDown}
-        onMouseMove={onMouseMove}
-        onMouseUp={onMouseUpOrLeave}
-        onMouseLeave={onMouseUpOrLeave}
-        className={cn(
-          "flex gap-2 sm:gap-3 overflow-x-auto py-1 no-scrollbar select-none",
-          isMouseDown ? "cursor-grabbing scroll-auto" : "cursor-grab"
-        )}
+        ref={trackRef}
+        className="flex gap-2 sm:gap-3 py-1 will-change-transform cursor-grab active:cursor-grabbing"
         style={{
-          WebkitOverflowScrolling: "touch",
-          touchAction: "pan-x pan-y",
-          overscrollBehaviorX: "contain",
+          transform: "translate3d(0, 0, 0)",
+          backfaceVisibility: "hidden",
+          WebkitBackfaceVisibility: "hidden",
         }}
       >
         {displayItems.map((product, idx) => (
@@ -430,16 +390,6 @@ function DealOfTheDayComponent({ products = [] }: DealOfTheDayProps) {
 
   return (
     <section className="w-full px-2 sm:px-4 py-2 sm:py-3 overflow-hidden">
-      <style>{`
-        .no-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .no-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
-
       <div className="max-w-7xl mx-auto">
         {/* Header with Title and View All */}
         <div className="flex items-center justify-between mb-2 sm:mb-3 px-1">
@@ -476,7 +426,7 @@ function DealOfTheDayComponent({ products = [] }: DealOfTheDayProps) {
           <DealRow
             rowId="row1"
             items={row1}
-            pxPerSecond={88}
+            pxPerSecond={58}
             direction="left"
           />
 
@@ -484,7 +434,7 @@ function DealOfTheDayComponent({ products = [] }: DealOfTheDayProps) {
           <DealRow
             rowId="row2"
             items={row2}
-            pxPerSecond={82}
+            pxPerSecond={54}
             direction="right"
           />
         </div>

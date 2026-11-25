@@ -957,6 +957,17 @@ export function getSmartProductImage(
   category: string = "",
   index: number = 0
 ): string {
+  const lowerName = name.toLowerCase();
+  if (lowerName.includes("3-in-1 kitchen knife sharpener") || lowerName.includes("3 in 1 kitchen knife sharpener")) {
+    return "/products/knife_sharpener_3in1.webp";
+  }
+  if (lowerName.includes("ban color shirt") && lowerName.includes("purple")) {
+    return "/products/shirt_ban_purple.webp";
+  }
+  if (lowerName.includes("cotton shirt") && lowerName.includes("purple")) {
+    return "/products/shirt_cotton_purple.webp";
+  }
+
   // If currentImageUrl is a genuine uploaded/supplier image URL, return the direct clean URL
   if (currentImageUrl && typeof currentImageUrl === "string" && currentImageUrl.trim() !== "") {
     const trimmed = currentImageUrl.trim();
@@ -1033,6 +1044,17 @@ export function getProductImageCandidates(product: any, width: number = 400): st
       candidates.push(clean);
     }
   };
+
+  const prodName = String(product?.name || "").toLowerCase();
+  if (prodName.includes("3-in-1 kitchen knife sharpener") || prodName.includes("3 in 1 kitchen knife sharpener")) {
+    addCandidate("/products/knife_sharpener_3in1.webp");
+  }
+  if (prodName.includes("ban color shirt") && prodName.includes("purple")) {
+    addCandidate("/products/shirt_ban_purple.webp");
+  }
+  if (prodName.includes("cotton shirt") && prodName.includes("purple")) {
+    addCandidate("/products/shirt_cotton_purple.webp");
+  }
 
   // Collect ALL genuine product images from any schema format
   const allRawImages: string[] = [];
