@@ -1296,6 +1296,115 @@ export default async function handler(req: any, res: any) {
         return res.status(200).json({ ok: true });
       }
 
+      // Handle Direct Reply-to-Message (when admin replies to an order notification)
+      if (msg.reply_to_message) {
+        const parentText = msg.reply_to_message.text || "";
+        const orderMatch = parentText.match(/#(ORD-[\w-]+)/i) ||
+                           parentText.match(/\b(ORD-[\w-]+)\b/i) ||
+                           parentText.match(/Order ID:\s*#?([A-Za-z0-9_-]+)/i) ||
+                           parentText.match(/Order Number:\s*#?([A-Za-z0-9_-]+)/i);
+
+        if (orderMatch) {
+          const orderNum = orderMatch[1].replace(/^#/, "").trim();
+          const lowerT = text.toLowerCase();
+          const isApprove = lowerT.includes("approve") || lowerT.includes("confirm") || lowerT.includes("yes") || lowerT.includes("ok") || lowerT.includes("done") || lowerT.includes("অ্যাপ্রুভ") || lowerT.includes("কনফার্ম") || lowerT.includes("হ্যাঁ") || lowerT.includes("হয়েছে") || lowerT.includes("ঠিক আছে") || lowerT === "👍" || lowerT === "✅";
+          const isReject = lowerT.includes("reject") || lowerT.includes("cancel") || lowerT.includes("no") || lowerT.includes("বাতিল") || lowerT.includes("ক্যান্সেল") || lowerT.includes("না") || lowerT.includes("বাদ") || lowerT === "❌" || lowerT === "👎";
+
+          if (isApprove) {
+            const nowIso = new Date().toISOString();
+            await fetch(`${FIRESTORE_BASE}/orders/${orderNum}?updateMask.fieldPaths=status&updateMask.fieldPaths=approved_by_telegram&updateMask.fieldPaths=approved_by_name&updateMask.fieldPaths=confirmed_at&updateMask.fieldPaths=updated_at`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                fields: {
+                  status: { stringValue: "confirmed" },
+                  approved_by_telegram: { stringValue: userId },
+                  approved_by_name: { stringValue: userName },
+                  confirmed_at: { stringValue: nowIso },
+                  updated_at: { stringValue: nowIso }
+                }
+              })
+            });
+
+            const origChatId = msg.reply_to_message.chat?.id;
+            const origMsgId = msg.reply_to_message.message_id;
+            if (origChatId && origMsgId) {
+              const updated = parentText.replace(/⚡ Status:.*\n?/i, `⚡ <b>Status:</b> ✅ <b>APPROVED / CONFIRMED</b>\n👤 <b>Approved By:</b> ${userName} (${userId})\n`);
+              await callTelegram("editMessageText", {
+                chat_id: origChatId,
+                message_id: origMsgId,
+                text: updated,
+                parse_mode: "HTML",
+                reply_markup: {
+                  inline_keyboard: [
+                    [
+                      { text: "✅ APPROVED", callback_data: "none" },
+                      { text: "🌐 View in Admin", url: `${STORE_URL}/admin/orders?id=${orderNum}` }
+                    ]
+                  ]
+                }
+              });
+            }
+
+            await callTelegram("sendMessage", {
+              chat_id: chatId,
+              reply_to_message_id: msg.message_id,
+              text: `✅ <b>অর্ডার #${orderNum} সফলভাবে অ্যাপ্রুভ ও কনফার্ম করা হয়েছে!</b>\n━━━━━━━━━━━━━━━━━━━━━━\n👤 <b>অনুমোদনকারী:</b> ${userName} (${userId})\n⚡ <b>স্ট্যাটাস:</b> 🟢 <b>CONFIRMED</b>`,
+              parse_mode: "HTML",
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: "🌐 ওয়েব প্যানেলে দেখুন", url: `${STORE_URL}/admin/orders?id=${orderNum}` }]
+                ]
+              }
+            });
+            return res.status(200).json({ ok: true });
+          }
+
+          if (isReject) {
+            const nowIso = new Date().toISOString();
+            await fetch(`${FIRESTORE_BASE}/orders/${orderNum}?updateMask.fieldPaths=status&updateMask.fieldPaths=cancelled_at&updateMask.fieldPaths=updated_at`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                fields: {
+                  status: { stringValue: "cancelled" },
+                  cancelled_at: { stringValue: nowIso },
+                  updated_at: { stringValue: nowIso }
+                }
+              })
+            });
+
+            const origChatId = msg.reply_to_message.chat?.id;
+            const origMsgId = msg.reply_to_message.message_id;
+            if (origChatId && origMsgId) {
+              const updated = parentText.replace(/⚡ Status:.*\n?/i, `⚡ <b>Status:</b> ❌ <b>REJECTED / CANCELLED</b>\n👤 <b>Rejected By:</b> ${userName} (${userId})\n`);
+              await callTelegram("editMessageText", {
+                chat_id: origChatId,
+                message_id: origMsgId,
+                text: updated,
+                parse_mode: "HTML",
+                reply_markup: {
+                  inline_keyboard: [
+                    [
+                      { text: "❌ REJECTED", callback_data: "none" },
+                      { text: "🌐 View in Admin", url: `${STORE_URL}/admin/orders?id=${orderNum}` }
+                    ]
+                  ]
+                }
+              });
+            }
+
+            await callTelegram("sendMessage", {
+              chat_id: chatId,
+              reply_to_message_id: msg.message_id,
+              text: `❌ <b>অর্ডার #${orderNum} বাতিল (Cancelled) করা হয়েছে!</b>\n━━━━━━━━━━━━━━━━━━━━━━\n👤 <b>বাতিলকারী:</b> ${userName} (${userId})\n⚡ <b>স্ট্যাটাস:</b> 🔴 <b>CANCELLED</b>`,
+              parse_mode: "HTML"
+            });
+            return res.status(200).json({ ok: true });
+          }
+        }
+      }
+
       // Command: /orders - Show categories
       if (text === "/orders") {
         await callTelegram("sendMessage", {
