@@ -124,13 +124,15 @@ interface DealRowProps {
   items: Product[];
   rowId: string;
   speed?: number;
+  direction?: "left" | "right";
 }
 
-function DealRow({ items, rowId, speed = 0.65 }: DealRowProps) {
+function DealRow({ items, rowId, speed = 0.65, direction = "left" }: DealRowProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const isDraggingRef = useRef<boolean>(false);
   const startXRef = useRef<number>(0);
   const scrollLeftRef = useRef<number>(0);
+  const posRef = useRef<number>(0);
   const isPausedRef = useRef<boolean>(false);
   const resumeTimerRef = useRef<any>(null);
 
@@ -138,14 +140,14 @@ function DealRow({ items, rowId, speed = 0.65 }: DealRowProps) {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
-  // Ensure sufficient items for smooth 2-half wrap loop
+  // Repeat items so there's always ample width for an endless 2-half loop
   const displayItems = useMemo(() => {
     if (!items || items.length === 0) return [];
     let base = [...items];
     while (base.length < 14) {
       base = [...base, ...items];
     }
-    // Duplicate for seamless infinite loop
+    // Duplicate exactly into 2 identical halves for seamless infinite wrapping
     return [...base, ...base];
   }, [items]);
 
@@ -172,7 +174,30 @@ function DealRow({ items, rowId, speed = 0.65 }: DealRowProps) {
     setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 20);
   }, []);
 
-  // Continuous silky smooth auto-scroll with seamless wrap
+  // Initialize starting position based on direction
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    // Wait for layout calculation
+    const timer = setTimeout(() => {
+      if (!el) return;
+      const halfWidth = el.scrollWidth / 2;
+      if (direction === "right" && halfWidth > 0) {
+        // Start from middle so it can smoothly scroll leftwards (content moving right)
+        el.scrollLeft = halfWidth;
+        posRef.current = halfWidth;
+      } else {
+        el.scrollLeft = 0;
+        posRef.current = 0;
+      }
+      updateScrollButtons();
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [direction, displayItems, updateScrollButtons]);
+
+  // Silky-smooth requestAnimationFrame continuous dual-direction auto-scroll
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -181,12 +206,23 @@ function DealRow({ items, rowId, speed = 0.65 }: DealRowProps) {
 
     const tick = () => {
       if (!isPausedRef.current && el) {
-        el.scrollLeft += speed;
-
         const halfWidth = el.scrollWidth / 2;
-        if (halfWidth > 0 && el.scrollLeft >= halfWidth) {
-          el.scrollLeft -= halfWidth;
+
+        if (direction === "left") {
+          // Content scrolls to the left (←)
+          posRef.current += speed;
+          if (halfWidth > 0 && posRef.current >= halfWidth) {
+            posRef.current -= halfWidth;
+          }
+        } else {
+          // Content scrolls to the right (→) in opposite direction!
+          posRef.current -= speed;
+          if (halfWidth > 0 && posRef.current <= 0) {
+            posRef.current += halfWidth;
+          }
         }
+
+        el.scrollLeft = posRef.current;
       }
       animId = requestAnimationFrame(tick);
     };
@@ -197,7 +233,7 @@ function DealRow({ items, rowId, speed = 0.65 }: DealRowProps) {
       cancelAnimationFrame(animId);
       if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
     };
-  }, [speed]);
+  }, [speed, direction]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -211,15 +247,18 @@ function DealRow({ items, rowId, speed = 0.65 }: DealRowProps) {
     };
   }, [updateScrollButtons]);
 
-  const handleScroll = (direction: "left" | "right") => {
+  const handleScroll = (scrollDir: "left" | "right") => {
     const el = containerRef.current;
     if (!el) return;
     pauseAutoScroll();
     const scrollAmount = Math.max(280, Math.round(el.clientWidth * 0.7));
     el.scrollBy({
-      left: direction === "left" ? -scrollAmount : scrollAmount,
+      left: scrollDir === "left" ? -scrollAmount : scrollAmount,
       behavior: "smooth",
     });
+    setTimeout(() => {
+      if (el) posRef.current = el.scrollLeft;
+    }, 300);
     resumeAutoScroll(1800);
   };
 
@@ -231,6 +270,7 @@ function DealRow({ items, rowId, speed = 0.65 }: DealRowProps) {
     isDraggingRef.current = false;
     startXRef.current = e.pageX - el.offsetLeft;
     scrollLeftRef.current = el.scrollLeft;
+    posRef.current = el.scrollLeft;
   };
 
   const onMouseMove = (e: React.MouseEvent) => {
@@ -243,18 +283,31 @@ function DealRow({ items, rowId, speed = 0.65 }: DealRowProps) {
     if (Math.abs(walk) > 5) {
       isDraggingRef.current = true;
     }
-    el.scrollLeft = scrollLeftRef.current - walk;
-
+    const newPos = scrollLeftRef.current - walk;
     const halfWidth = el.scrollWidth / 2;
+
     if (halfWidth > 0) {
-      if (el.scrollLeft >= halfWidth) el.scrollLeft -= halfWidth;
-      else if (el.scrollLeft <= 0) el.scrollLeft += halfWidth;
+      if (newPos >= halfWidth) {
+        posRef.current = newPos - halfWidth;
+        scrollLeftRef.current -= halfWidth;
+      } else if (newPos <= 0) {
+        posRef.current = newPos + halfWidth;
+        scrollLeftRef.current += halfWidth;
+      } else {
+        posRef.current = newPos;
+      }
+    } else {
+      posRef.current = newPos;
     }
+
+    el.scrollLeft = posRef.current;
   };
 
   const onMouseUpOrLeave = () => {
     if (isMouseDown) {
       setIsMouseDown(false);
+      const el = containerRef.current;
+      if (el) posRef.current = el.scrollLeft;
       resumeAutoScroll(1200);
       setTimeout(() => {
         isDraggingRef.current = false;
@@ -270,7 +323,11 @@ function DealRow({ items, rowId, speed = 0.65 }: DealRowProps) {
       onMouseEnter={pauseAutoScroll}
       onMouseLeave={() => resumeAutoScroll(400)}
       onTouchStart={pauseAutoScroll}
-      onTouchEnd={() => resumeAutoScroll(1500)}
+      onTouchEnd={() => {
+        const el = containerRef.current;
+        if (el) posRef.current = el.scrollLeft;
+        resumeAutoScroll(1500);
+      }}
     >
       {/* Left Scroll Navigation Button */}
       {canScrollLeft && (
@@ -392,7 +449,7 @@ function DealOfTheDayComponent({ products = [] }: DealOfTheDayProps) {
               <span>Exclusive daily discounts & special offers</span>
               <span className="hidden sm:inline">•</span>
               <span className="hidden sm:inline-flex items-center gap-1 text-orange-600 dark:text-orange-400 font-bold">
-                <Sparkles className="w-3 h-3" /> অটো-স্ক্রোলিং লাইভ ডিলস (টেনেও দেখতে পারেন)
+                <Sparkles className="w-3 h-3" /> ডুয়াল-ডিরেকশন অটো-স্ক্রোল (টেনেও দেখতে পারেন)
               </span>
             </p>
           </div>
@@ -408,20 +465,22 @@ function DealOfTheDayComponent({ products = [] }: DealOfTheDayProps) {
           </div>
         </div>
 
-        {/* 2 Interactive Auto-Scrolling & Draggable Rows Container */}
+        {/* 2 Interactive Dual-Direction Auto-Scrolling Rows Container */}
         <div className="deal-marquee-wrapper relative overflow-hidden py-1 space-y-2 sm:space-y-3 rounded-2xl bg-gradient-to-b from-slate-50/50 to-transparent dark:from-slate-900/40 p-1.5 sm:p-2.5 border border-slate-100 dark:border-slate-800/80">
-          {/* Row 1 */}
+          {/* Row 1: Moves leftwards (←) */}
           <DealRow
             rowId="row1"
             items={row1}
             speed={0.65}
+            direction="left"
           />
 
-          {/* Row 2 */}
+          {/* Row 2: Moves in opposite direction rightwards (→) */}
           <DealRow
             rowId="row2"
             items={row2}
-            speed={0.55}
+            speed={0.65}
+            direction="right"
           />
         </div>
       </div>
