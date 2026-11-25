@@ -87,6 +87,133 @@ export async function getTelegramHealthStatus(): Promise<{
   };
 }
 
+export function buildOrderActionKeyboard(
+  orderNum: string,
+  status: string = "pending",
+  paymentStatus: string = "pending",
+  phone: string = ""
+) {
+  const normStatus = (status || "pending").toLowerCase();
+  const normPayment = (paymentStatus || "pending").toLowerCase();
+  const cleanPhone = (phone || "").replace(/\D/g, "");
+  const waPhone = cleanPhone.startsWith("880") ? cleanPhone : (cleanPhone.startsWith("0") ? `88${cleanPhone}` : `880${cleanPhone}`);
+  const storeUrl = "https://durtup.shop";
+
+  const keyboard: any[][] = [];
+
+  // Row 1: Primary Lifecycle Transitions
+  if (normStatus === "pending") {
+    keyboard.push([
+      { text: "✅ APPROVE ORDER", callback_data: `order_approve:${orderNum}` },
+      { text: "🚚 MARK SHIPPED", callback_data: `order_ship:${orderNum}` }
+    ]);
+    keyboard.push([
+      { text: "🎉 MARK DELIVERED", callback_data: `order_deliver:${orderNum}` },
+      { text: "❌ CANCEL ORDER", callback_data: `order_reject:${orderNum}` }
+    ]);
+  } else if (normStatus === "confirmed" || normStatus === "processing") {
+    keyboard.push([
+      { text: "🚚 MARK SHIPPED", callback_data: `order_ship:${orderNum}` },
+      { text: "🎉 MARK DELIVERED", callback_data: `order_deliver:${orderNum}` }
+    ]);
+    keyboard.push([
+      { text: "⚙️ Processing (Active)", callback_data: `order_noop:${orderNum}` },
+      { text: "❌ CANCEL ORDER", callback_data: `order_reject:${orderNum}` }
+    ]);
+  } else if (normStatus === "shipped") {
+    keyboard.push([
+      { text: "🎉 MARK DELIVERED", callback_data: `order_deliver:${orderNum}` },
+      { text: "↩️ MARK REFUNDED", callback_data: `order_refund:${orderNum}` }
+    ]);
+    keyboard.push([
+      { text: "🚚 Shipped (In Transit)", callback_data: `order_noop:${orderNum}` },
+      { text: "❌ CANCEL ORDER", callback_data: `order_reject:${orderNum}` }
+    ]);
+  } else if (normStatus === "delivered") {
+    keyboard.push([
+      { text: "🟢 DELIVERED / COMPLETED", callback_data: `order_noop:${orderNum}` },
+      { text: "↩️ MARK REFUNDED", callback_data: `order_refund:${orderNum}` }
+    ]);
+  } else if (normStatus === "cancelled") {
+    keyboard.push([
+      { text: "🔴 CANCELLED / REJECTED", callback_data: `order_noop:${orderNum}` },
+      { text: "🔄 REOPEN (PENDING)", callback_data: `order_pending:${orderNum}` }
+    ]);
+  } else {
+    keyboard.push([
+      { text: "✅ APPROVE", callback_data: `order_approve:${orderNum}` },
+      { text: "🚚 SHIP", callback_data: `order_ship:${orderNum}` },
+      { text: "🎉 DELIVER", callback_data: `order_deliver:${orderNum}` }
+    ]);
+  }
+
+  // Row 2: Payment Action
+  const payRow: any[] = [];
+  if (normPayment === "paid") {
+    payRow.push({ text: "💵 PAID ✅", callback_data: `order_noop:${orderNum}` });
+    payRow.push({ text: "↩️ Mark Unpaid", callback_data: `order_unpaid:${orderNum}` });
+  } else {
+    payRow.push({ text: "💵 MARK AS PAID", callback_data: `order_paid:${orderNum}` });
+  }
+  keyboard.push(payRow);
+
+  // Row 3: Direct WhatsApp / Call / Web Admin Links
+  const linksRow: any[] = [];
+  if (cleanPhone && cleanPhone.length >= 10) {
+    linksRow.push({ text: "💬 WhatsApp", url: `https://wa.me/${waPhone}` });
+    linksRow.push({ text: "📞 Call", url: `tel:${cleanPhone}` });
+  }
+  linksRow.push({ text: "🌐 View in Admin", url: `${storeUrl}/admin/orders?id=${orderNum}` });
+  keyboard.push(linksRow);
+
+  return { inline_keyboard: keyboard };
+}
+
+export function updateMessageTextWithStatus(
+  originalText: string,
+  newStatus: string | null,
+  newPaymentStatus: string | null,
+  adminName: string,
+  adminId: string
+): string {
+  const statusBadgeMap: Record<string, string> = {
+    pending: "⏳ <b>PENDING REVIEW</b>",
+    confirmed: "⚙️ <b>CONFIRMED / PROCESSING</b>",
+    processing: "⚙️ <b>PROCESSING</b>",
+    shipped: "🚚 <b>SHIPPED / IN TRANSIT</b>",
+    delivered: "🟢 <b>DELIVERED / COMPLETED</b>",
+    cancelled: "🔴 <b>CANCELLED / REJECTED</b>",
+    refunded: "↩️ <b>REFUNDED</b>"
+  };
+
+  let updatedText = originalText || "";
+
+  if (newStatus && statusBadgeMap[newStatus]) {
+    const replacement = `⚡ <b>Status:</b> ${statusBadgeMap[newStatus]}\n👤 <b>Updated By:</b> ${adminName} (${adminId})\n`;
+    if (/⚡ Status:.*\n?/i.test(updatedText)) {
+      updatedText = updatedText.replace(/⚡ Status:.*\n?/i, replacement);
+    } else {
+      updatedText += `\n${replacement}`;
+    }
+  }
+
+  if (newPaymentStatus === "paid") {
+    const payReplacement = `💳 <b>Payment:</b> 💵 <b>PAID & VERIFIED</b> (by ${adminName})\n`;
+    if (/💳 Payment:.*\n?/i.test(updatedText)) {
+      updatedText = updatedText.replace(/💳 Payment:.*\n?/i, payReplacement);
+    } else {
+      updatedText += `\n${payReplacement}`;
+    }
+  } else if (newPaymentStatus === "pending") {
+    const payReplacement = `💳 <b>Payment:</b> ⏳ <b>PENDING / UNPAID</b>\n`;
+    if (/💳 Payment:.*\n?/i.test(updatedText)) {
+      updatedText = updatedText.replace(/💳 Payment:.*\n?/i, payReplacement);
+    }
+  }
+
+  return updatedText;
+}
+
 /**
  * Main Webhook Dispatcher
  * Processes inbound Telegram Updates according to strict security & routing specifications.
@@ -272,64 +399,194 @@ export async function handleTelegramWebhookUpdate(
       return { handled: true, authorized: true, action: "m4_stub" };
     }
 
-    // Handle Order Approval from Inline Keyboard
+    // 1. APPROVE / PROCESS
     if (data.startsWith("order_approve:")) {
       const orderNum = data.replace("order_approve:", "").replace(/^#/, "").trim();
       await updateOrderStatusInFirestore(orderNum, "confirmed", String(userId), userName);
-      await answerCallbackQuery(cbId, `✅ অর্ডার #${orderNum} সফলভাবে অ্যাপ্রুভ হয়েছে!`, false);
+      await answerCallbackQuery(cbId, `✅ অর্ডার #${orderNum} সফলভাবে অ্যাপ্রুভ / কনফার্ম হয়েছে!`, false);
 
       if (chatId && messageId) {
         const originalText = cb.message?.text || "";
-        const updatedText = originalText
-          ? originalText.replace(/⚡ Status:.*\n?/i, `⚡ <b>Status:</b> ✅ <b>APPROVED / CONFIRMED</b>\n👤 <b>Approved By:</b> ${userName} (Telegram Admin)\n`)
-          : `✅ <b>Order #${orderNum} Approved!</b>\nApproved by ${userName}`;
+        const updatedText = updateMessageTextWithStatus(originalText, "confirmed", null, userName, String(userId));
+        const phoneMatch = updatedText.match(/📞 Phone:\s*<code>?([+\d]+)<?/i) || updatedText.match(/\b(01\d{9})\b/);
+        const phone = phoneMatch ? phoneMatch[1] : "";
 
         await editTelegramMessageText({
           chat_id: chatId,
           message_id: messageId,
           text: updatedText,
           parse_mode: "HTML",
-          reply_markup: {
-            inline_keyboard: [
-              [
-                { text: "✅ APPROVED", callback_data: "none" },
-                { text: "🌐 Open in Admin", url: `https://durtup.shop/admin/orders?id=${orderNum}` }
-              ]
-            ]
-          }
+          reply_markup: buildOrderActionKeyboard(orderNum, "confirmed", "pending", phone)
         });
       }
       return { handled: true, authorized: true, action: "order_approved" };
     }
 
-    // Handle Order Rejection from Inline Keyboard
-    if (data.startsWith("order_reject:")) {
-      const orderNum = data.replace("order_reject:", "").replace(/^#/, "").trim();
-      await updateOrderStatusInFirestore(orderNum, "cancelled", String(userId), userName);
-      await answerCallbackQuery(cbId, `❌ অর্ডার #${orderNum} বাতিল করা হয়েছে!`, false);
+    // 2. MARK SHIPPED
+    if (data.startsWith("order_ship:")) {
+      const orderNum = data.replace("order_ship:", "").replace(/^#/, "").trim();
+      await updateOrderStatusInFirestore(orderNum, "shipped", String(userId), userName);
+      await answerCallbackQuery(cbId, `🚚 অর্ডার #${orderNum} সফলভাবে SHIPPED মার্ক করা হয়েছে!`, false);
 
       if (chatId && messageId) {
         const originalText = cb.message?.text || "";
-        const updatedText = originalText
-          ? originalText.replace(/⚡ Status:.*\n?/i, `⚡ <b>Status:</b> ❌ <b>REJECTED / CANCELLED</b>\n👤 <b>Rejected By:</b> ${userName} (Telegram Admin)\n`)
-          : `❌ <b>Order #${orderNum} Rejected</b>`;
+        const updatedText = updateMessageTextWithStatus(originalText, "shipped", null, userName, String(userId));
+        const phoneMatch = updatedText.match(/📞 Phone:\s*<code>?([+\d]+)<?/i) || updatedText.match(/\b(01\d{9})\b/);
+        const phone = phoneMatch ? phoneMatch[1] : "";
 
         await editTelegramMessageText({
           chat_id: chatId,
           message_id: messageId,
           text: updatedText,
           parse_mode: "HTML",
-          reply_markup: {
-            inline_keyboard: [
-              [
-                { text: "❌ REJECTED", callback_data: "none" },
-                { text: "🌐 Open in Admin", url: `https://durtup.shop/admin/orders?id=${orderNum}` }
-              ]
-            ]
-          }
+          reply_markup: buildOrderActionKeyboard(orderNum, "shipped", "pending", phone)
+        });
+      }
+      return { handled: true, authorized: true, action: "order_shipped" };
+    }
+
+    // 3. MARK DELIVERED
+    if (data.startsWith("order_deliver:")) {
+      const orderNum = data.replace("order_deliver:", "").replace(/^#/, "").trim();
+      await updateOrderStatusInFirestore(orderNum, "delivered", String(userId), userName, "paid");
+      await answerCallbackQuery(cbId, `🎉 অর্ডার #${orderNum} সফলভাবে DELIVERED মার্ক করা হয়েছে!`, false);
+
+      if (chatId && messageId) {
+        const originalText = cb.message?.text || "";
+        const updatedText = updateMessageTextWithStatus(originalText, "delivered", "paid", userName, String(userId));
+        const phoneMatch = updatedText.match(/📞 Phone:\s*<code>?([+\d]+)<?/i) || updatedText.match(/\b(01\d{9})\b/);
+        const phone = phoneMatch ? phoneMatch[1] : "";
+
+        await editTelegramMessageText({
+          chat_id: chatId,
+          message_id: messageId,
+          text: updatedText,
+          parse_mode: "HTML",
+          reply_markup: buildOrderActionKeyboard(orderNum, "delivered", "paid", phone)
+        });
+      }
+      return { handled: true, authorized: true, action: "order_delivered" };
+    }
+
+    // 4. MARK AS PAID
+    if (data.startsWith("order_paid:")) {
+      const orderNum = data.replace("order_paid:", "").replace(/^#/, "").trim();
+      await updateOrderStatusInFirestore(orderNum, null, String(userId), userName, "paid");
+      await answerCallbackQuery(cbId, `💵 অর্ডার #${orderNum} এর পেমেন্ট PAID হিসেবে ভেরিফাই হয়েছে!`, false);
+
+      if (chatId && messageId) {
+        const originalText = cb.message?.text || "";
+        const updatedText = updateMessageTextWithStatus(originalText, null, "paid", userName, String(userId));
+        const phoneMatch = updatedText.match(/📞 Phone:\s*<code>?([+\d]+)<?/i) || updatedText.match(/\b(01\d{9})\b/);
+        const phone = phoneMatch ? phoneMatch[1] : "";
+
+        await editTelegramMessageText({
+          chat_id: chatId,
+          message_id: messageId,
+          text: updatedText,
+          parse_mode: "HTML",
+          reply_markup: buildOrderActionKeyboard(orderNum, "confirmed", "paid", phone)
+        });
+      }
+      return { handled: true, authorized: true, action: "order_paid" };
+    }
+
+    // 5. MARK AS UNPAID
+    if (data.startsWith("order_unpaid:")) {
+      const orderNum = data.replace("order_unpaid:", "").replace(/^#/, "").trim();
+      await updateOrderStatusInFirestore(orderNum, null, String(userId), userName, "pending");
+      await answerCallbackQuery(cbId, `⏳ অর্ডার #${orderNum} এর পেমেন্ট UNPAID করা হয়েছে!`, false);
+
+      if (chatId && messageId) {
+        const originalText = cb.message?.text || "";
+        const updatedText = updateMessageTextWithStatus(originalText, null, "pending", userName, String(userId));
+        const phoneMatch = updatedText.match(/📞 Phone:\s*<code>?([+\d]+)<?/i) || updatedText.match(/\b(01\d{9})\b/);
+        const phone = phoneMatch ? phoneMatch[1] : "";
+
+        await editTelegramMessageText({
+          chat_id: chatId,
+          message_id: messageId,
+          text: updatedText,
+          parse_mode: "HTML",
+          reply_markup: buildOrderActionKeyboard(orderNum, "confirmed", "pending", phone)
+        });
+      }
+      return { handled: true, authorized: true, action: "order_unpaid" };
+    }
+
+    // 6. CANCEL / REJECT
+    if (data.startsWith("order_reject:") || data.startsWith("order_cancel:")) {
+      const orderNum = data.replace(/^(order_reject:|order_cancel:)/, "").replace(/^#/, "").trim();
+      await updateOrderStatusInFirestore(orderNum, "cancelled", String(userId), userName);
+      await answerCallbackQuery(cbId, `❌ অর্ডার #${orderNum} বাতিল (Cancelled) করা হয়েছে!`, false);
+
+      if (chatId && messageId) {
+        const originalText = cb.message?.text || "";
+        const updatedText = updateMessageTextWithStatus(originalText, "cancelled", null, userName, String(userId));
+        const phoneMatch = updatedText.match(/📞 Phone:\s*<code>?([+\d]+)<?/i) || updatedText.match(/\b(01\d{9})\b/);
+        const phone = phoneMatch ? phoneMatch[1] : "";
+
+        await editTelegramMessageText({
+          chat_id: chatId,
+          message_id: messageId,
+          text: updatedText,
+          parse_mode: "HTML",
+          reply_markup: buildOrderActionKeyboard(orderNum, "cancelled", "pending", phone)
         });
       }
       return { handled: true, authorized: true, action: "order_rejected" };
+    }
+
+    // 7. MARK REFUNDED
+    if (data.startsWith("order_refund:")) {
+      const orderNum = data.replace("order_refund:", "").replace(/^#/, "").trim();
+      await updateOrderStatusInFirestore(orderNum, "refunded", String(userId), userName, "refunded");
+      await answerCallbackQuery(cbId, `↩️ অর্ডার #${orderNum} রিফান্ড মার্ক করা হয়েছে!`, false);
+
+      if (chatId && messageId) {
+        const originalText = cb.message?.text || "";
+        const updatedText = updateMessageTextWithStatus(originalText, "refunded", "refunded", userName, String(userId));
+        const phoneMatch = updatedText.match(/📞 Phone:\s*<code>?([+\d]+)<?/i) || updatedText.match(/\b(01\d{9})\b/);
+        const phone = phoneMatch ? phoneMatch[1] : "";
+
+        await editTelegramMessageText({
+          chat_id: chatId,
+          message_id: messageId,
+          text: updatedText,
+          parse_mode: "HTML",
+          reply_markup: buildOrderActionKeyboard(orderNum, "refunded", "refunded", phone)
+        });
+      }
+      return { handled: true, authorized: true, action: "order_refunded" };
+    }
+
+    // 8. REOPEN AS PENDING
+    if (data.startsWith("order_pending:")) {
+      const orderNum = data.replace("order_pending:", "").replace(/^#/, "").trim();
+      await updateOrderStatusInFirestore(orderNum, "pending", String(userId), userName);
+      await answerCallbackQuery(cbId, `⏳ অর্ডার #${orderNum} পুনরায় PENDING করা হয়েছে!`, false);
+
+      if (chatId && messageId) {
+        const originalText = cb.message?.text || "";
+        const updatedText = updateMessageTextWithStatus(originalText, "pending", null, userName, String(userId));
+        const phoneMatch = updatedText.match(/📞 Phone:\s*<code>?([+\d]+)<?/i) || updatedText.match(/\b(01\d{9})\b/);
+        const phone = phoneMatch ? phoneMatch[1] : "";
+
+        await editTelegramMessageText({
+          chat_id: chatId,
+          message_id: messageId,
+          text: updatedText,
+          parse_mode: "HTML",
+          reply_markup: buildOrderActionKeyboard(orderNum, "pending", "pending", phone)
+        });
+      }
+      return { handled: true, authorized: true, action: "order_reopened" };
+    }
+
+    // 9. NO-OP
+    if (data.startsWith("order_noop:")) {
+      await answerCallbackQuery(cbId, "অর্ডারটি ইতিমধ্যে এই স্ট্যাটাসে রয়েছে।");
+      return { handled: true, authorized: true, action: "order_noop" };
     }
 
     // Legacy callback aliases support
@@ -374,9 +631,14 @@ export async function handleTelegramWebhookUpdate(
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 • <b>/admin</b> or <b>/start</b> — Open 16-Module Master Control Center
 • <b>/myid</b> — Inspect your Telegram User & Chat ID
+• <b>/ship &lt;order_id&gt;</b> — Mark order as Shipped
+• <b>/deliver &lt;order_id&gt;</b> — Mark order as Delivered
+• <b>/paid &lt;order_id&gt;</b> — Mark order as Paid
+• <b>/cancel &lt;order_id&gt;</b> — Cancel order
+• <b>/status &lt;order_id&gt;</b> — Check order details & actions
 • <b>/help</b> — Show this command directory
 
-<i>Tip: Tap buttons on the /admin dashboard for one-tap store administration!</i>`;
+<i>Tip: You can also tap the inline buttons directly under any order notification!</i>`;
       await sendTelegramMessage({
         chat_id: chatId,
         text: helpText,
@@ -386,6 +648,111 @@ export async function handleTelegramWebhookUpdate(
         }
       });
       return { handled: true, authorized: true, action: "help_sent" };
+    }
+
+    // Direct fulfillment commands (/ship, /deliver, /paid, /cancel, /status) or reply-to
+    const replyText = update.message?.reply_to_message?.text || "";
+    let referencedOrder = "";
+    const refMatch = replyText.match(/Order ID:\s*<code>?#?([a-zA-Z0-9_-]+)<?/i)
+      || replyText.match(/ORDER\s*#([a-zA-Z0-9_-]+)/i)
+      || replyText.match(/#ORD-([a-zA-Z0-9_-]+)/i);
+    if (refMatch) {
+      referencedOrder = refMatch[1];
+    }
+
+    const lower = text.toLowerCase();
+    const cmdParts = text.split(/\s+/);
+    const cmd = cmdParts[0].toLowerCase();
+    const argOrder = cmdParts[1] ? cmdParts[1].replace(/^#/, "").trim() : referencedOrder;
+
+    if (cmd === "/ship" || cmd === "/shipped" || (referencedOrder && (lower === "ship" || lower === "shipped"))) {
+      if (!argOrder) {
+        await sendTelegramMessage({
+          chat_id: chatId,
+          text: "⚠️ অনুগ্রহ করে অর্ডার নম্বর দিন। উদাহরণ: <code>/ship ORD-123456</code> বা কোনো অর্ডারের নোটিফিকেশনে রিপ্লাই দিন।"
+        });
+        return { handled: true, authorized: true, action: "ship_missing_arg" };
+      }
+      await updateOrderStatusInFirestore(argOrder, "shipped", String(userId), userName);
+      await sendTelegramMessage({
+        chat_id: chatId,
+        text: `🚚 <b>অর্ডার #${argOrder} সফলভাবে SHIPPED মার্ক করা হয়েছে!</b>\n\nকুরিয়ার ট্র্যাকিং ও ডেলিভারি স্ট্যাটাস আপডেট হয়েছে।`,
+        parse_mode: "HTML",
+        reply_markup: buildOrderActionKeyboard(argOrder, "shipped", "pending")
+      });
+      return { handled: true, authorized: true, action: "cmd_ship" };
+    }
+
+    if (cmd === "/deliver" || cmd === "/delivered" || (referencedOrder && (lower === "deliver" || lower === "delivered"))) {
+      if (!argOrder) {
+        await sendTelegramMessage({
+          chat_id: chatId,
+          text: "⚠️ অনুগ্রহ করে অর্ডার নম্বর দিন। উদাহরণ: <code>/deliver ORD-123456</code> বা কোনো অর্ডারের নোটিফিকেশনে রিপ্লাই দিন।"
+        });
+        return { handled: true, authorized: true, action: "deliver_missing_arg" };
+      }
+      await updateOrderStatusInFirestore(argOrder, "delivered", String(userId), userName, "paid");
+      await sendTelegramMessage({
+        chat_id: chatId,
+        text: `🎉 <b>অর্ডার #${argOrder} সফলভাবে DELIVERED মার্ক করা হয়েছে!</b>\n\nকাস্টমার ডেলিভারি সম্পন্ন হয়েছে এবং পেমেন্ট Paid মার্ক করা হয়েছে।`,
+        parse_mode: "HTML",
+        reply_markup: buildOrderActionKeyboard(argOrder, "delivered", "paid")
+      });
+      return { handled: true, authorized: true, action: "cmd_deliver" };
+    }
+
+    if (cmd === "/paid" || (referencedOrder && (lower === "paid" || lower === "pay"))) {
+      if (!argOrder) {
+        await sendTelegramMessage({
+          chat_id: chatId,
+          text: "⚠️ অনুগ্রহ করে অর্ডার নম্বর দিন। উদাহরণ: <code>/paid ORD-123456</code> বা কোনো অর্ডারের নোটিফিকেশনে রিপ্লাই দিন।"
+        });
+        return { handled: true, authorized: true, action: "paid_missing_arg" };
+      }
+      await updateOrderStatusInFirestore(argOrder, null, String(userId), userName, "paid");
+      await sendTelegramMessage({
+        chat_id: chatId,
+        text: `💵 <b>অর্ডার #${argOrder} এর পেমেন্ট PAID হিসেবে ভেরিফাই হয়েছে!</b>`,
+        parse_mode: "HTML",
+        reply_markup: buildOrderActionKeyboard(argOrder, "confirmed", "paid")
+      });
+      return { handled: true, authorized: true, action: "cmd_paid" };
+    }
+
+    if (cmd === "/cancel" || cmd === "/reject" || (referencedOrder && (lower === "cancel" || lower === "reject"))) {
+      if (!argOrder) {
+        await sendTelegramMessage({
+          chat_id: chatId,
+          text: "⚠️ অনুগ্রহ করে অর্ডার নম্বর দিন। উদাহরণ: <code>/cancel ORD-123456</code> বা কোনো অর্ডারের নোটিফিকেশনে রিপ্লাই দিন।"
+        });
+        return { handled: true, authorized: true, action: "cancel_missing_arg" };
+      }
+      await updateOrderStatusInFirestore(argOrder, "cancelled", String(userId), userName);
+      await sendTelegramMessage({
+        chat_id: chatId,
+        text: `❌ <b>অর্ডার #${argOrder} বাতিল (Cancelled) করা হয়েছে!</b>`,
+        parse_mode: "HTML",
+        reply_markup: buildOrderActionKeyboard(argOrder, "cancelled", "pending")
+      });
+      return { handled: true, authorized: true, action: "cmd_cancel" };
+    }
+
+    if (cmd === "/approve" || cmd === "/confirm" || (referencedOrder && (lower === "approve" || lower === "confirm"))) {
+      if (!argOrder) {
+        await sendTelegramMessage({
+          chat_id: chatId,
+          text: "⚠️ অনুগ্রহ করে অর্ডার নম্বর দিন। উদাহরণ: <code>/approve ORD-123456</code> বা কোনো অর্ডারের নোটিফিকেশনে রিপ্লাই দিন।"
+        });
+        return { handled: true, authorized: true, action: "approve_missing_arg" };
+      }
+      await updateOrderStatusInFirestore(argOrder, "confirmed", String(userId), userName);
+      await sendTelegramMessage({
+        chat_id: chatId,
+        text: `✅ <b>অর্ডার #${argOrder} সফলভাবে APPROVED / CONFIRMED করা হয়েছে!</b>`,
+        parse_mode: "HTML",
+        reply_markup: buildOrderActionKeyboard(argOrder, "confirmed", "pending")
+      });
+      return { handled: true, authorized: true, action: "cmd_approve" };
     }
 
     // Unknown command fallback
@@ -407,23 +774,41 @@ const FIRESTORE_BASE = "https://firestore.googleapis.com/v1/projects/eshop-app-6
 
 async function updateOrderStatusInFirestore(
   orderIdentifier: string,
-  status: "confirmed" | "cancelled",
-  adminId: string,
-  adminName: string
+  status?: string | null,
+  adminId: string = "telegram_admin",
+  adminName: string = "Admin",
+  paymentStatus?: string | null
 ): Promise<void> {
   const cleanId = orderIdentifier.replace(/^#/, "").trim();
   const nowIso = new Date().toISOString();
   const statusFields: Record<string, any> = {
-    status: { stringValue: status },
-    approved_by_telegram: { stringValue: adminId },
-    approved_by_name: { stringValue: adminName },
+    updated_by_telegram: { stringValue: String(adminId) },
+    updated_by_name: { stringValue: String(adminName) },
     updated_at: { stringValue: nowIso }
   };
-  if (status === "confirmed") {
-    statusFields.confirmed_at = { stringValue: nowIso };
-  } else {
-    statusFields.cancelled_at = { stringValue: nowIso };
+
+  if (status) {
+    statusFields.status = { stringValue: status };
+    if (status === "confirmed" || status === "processing") {
+      statusFields.confirmed_at = { stringValue: nowIso };
+    } else if (status === "shipped") {
+      statusFields.shipped_at = { stringValue: nowIso };
+    } else if (status === "delivered") {
+      statusFields.delivered_at = { stringValue: nowIso };
+    } else if (status === "cancelled") {
+      statusFields.cancelled_at = { stringValue: nowIso };
+    } else if (status === "refunded") {
+      statusFields.refunded_at = { stringValue: nowIso };
+    }
   }
+
+  if (paymentStatus) {
+    statusFields.payment_status = { stringValue: paymentStatus };
+    if (paymentStatus === "paid") {
+      statusFields.paid_at = { stringValue: nowIso };
+    }
+  }
+
   const mask = Object.keys(statusFields).map((k) => `updateMask.fieldPaths=${k}`).join("&");
 
   // 1. Direct REST PATCH by cleanId

@@ -126,6 +126,88 @@ export async function sendTelegramMessage(text: string, customConfig?: Partial<T
   }
 }
 
+export function buildOrderActionKeyboard(
+  orderNum: string,
+  status: string = "pending",
+  paymentStatus: string = "pending",
+  phone: string = "",
+  baseUrl: string = "https://durtup.shop"
+) {
+  const normStatus = (status || "pending").toLowerCase();
+  const normPayment = (paymentStatus || "pending").toLowerCase();
+  const cleanPhone = (phone || "").replace(/\D/g, "");
+  const waPhone = cleanPhone.startsWith("880") ? cleanPhone : (cleanPhone.startsWith("0") ? `88${cleanPhone}` : `880${cleanPhone}`);
+
+  const keyboard: any[][] = [];
+
+  // Row 1: Primary Lifecycle Transitions
+  if (normStatus === "pending") {
+    keyboard.push([
+      { text: "✅ APPROVE ORDER", callback_data: `order_approve:${orderNum}` },
+      { text: "🚚 MARK SHIPPED", callback_data: `order_ship:${orderNum}` }
+    ]);
+    keyboard.push([
+      { text: "🎉 MARK DELIVERED", callback_data: `order_deliver:${orderNum}` },
+      { text: "❌ CANCEL ORDER", callback_data: `order_reject:${orderNum}` }
+    ]);
+  } else if (normStatus === "confirmed" || normStatus === "processing") {
+    keyboard.push([
+      { text: "🚚 MARK SHIPPED", callback_data: `order_ship:${orderNum}` },
+      { text: "🎉 MARK DELIVERED", callback_data: `order_deliver:${orderNum}` }
+    ]);
+    keyboard.push([
+      { text: "⚙️ Processing (Active)", callback_data: `order_noop:${orderNum}` },
+      { text: "❌ CANCEL ORDER", callback_data: `order_reject:${orderNum}` }
+    ]);
+  } else if (normStatus === "shipped") {
+    keyboard.push([
+      { text: "🎉 MARK DELIVERED", callback_data: `order_deliver:${orderNum}` },
+      { text: "↩️ MARK REFUNDED", callback_data: `order_refund:${orderNum}` }
+    ]);
+    keyboard.push([
+      { text: "🚚 Shipped (In Transit)", callback_data: `order_noop:${orderNum}` },
+      { text: "❌ CANCEL ORDER", callback_data: `order_reject:${orderNum}` }
+    ]);
+  } else if (normStatus === "delivered") {
+    keyboard.push([
+      { text: "🟢 DELIVERED / COMPLETED", callback_data: `order_noop:${orderNum}` },
+      { text: "↩️ MARK REFUNDED", callback_data: `order_refund:${orderNum}` }
+    ]);
+  } else if (normStatus === "cancelled") {
+    keyboard.push([
+      { text: "🔴 CANCELLED / REJECTED", callback_data: `order_noop:${orderNum}` },
+      { text: "🔄 REOPEN (PENDING)", callback_data: `order_pending:${orderNum}` }
+    ]);
+  } else {
+    keyboard.push([
+      { text: "✅ APPROVE", callback_data: `order_approve:${orderNum}` },
+      { text: "🚚 SHIP", callback_data: `order_ship:${orderNum}` },
+      { text: "🎉 DELIVER", callback_data: `order_deliver:${orderNum}` }
+    ]);
+  }
+
+  // Row 2: Payment Action
+  const payRow: any[] = [];
+  if (normPayment === "paid") {
+    payRow.push({ text: "💵 PAID ✅", callback_data: `order_noop:${orderNum}` });
+    payRow.push({ text: "↩️ Mark Unpaid", callback_data: `order_unpaid:${orderNum}` });
+  } else {
+    payRow.push({ text: "💵 MARK AS PAID", callback_data: `order_paid:${orderNum}` });
+  }
+  keyboard.push(payRow);
+
+  // Row 3: Direct WhatsApp / Call / Web Admin Links
+  const linksRow: any[] = [];
+  if (cleanPhone && cleanPhone.length >= 10) {
+    linksRow.push({ text: "💬 WhatsApp", url: `https://wa.me/${waPhone}` });
+    linksRow.push({ text: "📞 Call", url: `tel:${cleanPhone}` });
+  }
+  linksRow.push({ text: "🌐 View in Admin", url: `${baseUrl}/admin/orders?id=${orderNum}` });
+  keyboard.push(linksRow);
+
+  return { inline_keyboard: keyboard };
+}
+
 export async function sendTelegramOrderNotification(order: {
   orderNumber: string;
   customerName: string;
@@ -196,17 +278,13 @@ ${order.email ? `📧 <b>Email:</b> ${order.email}\n` : ""}📍 <b>Address:</b> 
 🛒 <b>Ordered Items (${order.items?.length || 0}):</b>
 ${itemsList}`;
 
-  const inlineKeyboard = {
-    inline_keyboard: [
-      [
-        { text: "✅ APPROVE ORDER", callback_data: `order_approve:${order.orderNumber}` },
-        { text: "❌ REJECT ORDER", callback_data: `order_reject:${order.orderNumber}` }
-      ],
-      [
-        { text: "🌐 View in Admin Panel", url: adminUrl }
-      ]
-    ]
-  };
+  const inlineKeyboard = buildOrderActionKeyboard(
+    order.orderNumber,
+    "pending",
+    order.paymentMethod.toLowerCase().includes("cod") ? "pending" : "pending",
+    order.phone,
+    baseUrl
+  );
 
   return sendTelegramMessage(message, activeConfig, inlineKeyboard);
 }

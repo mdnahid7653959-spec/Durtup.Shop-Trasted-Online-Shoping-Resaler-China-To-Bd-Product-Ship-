@@ -411,6 +411,133 @@ async function getStoreUsers(): Promise<StoreUser[]> {
   return Array.from(userMap.values());
 }
 
+function buildOrderActionKeyboard(
+  orderNum: string,
+  status: string = "pending",
+  paymentStatus: string = "pending",
+  phone: string = ""
+) {
+  const normStatus = (status || "pending").toLowerCase();
+  const normPayment = (paymentStatus || "pending").toLowerCase();
+  const cleanPhone = (phone || "").replace(/\D/g, "");
+  const waPhone = cleanPhone.startsWith("880") ? cleanPhone : (cleanPhone.startsWith("0") ? `88${cleanPhone}` : `880${cleanPhone}`);
+  const storeUrl = STORE_URL || "https://durtup.shop";
+
+  const keyboard: any[][] = [];
+
+  // Row 1: Primary Lifecycle Transitions
+  if (normStatus === "pending") {
+    keyboard.push([
+      { text: "✅ APPROVE ORDER", callback_data: `order_approve:${orderNum}` },
+      { text: "🚚 MARK SHIPPED", callback_data: `order_ship:${orderNum}` }
+    ]);
+    keyboard.push([
+      { text: "🎉 MARK DELIVERED", callback_data: `order_deliver:${orderNum}` },
+      { text: "❌ CANCEL ORDER", callback_data: `order_reject:${orderNum}` }
+    ]);
+  } else if (normStatus === "confirmed" || normStatus === "processing") {
+    keyboard.push([
+      { text: "🚚 MARK SHIPPED", callback_data: `order_ship:${orderNum}` },
+      { text: "🎉 MARK DELIVERED", callback_data: `order_deliver:${orderNum}` }
+    ]);
+    keyboard.push([
+      { text: "⚙️ Processing (Active)", callback_data: `order_noop:${orderNum}` },
+      { text: "❌ CANCEL ORDER", callback_data: `order_reject:${orderNum}` }
+    ]);
+  } else if (normStatus === "shipped") {
+    keyboard.push([
+      { text: "🎉 MARK DELIVERED", callback_data: `order_deliver:${orderNum}` },
+      { text: "↩️ MARK REFUNDED", callback_data: `order_refund:${orderNum}` }
+    ]);
+    keyboard.push([
+      { text: "🚚 Shipped (In Transit)", callback_data: `order_noop:${orderNum}` },
+      { text: "❌ CANCEL ORDER", callback_data: `order_reject:${orderNum}` }
+    ]);
+  } else if (normStatus === "delivered") {
+    keyboard.push([
+      { text: "🟢 DELIVERED / COMPLETED", callback_data: `order_noop:${orderNum}` },
+      { text: "↩️ MARK REFUNDED", callback_data: `order_refund:${orderNum}` }
+    ]);
+  } else if (normStatus === "cancelled") {
+    keyboard.push([
+      { text: "🔴 CANCELLED / REJECTED", callback_data: `order_noop:${orderNum}` },
+      { text: "🔄 REOPEN (PENDING)", callback_data: `order_pending:${orderNum}` }
+    ]);
+  } else {
+    keyboard.push([
+      { text: "✅ APPROVE", callback_data: `order_approve:${orderNum}` },
+      { text: "🚚 SHIP", callback_data: `order_ship:${orderNum}` },
+      { text: "🎉 DELIVER", callback_data: `order_deliver:${orderNum}` }
+    ]);
+  }
+
+  // Row 2: Payment Action
+  const payRow: any[] = [];
+  if (normPayment === "paid") {
+    payRow.push({ text: "💵 PAID ✅", callback_data: `order_noop:${orderNum}` });
+    payRow.push({ text: "↩️ Mark Unpaid", callback_data: `order_unpaid:${orderNum}` });
+  } else {
+    payRow.push({ text: "💵 MARK AS PAID", callback_data: `order_paid:${orderNum}` });
+  }
+  keyboard.push(payRow);
+
+  // Row 3: Direct WhatsApp / Call / Web Admin Links
+  const linksRow: any[] = [];
+  if (cleanPhone && cleanPhone.length >= 10) {
+    linksRow.push({ text: "💬 WhatsApp", url: `https://wa.me/${waPhone}` });
+    linksRow.push({ text: "📞 Call", url: `tel:${cleanPhone}` });
+  }
+  linksRow.push({ text: "🌐 View in Admin", url: `${storeUrl}/admin/orders?id=${orderNum}` });
+  keyboard.push(linksRow);
+
+  return { inline_keyboard: keyboard };
+}
+
+function updateMessageTextWithStatus(
+  originalText: string,
+  newStatus: string | null,
+  newPaymentStatus: string | null,
+  adminName: string,
+  adminId: string
+): string {
+  const statusBadgeMap: Record<string, string> = {
+    pending: "⏳ <b>PENDING REVIEW</b>",
+    confirmed: "⚙️ <b>CONFIRMED / PROCESSING</b>",
+    processing: "⚙️ <b>PROCESSING</b>",
+    shipped: "🚚 <b>SHIPPED / IN TRANSIT</b>",
+    delivered: "🟢 <b>DELIVERED / COMPLETED</b>",
+    cancelled: "🔴 <b>CANCELLED / REJECTED</b>",
+    refunded: "↩️ <b>REFUNDED</b>"
+  };
+
+  let updatedText = originalText || "";
+
+  if (newStatus && statusBadgeMap[newStatus]) {
+    const replacement = `⚡ <b>Status:</b> ${statusBadgeMap[newStatus]}\n👤 <b>Updated By:</b> ${adminName} (${adminId})\n`;
+    if (/⚡ Status:.*\n?/i.test(updatedText)) {
+      updatedText = updatedText.replace(/⚡ Status:.*\n?/i, replacement);
+    } else {
+      updatedText += `\n${replacement}`;
+    }
+  }
+
+  if (newPaymentStatus === "paid") {
+    const payReplacement = `💳 <b>Payment:</b> 💵 <b>PAID & VERIFIED</b> (by ${adminName})\n`;
+    if (/💳 Payment:.*\n?/i.test(updatedText)) {
+      updatedText = updatedText.replace(/💳 Payment:.*\n?/i, payReplacement);
+    } else {
+      updatedText += `\n${payReplacement}`;
+    }
+  } else if (newPaymentStatus === "pending") {
+    const payReplacement = `💳 <b>Payment:</b> ⏳ <b>PENDING / UNPAID</b>\n`;
+    if (/💳 Payment:.*\n?/i.test(updatedText)) {
+      updatedText = updatedText.replace(/💳 Payment:.*\n?/i, payReplacement);
+    }
+  }
+
+  return updatedText;
+}
+
 // Helper: Format single order detail card with action buttons
 function formatOrderCard(order: ReturnType<typeof parseFirestoreOrder>) {
   const statusEmoji: Record<string, string> = {
@@ -456,47 +583,10 @@ ${itemsList}
 💰 <b>Total Bill:</b> ৳${order.total.toLocaleString()}
 🕒 <b>Date:</b> ${new Date(order.dateStr).toLocaleString("en-BD", { timeZone: "Asia/Dhaka" })}`;
 
-  const buttons: any[] = [];
-
-  // Conditional action buttons
-  if (order.status === "pending") {
-    buttons.push([
-      { text: "✅ APPROVE ORDER", callback_data: `order_approve:${order.orderNum}` },
-      { text: "❌ REJECT ORDER", callback_data: `order_reject:${order.orderNum}` }
-    ]);
-    buttons.push([
-      { text: "🚚 MARK SHIPPED", callback_data: `order_ship:${order.orderNum}` },
-      { text: "👤 Customer Info", callback_data: `cust_info:${order.phone}` }
-    ]);
-  } else if (order.status === "confirmed" || order.status === "processing") {
-    buttons.push([
-      { text: "🚚 MARK SHIPPED", callback_data: `order_ship:${order.orderNum}` },
-      { text: "🎉 MARK DELIVERED", callback_data: `order_deliver:${order.orderNum}` }
-    ]);
-    buttons.push([
-      { text: "❌ CANCEL ORDER", callback_data: `order_reject:${order.orderNum}` },
-      { text: "👤 Customer Info", callback_data: `cust_info:${order.phone}` }
-    ]);
-  } else if (order.status === "shipped") {
-    buttons.push([
-      { text: "🎉 MARK AS DELIVERED", callback_data: `order_deliver:${order.orderNum}` },
-      { text: "↩️ REFUND ORDER", callback_data: `order_refund:${order.orderNum}` }
-    ]);
-  } else {
-    buttons.push([
-      { text: "👤 Customer Info", callback_data: `cust_info:${order.phone}` }
-    ]);
-  }
-
-  buttons.push([
-    { text: "🌐 Open on Website", url: `${STORE_URL}/admin/orders?id=${order.orderNum}` },
-    { text: "🔙 Order Categories", callback_data: "cmd_orders" }
-  ]);
-  buttons.push([
-    { text: "🏠 Main Dashboard", callback_data: "cmd_dashboard" }
-  ]);
-
-  return { text, reply_markup: { inline_keyboard: buttons } };
+  return {
+    text,
+    reply_markup: buildOrderActionKeyboard(order.orderNum, order.status, order.paymentStatus, order.phone)
+  };
 }
 
 // Built-in Fast Catalog for Products & Inventory Management
@@ -616,23 +706,17 @@ export default async function handler(req: any, res: any) {
         });
 
         if (chatId && messageId) {
+          const origText = cb.message?.text || "";
+          const phoneMatch = origText.match(/📞 Phone:\s*<code>?([+\d]+)<?/i) || origText.match(/\b(01\d{9})\b/);
+          const phone = phoneMatch ? phoneMatch[1] : "";
+          const updatedText = updateMessageTextWithStatus(origText, "confirmed", null, fromName, fromId);
+
           await callTelegram("editMessageText", {
             chat_id: chatId,
             message_id: messageId,
-            text: `✅ <b>Order #${orderNum} Confirmed & Approved!</b>\n👤 Approved by: ${fromName}\n🕒 ${new Date().toLocaleTimeString("en-BD")}`,
+            text: updatedText,
             parse_mode: "HTML",
-            reply_markup: {
-              inline_keyboard: [
-                [
-                  { text: "🚚 Mark Shipped", callback_data: `order_ship:${orderNum}` },
-                  { text: "🎉 Mark Delivered", callback_data: `order_deliver:${orderNum}` }
-                ],
-                [
-                  { text: "🌐 Open on Website", url: `${STORE_URL}/admin/orders?id=${orderNum}` },
-                  { text: "🔙 Main Menu", callback_data: "cmd_dashboard" }
-                ]
-              ]
-            }
+            reply_markup: buildOrderActionKeyboard(orderNum, "confirmed", "pending", phone)
           });
         }
         return res.status(200).json({ ok: true });
@@ -664,19 +748,17 @@ export default async function handler(req: any, res: any) {
         });
 
         if (chatId && messageId) {
+          const origText = cb.message?.text || "";
+          const phoneMatch = origText.match(/📞 Phone:\s*<code>?([+\d]+)<?/i) || origText.match(/\b(01\d{9})\b/);
+          const phone = phoneMatch ? phoneMatch[1] : "";
+          const updatedText = updateMessageTextWithStatus(origText, "shipped", null, fromName, fromId);
+
           await callTelegram("editMessageText", {
             chat_id: chatId,
             message_id: messageId,
-            text: `🚚 <b>Order #${orderNum} Shipped & On The Way!</b>\nParcel dispatched for courier delivery.`,
+            text: updatedText,
             parse_mode: "HTML",
-            reply_markup: {
-              inline_keyboard: [
-                [
-                  { text: "🎉 Mark Delivered", callback_data: `order_deliver:${orderNum}` },
-                  { text: "🌐 Open on Website", url: `${STORE_URL}/admin/orders?id=${orderNum}` }
-                ]
-              ]
-            }
+            reply_markup: buildOrderActionKeyboard(orderNum, "shipped", "pending", phone)
           });
         }
         return res.status(200).json({ ok: true });
@@ -687,13 +769,15 @@ export default async function handler(req: any, res: any) {
         const orderNum = data.replace("order_deliver:", "").trim();
         const nowIso = new Date().toISOString();
 
-        await fetch(`${FIRESTORE_BASE}/orders/${orderNum}?updateMask.fieldPaths=status&updateMask.fieldPaths=delivered_at&updateMask.fieldPaths=updated_at`, {
+        await fetch(`${FIRESTORE_BASE}/orders/${orderNum}?updateMask.fieldPaths=status&updateMask.fieldPaths=delivered_at&updateMask.fieldPaths=payment_status&updateMask.fieldPaths=paid_at&updateMask.fieldPaths=updated_at`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             fields: {
               status: { stringValue: "delivered" },
               delivered_at: { stringValue: nowIso },
+              payment_status: { stringValue: "paid" },
+              paid_at: { stringValue: nowIso },
               updated_at: { stringValue: nowIso }
             }
           })
@@ -703,29 +787,30 @@ export default async function handler(req: any, res: any) {
 
         await callTelegram("answerCallbackQuery", {
           callback_query_id: cbId,
-          text: `🎉 Order #${orderNum} Delivered!`,
+          text: `🎉 Order #${orderNum} Delivered & Paid!`,
           show_alert: false
         });
 
         if (chatId && messageId) {
+          const origText = cb.message?.text || "";
+          const phoneMatch = origText.match(/📞 Phone:\s*<code>?([+\d]+)<?/i) || origText.match(/\b(01\d{9})\b/);
+          const phone = phoneMatch ? phoneMatch[1] : "";
+          const updatedText = updateMessageTextWithStatus(origText, "delivered", "paid", fromName, fromId);
+
           await callTelegram("editMessageText", {
             chat_id: chatId,
             message_id: messageId,
-            text: `🎉 <b>ORDER #${orderNum} DELIVERED!</b>\nParcel successfully received by customer.\nUpdated on ${new Date().toLocaleTimeString("en-BD")}`,
+            text: updatedText,
             parse_mode: "HTML",
-            reply_markup: {
-              inline_keyboard: [
-                [{ text: "🌐 View in Admin", url: `${STORE_URL}/admin/orders?id=${orderNum}` }]
-              ]
-            }
+            reply_markup: buildOrderActionKeyboard(orderNum, "delivered", "paid", phone)
           });
         }
         return res.status(200).json({ ok: true });
       }
 
       // MODULE 2: Order Reject/Cancel Action
-      if (data.startsWith("order_reject:")) {
-        const orderNum = data.replace("order_reject:", "").trim();
+      if (data.startsWith("order_reject:") || data.startsWith("order_cancel:")) {
+        const orderNum = data.replace(/^(order_reject:|order_cancel:)/, "").trim();
         const nowIso = new Date().toISOString();
 
         await fetch(`${FIRESTORE_BASE}/orders/${orderNum}?updateMask.fieldPaths=status&updateMask.fieldPaths=cancelled_at&updateMask.fieldPaths=updated_at`, {
@@ -749,18 +834,172 @@ export default async function handler(req: any, res: any) {
         });
 
         if (chatId && messageId) {
+          const origText = cb.message?.text || "";
+          const phoneMatch = origText.match(/📞 Phone:\s*<code>?([+\d]+)<?/i) || origText.match(/\b(01\d{9})\b/);
+          const phone = phoneMatch ? phoneMatch[1] : "";
+          const updatedText = updateMessageTextWithStatus(origText, "cancelled", null, fromName, fromId);
+
           await callTelegram("editMessageText", {
             chat_id: chatId,
             message_id: messageId,
-            text: `❌ <b>Order #${orderNum} Cancelled / Rejected.</b>\nAction by ${fromName}`,
+            text: updatedText,
             parse_mode: "HTML",
-            reply_markup: {
-              inline_keyboard: [
-                [{ text: "🌐 View in Admin", url: `${STORE_URL}/admin/orders?id=${orderNum}` }]
-              ]
-            }
+            reply_markup: buildOrderActionKeyboard(orderNum, "cancelled", "pending", phone)
           });
         }
+        return res.status(200).json({ ok: true });
+      }
+
+      // MODULE 2: Mark As Paid
+      if (data.startsWith("order_paid:")) {
+        const orderNum = data.replace("order_paid:", "").trim();
+        const nowIso = new Date().toISOString();
+
+        await fetch(`${FIRESTORE_BASE}/orders/${orderNum}?updateMask.fieldPaths=payment_status&updateMask.fieldPaths=paid_at&updateMask.fieldPaths=updated_at`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fields: {
+              payment_status: { stringValue: "paid" },
+              paid_at: { stringValue: nowIso },
+              updated_at: { stringValue: nowIso }
+            }
+          })
+        });
+
+        await recordAuditLog(fromId, "ORDER_PAID", orderNum, `Marked paid by ${fromName}`);
+        await callTelegram("answerCallbackQuery", { callback_query_id: cbId, text: `💵 Order #${orderNum} marked as PAID!` });
+
+        if (chatId && messageId) {
+          const origText = cb.message?.text || "";
+          const phoneMatch = origText.match(/📞 Phone:\s*<code>?([+\d]+)<?/i) || origText.match(/\b(01\d{9})\b/);
+          const phone = phoneMatch ? phoneMatch[1] : "";
+          const updatedText = updateMessageTextWithStatus(origText, null, "paid", fromName, fromId);
+
+          await callTelegram("editMessageText", {
+            chat_id: chatId,
+            message_id: messageId,
+            text: updatedText,
+            parse_mode: "HTML",
+            reply_markup: buildOrderActionKeyboard(orderNum, "confirmed", "paid", phone)
+          });
+        }
+        return res.status(200).json({ ok: true });
+      }
+
+      // MODULE 2: Mark As Unpaid
+      if (data.startsWith("order_unpaid:")) {
+        const orderNum = data.replace("order_unpaid:", "").trim();
+        const nowIso = new Date().toISOString();
+
+        await fetch(`${FIRESTORE_BASE}/orders/${orderNum}?updateMask.fieldPaths=payment_status&updateMask.fieldPaths=updated_at`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fields: {
+              payment_status: { stringValue: "pending" },
+              updated_at: { stringValue: nowIso }
+            }
+          })
+        });
+
+        await recordAuditLog(fromId, "ORDER_UNPAID", orderNum, `Marked unpaid by ${fromName}`);
+        await callTelegram("answerCallbackQuery", { callback_query_id: cbId, text: `⏳ Order #${orderNum} marked as UNPAID!` });
+
+        if (chatId && messageId) {
+          const origText = cb.message?.text || "";
+          const phoneMatch = origText.match(/📞 Phone:\s*<code>?([+\d]+)<?/i) || origText.match(/\b(01\d{9})\b/);
+          const phone = phoneMatch ? phoneMatch[1] : "";
+          const updatedText = updateMessageTextWithStatus(origText, null, "pending", fromName, fromId);
+
+          await callTelegram("editMessageText", {
+            chat_id: chatId,
+            message_id: messageId,
+            text: updatedText,
+            parse_mode: "HTML",
+            reply_markup: buildOrderActionKeyboard(orderNum, "confirmed", "pending", phone)
+          });
+        }
+        return res.status(200).json({ ok: true });
+      }
+
+      // MODULE 2: Mark As Refunded
+      if (data.startsWith("order_refund:")) {
+        const orderNum = data.replace("order_refund:", "").trim();
+        const nowIso = new Date().toISOString();
+
+        await fetch(`${FIRESTORE_BASE}/orders/${orderNum}?updateMask.fieldPaths=status&updateMask.fieldPaths=payment_status&updateMask.fieldPaths=refunded_at&updateMask.fieldPaths=updated_at`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fields: {
+              status: { stringValue: "refunded" },
+              payment_status: { stringValue: "refunded" },
+              refunded_at: { stringValue: nowIso },
+              updated_at: { stringValue: nowIso }
+            }
+          })
+        });
+
+        await recordAuditLog(fromId, "ORDER_REFUND", orderNum, `Refunded by ${fromName}`);
+        await callTelegram("answerCallbackQuery", { callback_query_id: cbId, text: `↩️ Order #${orderNum} marked as REFUNDED!` });
+
+        if (chatId && messageId) {
+          const origText = cb.message?.text || "";
+          const phoneMatch = origText.match(/📞 Phone:\s*<code>?([+\d]+)<?/i) || origText.match(/\b(01\d{9})\b/);
+          const phone = phoneMatch ? phoneMatch[1] : "";
+          const updatedText = updateMessageTextWithStatus(origText, "refunded", "refunded", fromName, fromId);
+
+          await callTelegram("editMessageText", {
+            chat_id: chatId,
+            message_id: messageId,
+            text: updatedText,
+            parse_mode: "HTML",
+            reply_markup: buildOrderActionKeyboard(orderNum, "refunded", "refunded", phone)
+          });
+        }
+        return res.status(200).json({ ok: true });
+      }
+
+      // MODULE 2: Reopen As Pending
+      if (data.startsWith("order_pending:")) {
+        const orderNum = data.replace("order_pending:", "").trim();
+        const nowIso = new Date().toISOString();
+
+        await fetch(`${FIRESTORE_BASE}/orders/${orderNum}?updateMask.fieldPaths=status&updateMask.fieldPaths=updated_at`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fields: {
+              status: { stringValue: "pending" },
+              updated_at: { stringValue: nowIso }
+            }
+          })
+        });
+
+        await recordAuditLog(fromId, "ORDER_REOPEN", orderNum, `Reopened by ${fromName}`);
+        await callTelegram("answerCallbackQuery", { callback_query_id: cbId, text: `⏳ Order #${orderNum} reopened as PENDING!` });
+
+        if (chatId && messageId) {
+          const origText = cb.message?.text || "";
+          const phoneMatch = origText.match(/📞 Phone:\s*<code>?([+\d]+)<?/i) || origText.match(/\b(01\d{9})\b/);
+          const phone = phoneMatch ? phoneMatch[1] : "";
+          const updatedText = updateMessageTextWithStatus(origText, "pending", null, fromName, fromId);
+
+          await callTelegram("editMessageText", {
+            chat_id: chatId,
+            message_id: messageId,
+            text: updatedText,
+            parse_mode: "HTML",
+            reply_markup: buildOrderActionKeyboard(orderNum, "pending", "pending", phone)
+          });
+        }
+        return res.status(200).json({ ok: true });
+      }
+
+      // MODULE 2: No-Op status indicator button
+      if (data.startsWith("order_noop:")) {
+        await callTelegram("answerCallbackQuery", { callback_query_id: cbId, text: "Current order status." });
         return res.status(200).json({ ok: true });
       }
 

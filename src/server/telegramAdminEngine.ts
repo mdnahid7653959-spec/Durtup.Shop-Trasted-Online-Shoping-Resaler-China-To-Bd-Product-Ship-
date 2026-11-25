@@ -11,7 +11,7 @@
 
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, query, orderBy, limit, where } from "firebase/firestore";
-import { handleTelegramWebhookUpdate as routerHandleTelegramWebhookUpdate } from "./telegram/telegramRouter";
+import { handleTelegramWebhookUpdate as routerHandleTelegramWebhookUpdate, buildOrderActionKeyboard } from "./telegram/telegramRouter";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCIcvphAtwx7rup-aV3MZPDK0w-xCN1Xoc",
@@ -214,17 +214,12 @@ ${itemsList}
 💰 <b>Total Bill:</b> <b>৳${totalAmount.toLocaleString()}</b>
 ⚡ <b>Status:</b> ⏳ <b>PENDING CONFIRMATION</b>`;
 
-  const inlineKeyboard = {
-    inline_keyboard: [
-      [
-        { text: "✅ APPROVE ORDER", callback_data: `order_approve:${orderNum}` },
-        { text: "❌ REJECT ORDER", callback_data: `order_reject:${orderNum}` }
-      ],
-      [
-        { text: "🌐 View in Admin Panel", url: `${STORE_URL}/admin/orders?id=${orderNum}` }
-      ]
-    ]
-  };
+  const inlineKeyboard = buildOrderActionKeyboard(
+    orderNum,
+    "pending",
+    payMethod.includes("COD") ? "pending" : "pending",
+    phone
+  );
 
   let sentCount = 0;
   const errors: string[] = [];
@@ -395,25 +390,21 @@ async function executeOrderApproval(
       show_alert: false
     }, config.bot_token);
 
-    // Update Message in Telegram to show confirmed state and prevent double clicks
+    // Update Message in Telegram to show confirmed state and full lifecycle actions
     if (chatId && messageId) {
       const updatedText = originalText
-        ? originalText.replace(/⚡ Status:.*\n?/i, `⚡ <b>Status:</b> ✅ <b>APPROVED / CONFIRMED</b>\n👤 <b>Approved By:</b> ${adminName} (${adminId})\n`)
+        ? originalText.replace(/⚡ Status:.*\n?/i, `⚡ <b>Status:</b> ⚙️ <b>APPROVED / PROCESSING</b>\n👤 <b>Approved By:</b> ${adminName} (${adminId})\n`)
         : `✅ <b>Order #${orderNum} Approved!</b>\nApproved by ${adminName} on ${new Date().toLocaleString("en-BD")}`;
+
+      const phoneMatch = (originalText || "").match(/📞 Phone:\s*<code>?([+\d]+)<?/i) || (originalText || "").match(/\b(01\d{9})\b/);
+      const phone = phoneMatch ? phoneMatch[1] : "";
 
       await callTelegramApi("editMessageText", {
         chat_id: chatId,
         message_id: messageId,
         text: updatedText,
         parse_mode: "HTML",
-        reply_markup: {
-          inline_keyboard: [
-            [
-              { text: "✅ APPROVED", callback_data: "none" },
-              { text: "🌐 Open in Admin", url: `${STORE_URL}/admin/orders?id=${orderNum}` }
-            ]
-          ]
-        }
+        reply_markup: buildOrderActionKeyboard(orderNum, "confirmed", "pending", phone)
       }, config.bot_token);
     }
 
@@ -496,19 +487,15 @@ async function executeOrderRejection(
         ? originalText.replace(/⚡ Status:.*\n?/i, `⚡ <b>Status:</b> ❌ <b>REJECTED / CANCELLED</b>\n👤 <b>Rejected By:</b> ${adminName} (${adminId})\n`)
         : `❌ <b>Order #${orderNum} Rejected.</b>\nAction by ${adminName} on ${new Date().toLocaleString("en-BD")}`;
 
+      const phoneMatch = (originalText || "").match(/📞 Phone:\s*<code>?([+\d]+)<?/i) || (originalText || "").match(/\b(01\d{9})\b/);
+      const phone = phoneMatch ? phoneMatch[1] : "";
+
       await callTelegramApi("editMessageText", {
         chat_id: chatId,
         message_id: messageId,
         text: updatedText,
         parse_mode: "HTML",
-        reply_markup: {
-          inline_keyboard: [
-            [
-              { text: "❌ REJECTED", callback_data: "none" },
-              { text: "🌐 Open in Admin", url: `${STORE_URL}/admin/orders?id=${orderNum}` }
-            ]
-          ]
-        }
+        reply_markup: buildOrderActionKeyboard(orderNum, "cancelled", "pending", phone)
       }, config.bot_token);
     }
 
