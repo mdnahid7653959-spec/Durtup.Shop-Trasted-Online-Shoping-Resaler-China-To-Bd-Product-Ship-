@@ -964,6 +964,9 @@ export function getSmartProductImage(
   if (lowerName.includes("ban color shirt") && lowerName.includes("purple")) {
     return "/products/shirt_ban_purple.webp";
   }
+  if (lowerName.includes("ban color shirt") && lowerName.includes("maroon")) {
+    return "/products/shirt_ban_light_maroon.webp";
+  }
   if (lowerName.includes("cotton shirt") && lowerName.includes("purple")) {
     return "/products/shirt_cotton_purple.webp";
   }
@@ -1051,6 +1054,9 @@ export function getProductImageCandidates(product: any, width: number = 400): st
   }
   if (prodName.includes("ban color shirt") && prodName.includes("purple")) {
     addCandidate("/products/shirt_ban_purple.webp");
+  }
+  if (prodName.includes("ban color shirt") && prodName.includes("maroon")) {
+    addCandidate("/products/shirt_ban_light_maroon.webp");
   }
   if (prodName.includes("cotton shirt") && prodName.includes("purple")) {
     addCandidate("/products/shirt_cotton_purple.webp");

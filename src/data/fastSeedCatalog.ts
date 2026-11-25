@@ -2188,15 +2188,15 @@ export const FAST_SEED_PRODUCTS: Product[] = [
     "slug": "mens-solid-colour-ban-color-shirt-light-maroon-105",
     "product_code": "3105",
     "category": "Men's Fashion",
-    "image": "https://mohasagor.com.bd/public/storage/images/products/AnpVv784cOShcz9K3cL4h5kQyryfqpzKK0tosi8Q.png",
+    "image": "/products/shirt_ban_light_maroon.webp",
     "images": [
-      "https://mohasagor.com.bd/public/storage/images/products/AnpVv784cOShcz9K3cL4h5kQyryfqpzKK0tosi8Q.png",
+      "/products/shirt_ban_light_maroon.webp",
       "https://mohasagor.com.bd/public/storage/images/products/A9A3Y5jyamz1XxdcsQCo0awB2ytKRcp9pMAQesb3.jpg"
     ],
     "product_images": [
       {
         "id": "img-0",
-        "image_url": "https://mohasagor.com.bd/public/storage/images/products/AnpVv784cOShcz9K3cL4h5kQyryfqpzKK0tosi8Q.png",
+        "image_url": "/products/shirt_ban_light_maroon.webp",
         "is_primary": true,
         "sort_order": 0
       },

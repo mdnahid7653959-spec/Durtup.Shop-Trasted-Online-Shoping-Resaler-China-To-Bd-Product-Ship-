@@ -1713,10 +1713,9 @@
     "price": 550,
     "originalPrice": 743,
     "regular_price": 743,
-    "image": "https://mohasagor.com.bd/public/storage/images/products/AnpVv784cOShcz9K3cL4h5kQyryfqpzKK0tosi8Q.png",
+    "image": "/products/shirt_ban_light_maroon.webp",
     "images": [
-      "https://mohasagor.com.bd/public/storage/images/products/AnpVv784cOShcz9K3cL4h5kQyryfqpzKK0tosi8Q.png",
-      "https://mohasagor.com.bd/public/storage/images/products/A9A3Y5jyamz1XxdcsQCo0awB2ytKRcp9pMAQesb3.jpg"
+      "/products/shirt_ban_light_maroon.webp"
     ],
     "category": "Men's Fashion",
     "category_name": "Men's Fashion",
