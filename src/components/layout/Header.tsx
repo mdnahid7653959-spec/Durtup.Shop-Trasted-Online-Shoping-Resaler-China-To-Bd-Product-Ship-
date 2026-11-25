@@ -497,11 +497,11 @@ export function Header() {
                     </span>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-72 p-2 rounded-2xl bg-popover/95 backdrop-blur-md border border-border/80 shadow-xl space-y-1 z-50">
+                <DropdownMenuContent align="end" className="w-76 p-2 rounded-2xl bg-popover/98 backdrop-blur-xl border border-border/80 shadow-2xl space-y-1 z-50 text-popover-foreground">
                   {user ? (
                     <>
-                      {/* User Identity Header Card */}
-                      <div className="p-2.5 rounded-xl bg-muted/40 border border-border/60 mb-1">
+                      {/* User Profile Header Card */}
+                      <div className="p-3 rounded-xl bg-muted/40 border border-border/60 mb-1">
                         <div className="flex items-center gap-3">
                           <div className="relative shrink-0">
                             <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-tr from-orange-500 to-amber-500 text-white font-bold flex items-center justify-center text-sm shadow-xs ring-2 ring-background">
@@ -518,98 +518,103 @@ export function Header() {
                               <p className="text-xs font-bold text-foreground truncate">
                                 {profile?.full_name || "Valued Customer"}
                               </p>
-                              <span className="text-[9px] font-semibold bg-orange-100 dark:bg-orange-950/60 text-orange-700 dark:text-orange-400 px-1.5 py-0.2 rounded-full border border-orange-200/60 dark:border-orange-800/50">
-                                Verified
+                              <span className="text-[9px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.2 rounded-full border border-emerald-200/60 dark:border-emerald-800/50 flex items-center gap-0.5">
+                                <ShieldCheck className="w-2.5 h-2.5" /> Verified
                               </span>
                             </div>
-                            <p className="text-[11px] text-muted-foreground truncate font-mono">
+                            <p className="text-[11px] text-muted-foreground truncate font-mono mt-0.5">
                               {profile?.phone || (user.email?.endsWith("@durtup.shop") ? user.email.split("@")[0] : user.email)}
                             </p>
                           </div>
                         </div>
 
-                        {/* Reseller Program Banner */}
+                        {/* Professional Reseller Portal Banner */}
                         <Link 
                           to="/reseller" 
-                          className="mt-2.5 flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-orange-500/10 hover:bg-orange-500/15 border border-orange-500/20 text-orange-700 dark:text-orange-400 transition-colors group"
+                          className="mt-2.5 flex items-center justify-between p-2.5 rounded-xl bg-orange-500/[0.08] hover:bg-orange-500/[0.14] border border-orange-500/20 text-foreground transition-all duration-150 group"
                         >
-                          <span className="flex items-center gap-1.5 text-[11px] font-bold">
-                            <Store className="w-3.5 h-3.5 text-orange-600" />
-                            <span>রিসেলার প্যানেল</span>
-                          </span>
-                          <span className="text-[9px] font-bold bg-orange-600 text-white px-1.5 py-0.5 rounded-full flex items-center gap-1">
-                            <span>আয় করুন</span>
-                            <ChevronRight className="w-2.5 h-2.5 group-hover:translate-x-0.5 transition-transform" />
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-7 h-7 rounded-lg bg-orange-500/15 text-orange-600 dark:text-orange-400 flex items-center justify-center shrink-0">
+                              <Store className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-foreground leading-tight">Reseller Portal</p>
+                              <p className="text-[10px] text-muted-foreground leading-tight truncate">Earn commissions on every sale</p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-bold text-orange-600 dark:text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full flex items-center gap-0.5 shrink-0 group-hover:bg-orange-500/20 transition-colors">
+                            <span>Open</span>
+                            <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                           </span>
                         </Link>
                       </div>
 
-                      {/* Shopping & Orders Group */}
+                      {/* Primary Navigation Menu */}
                       <div className="space-y-0.5">
                         <DropdownMenuItem asChild>
-                          <Link to="/orders" className="cursor-pointer flex items-center justify-between p-2 rounded-lg hover:bg-muted/80 transition-colors group">
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-7 h-7 rounded-lg bg-orange-50 dark:bg-orange-950/40 text-orange-600 flex items-center justify-center shrink-0">
+                          <Link to="/orders" className="cursor-pointer flex items-center justify-between p-2 rounded-xl hover:bg-muted/80 transition-colors group">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-muted/60 dark:bg-muted/40 text-muted-foreground group-hover:text-foreground group-hover:bg-muted flex items-center justify-center shrink-0 transition-colors">
                                 <Package className="h-4 w-4" />
                               </div>
                               <div>
-                                <p className="text-xs font-semibold text-foreground leading-tight">আমার অর্ডারসমূহ</p>
-                                <p className="text-[10px] text-muted-foreground leading-tight">ট্র্যাকিং ও অর্ডার হিস্টোরি</p>
+                                <p className="text-xs font-semibold text-foreground leading-tight">My Orders</p>
+                                <p className="text-[10px] text-muted-foreground leading-tight">Track shipments & view history</p>
                               </div>
                             </div>
-                            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-transform" />
+                            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60 group-hover:text-foreground group-hover:translate-x-0.5 transition-transform" />
                           </Link>
                         </DropdownMenuItem>
 
                         <DropdownMenuItem asChild>
-                          <Link to="/wishlist" className="cursor-pointer flex items-center justify-between p-2 rounded-lg hover:bg-muted/80 transition-colors group">
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 flex items-center justify-center shrink-0">
+                          <Link to="/wishlist" className="cursor-pointer flex items-center justify-between p-2 rounded-xl hover:bg-muted/80 transition-colors group">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-muted/60 dark:bg-muted/40 text-muted-foreground group-hover:text-foreground group-hover:bg-muted flex items-center justify-center shrink-0 transition-colors">
                                 <Heart className="h-4 w-4" />
                               </div>
                               <div>
-                                <p className="text-xs font-semibold text-foreground leading-tight">উইশলিস্ট</p>
-                                <p className="text-[10px] text-muted-foreground leading-tight">পছন্দের পণ্যের তালিকা</p>
+                                <p className="text-xs font-semibold text-foreground leading-tight">Wishlist</p>
+                                <p className="text-[10px] text-muted-foreground leading-tight">Saved favorite items</p>
                               </div>
                             </div>
                             {wishlistCount > 0 ? (
-                              <span className="text-[10px] font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-600 px-1.5 py-0.5 rounded-full">
+                              <span className="text-[10px] font-bold bg-muted text-foreground px-2 py-0.5 rounded-full border border-border/60">
                                 {wishlistCount}
                               </span>
                             ) : (
-                              <ChevronRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-transform" />
+                              <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60 group-hover:text-foreground group-hover:translate-x-0.5 transition-transform" />
                             )}
                           </Link>
                         </DropdownMenuItem>
 
                         <DropdownMenuItem asChild>
-                          <Link to="/wallet" className="cursor-pointer flex items-center justify-between p-2 rounded-lg hover:bg-muted/80 transition-colors group">
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center shrink-0">
+                          <Link to="/wallet" className="cursor-pointer flex items-center justify-between p-2 rounded-xl hover:bg-muted/80 transition-colors group">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-muted/60 dark:bg-muted/40 text-muted-foreground group-hover:text-foreground group-hover:bg-muted flex items-center justify-center shrink-0 transition-colors">
                                 <Wallet className="h-4 w-4" />
                               </div>
                               <div>
-                                <p className="text-xs font-semibold text-foreground leading-tight">মাই ওয়ালেট</p>
-                                <p className="text-[10px] text-muted-foreground leading-tight">ব্যালেন্স ও রিফান্ড ওয়ালেট</p>
+                                <p className="text-xs font-semibold text-foreground leading-tight">My Wallet</p>
+                                <p className="text-[10px] text-muted-foreground leading-tight">Balances, deposits & refunds</p>
                               </div>
                             </div>
-                            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-transform" />
+                            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60 group-hover:text-foreground group-hover:translate-x-0.5 transition-transform" />
                           </Link>
                         </DropdownMenuItem>
 
                         <DropdownMenuItem asChild>
-                          <Link to="/referrals" className="cursor-pointer flex items-center justify-between p-2 rounded-lg hover:bg-muted/80 transition-colors group">
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 flex items-center justify-center shrink-0">
+                          <Link to="/referrals" className="cursor-pointer flex items-center justify-between p-2 rounded-xl hover:bg-muted/80 transition-colors group">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-muted/60 dark:bg-muted/40 text-muted-foreground group-hover:text-foreground group-hover:bg-muted flex items-center justify-center shrink-0 transition-colors">
                                 <Sparkles className="h-4 w-4" />
                               </div>
                               <div>
-                                <p className="text-xs font-semibold text-foreground leading-tight">রেফার ও আর্ন</p>
-                                <p className="text-[10px] text-muted-foreground leading-tight">বন্ধুদের রেফার করুন</p>
+                                <p className="text-xs font-semibold text-foreground leading-tight">Refer & Earn</p>
+                                <p className="text-[10px] text-muted-foreground leading-tight">Invite friends & earn rewards</p>
                               </div>
                             </div>
-                            <span className="text-[10px] bg-amber-500/10 text-amber-600 font-bold px-1.5 py-0.5 rounded-md">
-                              ৳৫০ বোনাস
+                            <span className="text-[10px] font-bold bg-orange-500/10 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-full border border-orange-500/20">
+                              ৳50 Reward
                             </span>
                           </Link>
                         </DropdownMenuItem>
@@ -617,95 +622,109 @@ export function Header() {
 
                       <DropdownMenuSeparator className="my-1 bg-border/60" />
 
-                      {/* Settings & Profile */}
+                      {/* Account Settings */}
                       <div className="space-y-0.5">
                         <DropdownMenuItem asChild>
-                          <Link to="/account" className="cursor-pointer flex items-center justify-between p-2 rounded-lg hover:bg-muted/80 transition-colors group">
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center text-foreground shrink-0">
-                                <Settings className="h-4 w-4 text-slate-700 dark:text-slate-300" />
+                          <Link to="/account" className="cursor-pointer flex items-center justify-between p-2 rounded-xl hover:bg-muted/80 transition-colors group">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-muted/60 dark:bg-muted/40 text-muted-foreground group-hover:text-foreground group-hover:bg-muted flex items-center justify-center shrink-0 transition-colors">
+                                <Settings className="h-4 w-4" />
                               </div>
                               <div>
-                                <p className="text-xs font-semibold text-foreground leading-tight">একাউন্ট সেটিংস</p>
-                                <p className="text-[10px] text-muted-foreground leading-tight">প্রোফাইল, ঠিকানা ও সিকিউরিটি</p>
+                                <p className="text-xs font-semibold text-foreground leading-tight">Account Settings</p>
+                                <p className="text-[10px] text-muted-foreground leading-tight">Profile, addresses & security</p>
                               </div>
                             </div>
-                            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-transform" />
+                            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60 group-hover:text-foreground group-hover:translate-x-0.5 transition-transform" />
                           </Link>
                         </DropdownMenuItem>
                       </div>
 
                       <DropdownMenuSeparator className="my-1 bg-border/60" />
 
-                      {/* Logout */}
+                      {/* Logout Action */}
                       <DropdownMenuItem 
                         onClick={handleLogout} 
-                        className="cursor-pointer flex items-center gap-2.5 p-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-700 focus:bg-red-50 focus:text-red-700 transition-colors"
+                        className="cursor-pointer flex items-center gap-3 p-2 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 hover:text-rose-700 focus:bg-rose-50 focus:text-rose-700 transition-colors group"
                       >
-                        <div className="w-7 h-7 rounded-lg bg-red-100/60 dark:bg-red-950/40 text-red-600 flex items-center justify-center shrink-0">
+                        <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 group-hover:bg-rose-500/20 flex items-center justify-center shrink-0 transition-colors">
                           <LogOut className="h-4 w-4" />
                         </div>
-                        <span className="text-xs font-semibold">লগআউট (Logout)</span>
+                        <span className="text-xs font-semibold">Sign Out</span>
                       </DropdownMenuItem>
                     </>
                   ) : (
                     <>
-                      {/* Logged Out State */}
+                      {/* Logged Out Guest State */}
                       <div className="p-3 rounded-xl bg-muted/40 border border-border/60 mb-1 space-y-2.5">
                         <div>
-                          <p className="text-xs font-bold text-foreground">Durtup.shop এ স্বাগতম</p>
-                          <p className="text-[11px] text-muted-foreground">অর্ডার ট্র্যাক ও প্রোফাইল অ্যাক্সেস করতে লগইন করুন</p>
+                          <p className="text-xs font-bold text-foreground">Welcome to Durtup</p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">Sign in to track orders and manage your account</p>
                         </div>
                         <div className="flex gap-2">
                           <Button asChild size="sm" className="flex-1 rounded-xl text-xs font-semibold h-8 bg-orange-600 hover:bg-orange-700 text-white shadow-xs">
-                            <Link to="/login">লগইন (Sign In)</Link>
+                            <Link to="/login">Sign In</Link>
                           </Button>
                           <Button asChild variant="outline" size="sm" className="flex-1 rounded-xl text-xs font-semibold h-8 border-border">
-                            <Link to="/register">রেজিস্টার</Link>
+                            <Link to="/register">Register</Link>
                           </Button>
                         </div>
                       </div>
 
-                      {/* Reseller Banner for Guest */}
+                      {/* Guest Reseller Banner */}
                       <Link 
                         to="/reseller" 
-                        className="flex items-center justify-between px-2.5 py-2 rounded-lg bg-orange-500/10 hover:bg-orange-500/15 border border-orange-500/20 text-orange-700 dark:text-orange-400 transition-colors group mb-1"
+                        className="flex items-center justify-between p-2.5 rounded-xl bg-orange-500/[0.08] hover:bg-orange-500/[0.14] border border-orange-500/20 text-foreground transition-all duration-150 group mb-1"
                       >
-                        <span className="flex items-center gap-1.5 text-xs font-bold">
-                          <Store className="w-4 h-4 text-orange-600" />
-                          <span>রিসেলার প্রোগ্রাম</span>
-                        </span>
-                        <span className="text-[9px] font-bold bg-orange-600 text-white px-2 py-0.5 rounded-full">
-                          আয় করুন
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-7 h-7 rounded-lg bg-orange-500/15 text-orange-600 dark:text-orange-400 flex items-center justify-center shrink-0">
+                            <Store className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-foreground leading-tight">Reseller Program</p>
+                            <p className="text-[10px] text-muted-foreground leading-tight truncate">Start dropshipping & earn daily</p>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-bold text-orange-600 dark:text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full flex items-center gap-0.5 shrink-0 group-hover:bg-orange-500/20 transition-colors">
+                          <span>Join</span>
+                          <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                         </span>
                       </Link>
 
                       <div className="space-y-0.5">
                         <DropdownMenuItem asChild>
-                          <Link to="/orders" className="cursor-pointer flex items-center gap-2.5 p-2 rounded-lg hover:bg-muted/80 text-xs font-semibold">
-                            <Package className="h-4 w-4 text-muted-foreground" />
-                            <span>My Orders (অর্ডারসমূহ)</span>
+                          <Link to="/orders" className="cursor-pointer flex items-center gap-3 p-2 rounded-xl hover:bg-muted/80 text-xs font-semibold group">
+                            <div className="w-8 h-8 rounded-lg bg-muted/60 dark:bg-muted/40 text-muted-foreground group-hover:text-foreground group-hover:bg-muted flex items-center justify-center shrink-0 transition-colors">
+                              <Package className="h-4 w-4" />
+                            </div>
+                            <span>Track Orders</span>
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                          <Link to="/wishlist" className="cursor-pointer flex items-center gap-2.5 p-2 rounded-lg hover:bg-muted/80 text-xs font-semibold">
-                            <Heart className="h-4 w-4 text-muted-foreground" />
-                            <span>Wishlist (উইশলিস্ট)</span>
+                          <Link to="/wishlist" className="cursor-pointer flex items-center gap-3 p-2 rounded-xl hover:bg-muted/80 text-xs font-semibold group">
+                            <div className="w-8 h-8 rounded-lg bg-muted/60 dark:bg-muted/40 text-muted-foreground group-hover:text-foreground group-hover:bg-muted flex items-center justify-center shrink-0 transition-colors">
+                              <Heart className="h-4 w-4" />
+                            </div>
+                            <span>Wishlist</span>
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                          <Link to="/referrals" className="cursor-pointer flex items-center justify-between p-2 rounded-lg hover:bg-muted/80 text-xs font-semibold">
-                            <span className="flex items-center gap-2.5">
-                              <Sparkles className="h-4 w-4 text-primary" />
+                          <Link to="/referrals" className="cursor-pointer flex items-center justify-between p-2 rounded-xl hover:bg-muted/80 text-xs font-semibold group">
+                            <span className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-muted/60 dark:bg-muted/40 text-muted-foreground group-hover:text-foreground group-hover:bg-muted flex items-center justify-center shrink-0 transition-colors">
+                                <Sparkles className="h-4 w-4" />
+                              </div>
                               <span>Refer & Earn</span>
                             </span>
-                            <span className="text-[10px] bg-primary/10 text-primary font-bold px-1.5 py-0.5 rounded">৳৫০ বোনাস</span>
+                            <span className="text-[10px] font-bold bg-orange-500/10 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-full border border-orange-500/20">৳50 Bonus</span>
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                          <Link to="/account" className="cursor-pointer flex items-center gap-2.5 p-2 rounded-lg hover:bg-muted/80 text-xs font-semibold">
-                            <Settings className="h-4 w-4 text-muted-foreground" />
-                            <span>Account Settings</span>
+                          <Link to="/help" className="cursor-pointer flex items-center gap-3 p-2 rounded-xl hover:bg-muted/80 text-xs font-semibold group">
+                            <div className="w-8 h-8 rounded-lg bg-muted/60 dark:bg-muted/40 text-muted-foreground group-hover:text-foreground group-hover:bg-muted flex items-center justify-center shrink-0 transition-colors">
+                              <HelpCircle className="h-4 w-4" />
+                            </div>
+                            <span>Help Center</span>
                           </Link>
                         </DropdownMenuItem>
                       </div>
