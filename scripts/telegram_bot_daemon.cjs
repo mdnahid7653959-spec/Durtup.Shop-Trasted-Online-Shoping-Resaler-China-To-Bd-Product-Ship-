@@ -193,7 +193,6 @@ function buildOrderActionKeyboard(orderNum, status = 'pending', paymentStatus = 
   const linksRow = [];
   if (cleanPhone && cleanPhone.length >= 10) {
     linksRow.push({ text: '💬 WhatsApp', url: `https://wa.me/${waPhone}` });
-    linksRow.push({ text: '📞 Call', url: `tel:${cleanPhone}` });
   }
   linksRow.push({ text: '🌐 View in Admin', url: `${STORE_URL}/admin/orders?id=${orderNum}` });
   keyboard.push(linksRow);
@@ -201,9 +200,17 @@ function buildOrderActionKeyboard(orderNum, status = 'pending', paymentStatus = 
   return { inline_keyboard: keyboard };
 }
 
+function escapeTgHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 function formatTelegramOrderCard(ord) {
   const itemsText = ord.items.length > 0
-    ? ord.items.map((it, idx) => `  • ${it.name} (x${it.quantity}) - ৳${it.price}`).join('\n')
+    ? ord.items.map((it, idx) => `  ▫️ <b>Item #${idx + 1}:</b> ${escapeTgHtml(it.name)} (x${it.quantity}) - ৳${it.price.toLocaleString()}`).join('\n')
     : '  • Ordered Product Item';
 
   const statusEmojiMap = {
@@ -219,15 +226,16 @@ function formatTelegramOrderCard(ord) {
   const statusLabel = ord.status.toUpperCase();
   const paymentStatus = ord.paymentStatus || (ord.status === 'delivered' ? 'paid' : 'pending');
 
-  const text = `📦 <b>ORDER #${ord.orderNum}</b>\n━━━━━━━━━━━━━━━━━━━━━━\n` +
-    `👤 <b>Customer:</b> ${ord.name}\n` +
-    `📞 <b>Phone:</b> <code>${ord.phone}</code>\n` +
-    `📍 <b>Address:</b> ${ord.address}\n` +
-    `💳 <b>Payment Method:</b> ${ord.paymentMethod.toUpperCase()}\n` +
+  const text = `🔔 <b>NEW ORDER RECEIVED!</b> 🎉\n━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `📦 <b>Order ID:</b> <code>#${escapeTgHtml(ord.orderNum)}</code>\n` +
+    `👤 <b>Customer:</b> <b>${escapeTgHtml(ord.name)}</b>\n` +
+    `📞 <b>Phone:</b> <code>${escapeTgHtml(ord.phone)}</code>\n` +
+    `📍 <b>Address:</b> ${escapeTgHtml(ord.address)}\n` +
+    `💳 <b>Payment Method:</b> <b>${escapeTgHtml(ord.paymentMethod.toUpperCase())}</b>\n` +
     `⚡ <b>Status:</b> ${statusEmoji} <b>${statusLabel}</b>\n` +
     `💵 <b>Payment Status:</b> ${paymentStatus === 'paid' ? '💵 <b>PAID</b>' : '⏳ <b>PENDING</b>'}\n\n` +
     `🛒 <b>Ordered Items:</b>\n${itemsText}\n\n` +
-    `💰 <b>Total Amount:</b> ৳${ord.total.toLocaleString()}`;
+    `💰 <b>Total Amount:</b> <b>৳${ord.total.toLocaleString()}</b>`;
 
   const reply_markup = buildOrderActionKeyboard(ord.orderNum, ord.status, paymentStatus, ord.phone);
 
@@ -1250,11 +1258,71 @@ async function handleMessage(msg) {
   });
 }
 
+const seenOrderIds = new Set();
+let isFirstOrderScan = true;
+
+async function scanAndNotifyNewOrders() {
+  try {
+    const res = await fetchFirestore('/orders?pageSize=20');
+    const docs = res?.documents || [];
+    if (isFirstOrderScan) {
+      // First boot: populate existing IDs so we don't spam old orders
+      for (const d of docs) {
+        const id = (d.name || '').split('/').pop();
+        const f = d.fields || {};
+        const orderNum = f.order_number?.stringValue || f.orderNumber?.stringValue || id;
+        if (id) seenOrderIds.add(id);
+        if (orderNum) seenOrderIds.add(orderNum);
+      }
+      isFirstOrderScan = false;
+      console.log(`[Order Watcher] Initialized with ${seenOrderIds.size} existing orders.`);
+      return;
+    }
+
+    for (const d of docs) {
+      const id = (d.name || '').split('/').pop();
+      const f = d.fields || {};
+      const orderNum = f.order_number?.stringValue || f.orderNumber?.stringValue || id;
+      if (!orderNum) continue;
+
+      if (seenOrderIds.has(id) || seenOrderIds.has(orderNum)) {
+        continue;
+      }
+
+      // Found a brand new order created in store!
+      seenOrderIds.add(id);
+      seenOrderIds.add(orderNum);
+
+      const ord = parseOrderDoc(d);
+      if (!ord) continue;
+
+      console.log(`[Order Watcher] 🔔 NEW ORDER DETECTED: #${ord.orderNum} from ${ord.name} (৳${ord.total})! Sending to Telegram...`);
+
+      const { text, reply_markup } = formatTelegramOrderCard(ord);
+      for (const adminId of ADMIN_CHAT_IDS) {
+        await callTelegram('sendMessage', {
+          chat_id: adminId,
+          text,
+          parse_mode: 'HTML',
+          reply_markup,
+          disable_web_page_preview: true
+        });
+      }
+    }
+  } catch (err) {
+    // silently handle polling notice
+  }
+}
+
 async function startPolling() {
   console.log('====================================================');
   console.log('🚀 Starting Durtup Telegram Bot Realtime Polling Service');
   console.log(`🤖 Bot Token: ${BOT_TOKEN.slice(0, 15)}...`);
   console.log('====================================================\n');
+
+  // Initialize and start realtime Firestore order watcher
+  await scanAndNotifyNewOrders().catch(() => {});
+  setInterval(scanAndNotifyNewOrders, 4000);
 
   // 1. Delete webhook so getUpdates receives all callback queries and messages
   const delRes = await callTelegram('deleteWebhook', { drop_pending_updates: false });

@@ -6,10 +6,19 @@ export interface TelegramConfig {
   enabled: boolean;
   bot_token: string;
   chat_id: string;
+  admin_chat_ids?: string[];
 }
 
 export const DEFAULT_TELEGRAM_BOT_TOKEN = "9052891455:AAEABwgEKbLVeCw1ZogwnUI_3LrPWGPuJGY";
 export const DEFAULT_TELEGRAM_CHAT_ID = "8204855335";
+
+export function escapeTgHtml(str: any): string {
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
 
 const LOCAL_STORAGE_KEY = "durtup_telegram_config";
 
@@ -111,7 +120,8 @@ export async function sendTelegramMessage(text: string, customConfig?: Partial<T
     const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      keepalive: true
     });
 
     const result = await response.json();
@@ -196,11 +206,10 @@ export function buildOrderActionKeyboard(
   }
   keyboard.push(payRow);
 
-  // Row 3: Direct WhatsApp / Call / Web Admin Links
+  // Row 3: Direct WhatsApp / Web Admin Links
   const linksRow: any[] = [];
   if (cleanPhone && cleanPhone.length >= 10) {
-    linksRow.push({ text: "💬 WhatsApp", url: `https://wa.me/${waPhone}` });
-    linksRow.push({ text: "📞 Call", url: `tel:${cleanPhone}` });
+    linksRow.push({ text: "💬 WhatsApp Customer", url: `https://wa.me/${waPhone}` });
   }
   linksRow.push({ text: "🌐 View in Admin", url: `${baseUrl}/admin/orders?id=${orderNum}` });
   keyboard.push(linksRow);
@@ -230,8 +239,7 @@ export async function sendTelegramOrderNotification(order: {
 }) {
   const config = await getTelegramConfig();
   const botToken = config.bot_token || DEFAULT_TELEGRAM_BOT_TOKEN;
-  const chatId = config.chat_id || DEFAULT_TELEGRAM_CHAT_ID;
-  const activeConfig = { ...config, bot_token: botToken, chat_id: chatId };
+  const primaryChatId = config.chat_id || DEFAULT_TELEGRAM_CHAT_ID;
 
   const origin = typeof window !== "undefined" && window.location.origin ? window.location.origin : "";
   const baseUrl = origin.startsWith("https://") ? origin : "https://durtup.shop";
@@ -253,25 +261,23 @@ export async function sendTelegramOrderNotification(order: {
         }
         const lineTotal = item.price * item.quantity;
         const linkTag = pId ? `<a href="${baseUrl}/product/${pId}">Store Link</a>` : "";
-        return `  ▫️ <b>Item #${idx + 1}:</b> ${item.name}
-     🆔 ID: <code>${pId || "N/A"}</code> | 🏢 Supplier: <b>${supplier}</b>
+        return `  ▫️ <b>Item #${idx + 1}:</b> ${escapeTgHtml(item.name)}
+     🆔 ID: <code>${escapeTgHtml(pId) || "N/A"}</code> | 🏢 Supplier: <b>${escapeTgHtml(supplier)}</b>
      💰 ৳${item.price.toLocaleString()} × ${item.quantity} = <b>৳${lineTotal.toLocaleString()}</b>${linkTag ? `\n     🔗 ${linkTag}` : ""}`;
       }).join("\n──────────────────────\n")
     : "  ▫️ Details in Admin Panel";
-
-  const adminUrl = `${baseUrl}/admin/orders?id=${order.orderNumber}`;
 
   const timeString = new Date().toLocaleTimeString("en-BD", { hour: "2-digit", minute: "2-digit", hour12: true });
   const dateString = new Date().toLocaleDateString("en-BD", { day: "numeric", month: "short", year: "numeric" });
 
   const message = `🔔 <b>NEW ORDER RECEIVED!</b> 🎉
 ━━━━━━━━━━━━━━━━━━━━━━
-📦 <b>Order ID:</b> <code>#${order.orderNumber}</code>
+📦 <b>Order ID:</b> <code>#${escapeTgHtml(order.orderNumber)}</code>
 ⏰ <b>Time:</b> ${dateString} at ${timeString}
-👤 <b>Customer:</b> <b>${order.customerName}</b>
-📞 <b>Phone:</b> <code>${order.phone}</code>
-${order.email ? `📧 <b>Email:</b> ${order.email}\n` : ""}📍 <b>Address:</b> ${order.address}, ${order.city}
-💳 <b>Payment:</b> <b>${order.paymentMethod.toUpperCase()}</b>
+👤 <b>Customer:</b> <b>${escapeTgHtml(order.customerName)}</b>
+📞 <b>Phone:</b> <code>${escapeTgHtml(order.phone)}</code>
+${order.email ? `📧 <b>Email:</b> ${escapeTgHtml(order.email)}\n` : ""}📍 <b>Address:</b> ${escapeTgHtml(order.address)}, ${escapeTgHtml(order.city)}
+💳 <b>Payment:</b> <b>${escapeTgHtml(order.paymentMethod.toUpperCase())}</b>
 💰 <b>Total Amount:</b> <b>৳${order.total.toLocaleString()}</b>
 ⚡️ <b>Status:</b> ⏳ <b>PENDING CONFIRMATION</b>
 
@@ -286,5 +292,19 @@ ${itemsList}`;
     baseUrl
   );
 
-  return sendTelegramMessage(message, activeConfig, inlineKeyboard);
+  // Send to all authorized admin IDs (deduplicated)
+  const targetChatIds = Array.from(new Set([
+    primaryChatId,
+    ...(config.admin_chat_ids || [])
+  ])).filter(Boolean);
+
+  let firstResult: any = { success: false };
+  for (const cid of targetChatIds) {
+    const res = await sendTelegramMessage(message, { bot_token: botToken, chat_id: String(cid) }, inlineKeyboard);
+    if (!firstResult.success && res.success) {
+      firstResult = res;
+    }
+  }
+
+  return firstResult;
 }

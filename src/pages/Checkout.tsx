@@ -736,18 +736,25 @@ export default function Checkout() {
         productName: primaryProductName
       });
 
-      // 4. Immediately dispatch Telegram Order Alert
-      sendTelegramOrderNotification({
-        orderNumber: orderNumber,
-        customerName: fullNameCombined,
-        phone: safePhone,
-        email: safeEmail,
-        address: safeAddress,
-        city: safeCity,
-        paymentMethod: paymentMethod,
-        total: confirmedTotal,
-        items: enrichedItems.map(i => ({ name: i.name, quantity: i.quantity, price: i.price, product_id: i.product_id }))
-      }).catch((tgErr) => console.warn("[Checkout] Immediate Telegram dispatch notice:", tgErr));
+      // 4. Immediately dispatch Telegram Order Alert (await with safety timeout)
+      try {
+        await Promise.race([
+          sendTelegramOrderNotification({
+            orderNumber: orderNumber,
+            customerName: fullNameCombined,
+            phone: safePhone,
+            email: safeEmail,
+            address: safeAddress,
+            city: safeCity,
+            paymentMethod: paymentMethod,
+            total: confirmedTotal,
+            items: enrichedItems.map(i => ({ name: i.name, quantity: i.quantity, price: i.price, product_id: i.product_id }))
+          }),
+          new Promise((resolve) => setTimeout(resolve, 2500))
+        ]);
+      } catch (tgErr) {
+        console.warn("[Checkout] Immediate Telegram dispatch notice:", tgErr);
+      }
 
       // 5. Clear cart
       clearCart().catch(() => { });

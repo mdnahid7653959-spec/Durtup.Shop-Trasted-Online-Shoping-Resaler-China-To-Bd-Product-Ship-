@@ -157,11 +157,10 @@ export function buildOrderActionKeyboard(
   }
   keyboard.push(payRow);
 
-  // Row 3: Direct WhatsApp / Call / Web Admin Links
+  // Row 3: Direct WhatsApp / Web Admin Links
   const linksRow: any[] = [];
   if (cleanPhone && cleanPhone.length >= 10) {
     linksRow.push({ text: "💬 WhatsApp", url: `https://wa.me/${waPhone}` });
-    linksRow.push({ text: "📞 Call", url: `tel:${cleanPhone}` });
   }
   linksRow.push({ text: "🌐 View in Admin", url: `${storeUrl}/admin/orders?id=${orderNum}` });
   keyboard.push(linksRow);
