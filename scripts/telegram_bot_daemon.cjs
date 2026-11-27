@@ -17,8 +17,22 @@ const path = require('path');
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '9052891455:AAEABwgEKbLVeCw1ZogwnUI_3LrPWGPuJGY';
 const FIRESTORE_BASE = 'https://firestore.googleapis.com/v1/projects/eshop-app-6119d/databases/(default)/documents';
 const MASTER_ADMIN_ID = '8204855335';
+let ADMIN_CHAT_IDS = ['8204855335'];
 const STORE_NAME = 'Durtup.shop';
 const STORE_URL = 'https://durtup.shop';
+
+async function refreshAdminChatIds() {
+  try {
+    const doc = await fetchFirestore('/settings/telegram');
+    const f = doc?.fields || {};
+    const primary = f.chat_id?.stringValue;
+    const list = f.admin_chat_ids?.arrayValue?.values?.map(v => v.stringValue).filter(Boolean) || [];
+    const set = new Set(['8204855335']);
+    if (primary) set.add(primary);
+    list.forEach(id => set.add(id));
+    ADMIN_CHAT_IDS = Array.from(set);
+  } catch {}
+}
 
 // Cache catalog in memory for instant product searches
 let cachedCatalog = null;
@@ -1261,6 +1275,38 @@ async function handleMessage(msg) {
 const seenOrderIds = new Set();
 let isFirstOrderScan = true;
 
+async function markOrderNotifiedInFirestore(orderIdentifier) {
+  const cleanId = orderIdentifier.replace(/^#/, '').trim();
+  const mask = 'updateMask.fieldPaths=telegram_notified&updateMask.fieldPaths=telegram_notified_at';
+  const patchData = JSON.stringify({
+    fields: {
+      telegram_notified: { booleanValue: true },
+      telegram_notified_at: { stringValue: new Date().toISOString() }
+    }
+  });
+  try {
+    const patchUrl = `${FIRESTORE_BASE}/orders/${cleanId}?${mask}`;
+    await new Promise((resolve) => {
+      const u = new URL(patchUrl);
+      const req = https.request({
+        hostname: u.hostname,
+        port: 443,
+        path: u.pathname + u.search,
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(patchData) },
+        timeout: 4000
+      }, (res) => {
+        let b = '';
+        res.on('data', c => b += c);
+        res.on('end', () => resolve(b));
+      });
+      req.on('error', () => resolve(null));
+      req.write(patchData);
+      req.end();
+    });
+  } catch {}
+}
+
 async function scanAndNotifyNewOrders() {
   try {
     const res = await fetchFirestore('/orders?pageSize=20');
@@ -1285,7 +1331,10 @@ async function scanAndNotifyNewOrders() {
       const orderNum = f.order_number?.stringValue || f.orderNumber?.stringValue || id;
       if (!orderNum) continue;
 
-      if (seenOrderIds.has(id) || seenOrderIds.has(orderNum)) {
+      // If already recorded or already marked as notified, skip duplicate
+      if (seenOrderIds.has(id) || seenOrderIds.has(orderNum) || f.telegram_notified?.booleanValue) {
+        seenOrderIds.add(id);
+        seenOrderIds.add(orderNum);
         continue;
       }
 
@@ -1296,7 +1345,7 @@ async function scanAndNotifyNewOrders() {
       const ord = parseOrderDoc(d);
       if (!ord) continue;
 
-      console.log(`[Order Watcher] 🔔 NEW ORDER DETECTED: #${ord.orderNum} from ${ord.name} (৳${ord.total})! Sending to Telegram...`);
+      console.log(`[Order Watcher] 🔔 BRAND NEW ORDER DETECTED: #${ord.orderNum} from ${ord.name} (৳${ord.total})! Sending to Telegram...`);
 
       const { text, reply_markup } = formatTelegramOrderCard(ord);
       for (const adminId of ADMIN_CHAT_IDS) {
@@ -1308,6 +1357,9 @@ async function scanAndNotifyNewOrders() {
           disable_web_page_preview: true
         });
       }
+
+      // Mark as notified in Firestore
+      await markOrderNotifiedInFirestore(ord.orderNum);
     }
   } catch (err) {
     // silently handle polling notice
@@ -1320,9 +1372,13 @@ async function startPolling() {
   console.log(`🤖 Bot Token: ${BOT_TOKEN.slice(0, 15)}...`);
   console.log('====================================================\n');
 
-  // Initialize and start realtime Firestore order watcher
+  // Refresh admin chat ids
+  await refreshAdminChatIds().catch(() => {});
+  setInterval(refreshAdminChatIds, 60000);
+
+  // Initialize and start realtime Firestore order watcher (super fast 2s interval)
   await scanAndNotifyNewOrders().catch(() => {});
-  setInterval(scanAndNotifyNewOrders, 4000);
+  setInterval(scanAndNotifyNewOrders, 2000);
 
   // 1. Delete webhook so getUpdates receives all callback queries and messages
   const delRes = await callTelegram('deleteWebhook', { drop_pending_updates: false });

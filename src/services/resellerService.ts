@@ -1,4 +1,7 @@
 import { supabase } from "@/lib/firebaseAdapter";
+import { db } from "@/integrations/firebase/client";
+import { doc, setDoc } from "firebase/firestore";
+import { sendTelegramOrderNotification } from "@/utils/telegramNotifier";
 import { FAST_SEED_PRODUCTS } from "@/data/fastSeedCatalog";
 import { calculateProductPrice } from "@/utils/pricingMargin";
 
@@ -502,6 +505,51 @@ export const ResellerService = {
         notes: newOrder.notes,
         created_at: newOrder.createdAt,
       }).catch(() => {});
+
+      // Sync to main store orders for unified admin fulfillment
+      setDoc(doc(db, "orders", newOrder.orderNumber), {
+        id: newOrder.id,
+        order_number: newOrder.orderNumber,
+        customer_name: newOrder.customerName,
+        customer_phone: newOrder.customerPhone,
+        total: newOrder.totalCustomerBill,
+        status: "pending",
+        payment_method: "cod",
+        payment_status: "pending",
+        shipping_address: {
+          address: newOrder.customerAddress,
+          city: newOrder.customerCity,
+          phone: newOrder.customerPhone,
+          name: newOrder.customerName
+        },
+        items: [{
+          name: newOrder.productName,
+          quantity: newOrder.quantity,
+          price: Math.round(newOrder.customerSellingPrice / (newOrder.quantity || 1)),
+          product_id: newOrder.productId
+        }],
+        reseller_id: userId,
+        reseller_shop_name: newOrder.resellerShopName,
+        created_at: newOrder.createdAt,
+        updated_at: newOrder.createdAt
+      }).catch(() => {});
+
+      // Dispatch instant Telegram notification to store admin
+      sendTelegramOrderNotification({
+        orderNumber: newOrder.orderNumber,
+        customerName: `${newOrder.customerName} (Reseller: ${newOrder.resellerShopName})`,
+        phone: newOrder.customerPhone,
+        address: newOrder.customerAddress,
+        city: newOrder.customerCity,
+        paymentMethod: "cod",
+        total: newOrder.totalCustomerBill,
+        items: [{
+          name: newOrder.productName,
+          quantity: newOrder.quantity,
+          price: Math.round(newOrder.customerSellingPrice / (newOrder.quantity || 1)),
+          product_id: newOrder.productId
+        }]
+      }).catch((tgErr) => console.warn("[ResellerService] Telegram dispatch notice:", tgErr));
     } catch {}
 
     // Dispatch real-time events across UI

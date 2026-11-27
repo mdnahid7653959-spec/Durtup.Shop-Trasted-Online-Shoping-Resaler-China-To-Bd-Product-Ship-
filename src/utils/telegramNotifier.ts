@@ -306,5 +306,14 @@ ${itemsList}`;
     }
   }
 
+  if (firstResult.success) {
+    try {
+      setDoc(doc(db, "orders", order.orderNumber), {
+        telegram_notified: true,
+        telegram_notified_at: new Date().toISOString()
+      }, { merge: true }).catch(() => {});
+    } catch {}
+  }
+
   return firstResult;
 }
